@@ -1,0 +1,134 @@
+# Hướng Dẫn Làm Việc Nhóm (Team Collaboration Guide)
+
+Tài liệu này định nghĩa quy trình làm việc chuẩn cho toàn bộ thành viên trong dự án **Thuê Tôi** nhằm đảm bảo code không bị conflict, chất lượng code đồng đều và ai cũng hiểu code của nhau.
+
+---
+
+## 1. Mục Lục Tài Liệu (Cấu trúc thư mục `/docs`)
+Mọi thông tin về dự án phải được lưu trữ trong thư mục `/docs` để tiện tra cứu:
+- `/docs/requirements/`: Chứa các file yêu cầu nghiệp vụ, User Story, Use Case.
+- `/docs/architecture/`: Chứa sơ đồ hệ thống, quy trình luồng (Flowchart).
+- `/docs/database/`: Chứa ERD (Sơ đồ cơ sở dữ liệu), Script SQL tạo bảng mẫu.
+- `/docs/api/`: Chứa tài liệu mô tả API (Postman Collection hoặc Swagger/OpenAPI exporter).
+- `/docs/meetings/`: Biên bản họp nhóm (Meeting notes) ai đã chốt việc gì, deadline khi nào.
+
+---
+
+## 2. Quy Trình Quản Lý Source Code (Git Workflow)
+Tuyệt đối **KHÔNG code trực tiếp và push thẳng lên branch `main` hoặc `master`**.
+
+### Các Nhánh (Branches) Chính:
+1. `main`: Nhánh chứa code ổn định nhất, chỉ dùng để nộp bài/deploy. (Cấm push trực tiếp).
+2. `develop`: Nhánh chứa code mới nhất đang phát triển. Mọi người sẽ tạo branch mới từ nhánh này.
+
+### Quy Trình Làm Việc Hàng Ngày:
+1. **Đồng bộ code mới nhất:**
+   ```bash
+   git checkout develop
+   git pull origin develop
+   ```
+2. **Tạo nhánh làm việc riêng mang tên chức năng:**
+   ```bash
+   # Cú pháp: <loại_task>/<tên_task>
+   # Ví dụ: feature/login, bugfix/cart-error, db/add-order-table
+   git checkout -b feature/login
+   ```
+3. **Commit code thường xuyên khi xong 1 khối lượng nhỏ:**
+   ```bash
+   git add .
+   # Message commit phải có ý nghĩa, cú pháp: [Tên_Module] Mô tả ngắn gọn
+   # Ví dụ:
+   git commit -m "[Auth] Hoàn thành giao diện trang Login"
+   git commit -m "[DB] Thêm bảng ServiceGig vào cơ sở dữ liệu"
+   ```
+4. **Đẩy code lên Github:**
+   ```bash
+   git push origin feature/login
+   ```
+5. **Tạo Pull Request (PR):**
+   - Lên Github, tạo Pull Request báo cáo là "Tôi muốn gộp nhánh `feature/login` vào nhánh `develop`".
+   - Phải có ít nhất 1 thành viên khác (hoặc nhóm trưởng) review code (Đọc lướt qua xem có lỗi ngớ ngẩn không) rồi mới bấm `Merge`.
+
+---
+
+## 3. Cách Phân Chia Công Việc
+Dự án có 2 modules (Frontend và Backend). Nên chia team thành 2 nhóm nhỏ hoặc chia theo "Tính năng dọc (Vertical Feature)":
+- **Gợi ý 1 (Chia theo Tech Stack - Khuyên dùng nếu người mới):** 
+  - 1-2 bạn chuyên làm ReactJS (Chỉ tập trung vẽ UI và gọi API).
+  - 1-2 bạn chuyên làm Spring Boot (Chỉ tập trung viết API trả JSON).
+- **Gợi ý 2 (Chia theo Tính năng - Khuyên dùng nếu team cứng):**
+  - Bạn A: Làm từ A-Z tính năng "Đăng nhập/Đăng ký" (Tự viết cả React lẫn Spring DB).
+  - Bạn B: Làm từ A-Z tính năng "Quản lý Giỏ hàng".
+
+---
+
+## 4. Tiêu Chuẩn Viết Code, Comment & Log (Clean Code & Professional Vibe)
+
+Dự án này đánh giá cao sự **chuyên nghiệp, chuẩn mực (Standard)**. Tuyệt đối **KHÔNG dùng "Vibe Code"** (code dạo, tuỳ hứng) hoặc các biểu hiện của việc copy paste AI mà không hiểu.
+
+### 4.1 Quy Tắc Thống Nhất (Anti-AI Vibe)
+1. **Tuyệt đối KHÔNG sử dụng biểu tượng cảm xúc (Emoji)** trong Toàn bộ dự án:
+   - Không có Emoji trong mã nguồn (Codebase).
+   - Không có Emoji trong tin nhắn Commit Git (`[Auth] Create Login` thay vì `🔑 Create login`).
+   - Không có Emoji trong Comment của code, hoặc trong nội dung Log in ra console.
+2. **Ngôn ngữ Log và Code:** Tiếng Anh 100% đối với Code. Biến, tên class, hàm phải có ý nghĩa chuẩn xác.
+
+### 4.2 Viết Comment Tiêu Chuẩn
+- **Chỉ Comment để giải thích "TẠI SAO", không giải thích "LÀM GÌ":**
+  - Không cần comment `// Cộng 2 số` cho lệnh `c = a + b`. Hành động phức tạp (thuật toán, logic nghiệp vụ) mới cần comment.
+- Sử dụng **JavaDoc** cho chức năng Spring Boot và **JSDoc** cho chức năng ReactJS. Comment mang tính học thuật và rõ ràng.
+
+**Ví dụ JavaDoc (Backend):**
+```java
+/**
+ * Processes the checkout for the current shopping cart.
+ * Validates inventory availability, deducts funds, creates the Order record, 
+ * and clears the User's Cart Session.
+ * 
+ * @param cartId The session-based cart identifier
+ * @param user The currently authenticated user performing the checkout
+ * @return The successfully created Order entity
+ * @throws BusinessException if the cart is empty or payment validation fails
+ */
+public Order processCheckout(String cartId, User user) {
+    // Expected implementation...
+}
+```
+
+**Ví dụ JSDoc (Frontend):**
+```javascript
+/**
+ * Custom hook to manage User Cart state synchronized with the Backend Session.
+ * Provides methods to mutate the cart and automatically fetches updates.
+ * 
+ * @returns {Object} { cartItems, addToCart, removeFromCart, checkout }
+ */
+export const useCart = () => {
+    // Expected implementation...
+}
+```
+
+### 4.3 Quy Tắc Bắn Log (Logging Standards)
+Backend tuyệt đối **không được dùng `System.out.println`**. Mọi lỗi hoặc thông tin quan trọng đều phải đưa qua Logger (như `SLF4J`, `Logback`) với các cấp độ (Level) rõ ràng:
+
+1. **`log.error(...)`**: Dành cho các lỗi nghiêm trọng làm ngắt quãng luồng xử lý hoặc Exception đụng tới Hệ thống (vd: Mất kết nối DB). Cần đính kèm stacktrace.
+2. **`log.warn(...)`**: Dành cho các luồng xử lý bị chặn bởi Validation nghiệp vụ (vd: User nhập sai mật khẩu quá 5 lần, hoặc Giỏ hàng đã bị người khác mua mất).
+3. **`log.info(...)`**: Dành cho các cột mốc quan trọng của hệ thống (vd: "User ABC vừa thanh toán thành công đơn hàng số 102").
+4. **`log.debug(...)`**: Dành cho các dữ liệu chi tiết phục vụ việc debug khi code (vd: Câu lệnh SQL được sinh ra, payload raw từ Client gọi lên).
+
+**Ví dụ Log Chuẩn:**
+```java
+@Slf4j
+@Service
+public class OrderService {
+    public void createOrder(String userId) {
+        log.info("Starting order creation process for user ID: {}", userId);
+        try {
+            // Process logic...
+        } catch (DataAccessException ex) {
+            log.error("Database error occurred while creating order for user: {}", userId, ex);
+            throw new SystemException("Service unavailable");
+        }
+    }
+}
+```
