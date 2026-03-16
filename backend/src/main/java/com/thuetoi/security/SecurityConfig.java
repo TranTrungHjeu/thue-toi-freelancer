@@ -22,7 +22,7 @@ public class SecurityConfig {
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
         http
             .csrf(AbstractHttpConfigurer::disable)
-            // Permit all for now to setup base structures without auth blockage
+            // Tạm thời cho phép tất cả request để xây dựng cấu trúc ban đầu, sẽ bổ sung phân quyền sau
             .authorizeHttpRequests(auth -> auth
                 .anyRequest().permitAll()
             );

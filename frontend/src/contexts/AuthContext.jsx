@@ -1,5 +1,4 @@
 import { createContext, useState, useEffect } from 'react';
-import axiosClient from '../api/axiosClient';
 
 export const AuthContext = createContext();
 
@@ -8,10 +7,10 @@ export const AuthProvider = ({ children }) => {
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
-        // Initial load: check if session cookie is valid
+        // Tải lần đầu: Kiểm tra xem Session Cookie còn hiệu lực không
         const checkAuth = async () => {
             try {
-                // We'll call /api/auth/me later on backend
+                // Chúng ta sẽ gọi API /api/auth/me tại Backend sau
                 // const res = await axiosClient.get('/auth/me');
                 // setUser(res.data);
             } catch (err) {
@@ -23,7 +22,7 @@ export const AuthProvider = ({ children }) => {
         checkAuth();
     }, []);
 
-    const login = async (email, password) => {
+    const login = async () => {
          // const res = await axiosClient.post('/auth/login', { email, password });
          // setUser(res.data.user);
     };

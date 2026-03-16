@@ -14,10 +14,10 @@ public class WebConfig {
             @Override
             public void addCorsMappings(CorsRegistry registry) {
                 registry.addMapping("/**")
-                        .allowedOrigins("http://localhost:5173") // Vite React Default Port
+                        .allowedOrigins("http://localhost:5173") // Cổng mặc định của Vite React
                         .allowedMethods("GET", "POST", "PUT", "DELETE", "OPTIONS")
                         .allowedHeaders("*")
-                        .allowCredentials(true); // REQUIRED for Session/Cookies to work
+                        .allowCredentials(true); // BẮT BUỘC để Session/Cookie hoạt động với ReactJS
             }
         };
     }

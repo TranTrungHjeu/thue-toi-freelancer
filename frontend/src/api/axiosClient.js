@@ -2,17 +2,17 @@ import axios from 'axios';
 
 const axiosClient = axios.create({
     baseURL: 'http://localhost:8080/api',
-    // Important: required to send Session/Cookie details to Backend
+    // Quan trọng: Bắt buộc để gửi thông tin Session/Cookie lên Backend
     withCredentials: true,
     headers: {
         'Content-Type': 'application/json',
     },
 });
 
-// Interceptors for handling global request/response patterns
+// Interceptors để xử lý các luồng Request/Response ở cấp độ toàn cục
 axiosClient.interceptors.request.use(
     (config) => {
-        // We can append JWT token here if we move away from Spring Sessions
+        // Có thể đính kèm JWT token ở đây nếu hệ thống không dùng Spring Sessions nữa
         return config;
     },
     (error) => {
@@ -22,16 +22,16 @@ axiosClient.interceptors.request.use(
 
 axiosClient.interceptors.response.use(
     (response) => {
-        // Unwrap the ApiResponse class from Spring Boot
+        // Bóc tách lớp vỏ ApiResponse từ Spring Boot trả về
         if (response.data && response.data.success !== undefined) {
              return response.data;
         }
         return response.data;
     },
     (error) => {
-        // Handle global error codes (e.g. 401 Unauthorized)
+        // Xử lý các mã lỗi hệ thống toàn cục (Ví dụ: 401 Unauthorized - Hết hạn đăng nhập)
         if (error.response && error.response.status === 401) {
-            // e.g. window.location.href = '/login';
+            // Ví dụ: window.location.href = '/login';
         }
         console.error("API Error", error.response?.data);
         return Promise.reject(error.response?.data || error);
