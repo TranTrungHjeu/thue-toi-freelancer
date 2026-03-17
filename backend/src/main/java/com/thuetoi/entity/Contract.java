@@ -1,11 +1,14 @@
 package com.thuetoi.entity;
 
-import javax.persistence.*;
+import lombok.Data;
+
+import jakarta.persistence.*;
 import java.time.LocalDateTime;
 import java.util.List;
 
 @Entity
 @Table(name = "contract")
+@Data
 public class Contract extends BaseEntity {
     @Column(name = "project_id", nullable = false)
     private Long projectId;

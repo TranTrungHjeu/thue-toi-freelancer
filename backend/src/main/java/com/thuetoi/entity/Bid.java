@@ -1,6 +1,7 @@
 package com.thuetoi.entity;
 
-import javax.persistence.*;
+import jakarta.persistence.*;
+import lombok.Data;
 import java.util.Date;
 
 /**
@@ -8,6 +9,7 @@ import java.util.Date;
  */
 @Entity
 @Table(name = "bids")
+@Data
 public class Bid extends BaseEntity {
     @ManyToOne
     @JoinColumn(name = "project_id", nullable = false)

@@ -1,6 +1,8 @@
 package com.thuetoi.entity;
 
-import javax.persistence.*;
+import lombok.Data;
+
+import jakarta.persistence.*;
 import java.util.Date;
 
 /**
@@ -9,6 +11,7 @@ import java.util.Date;
  */
 @Entity
 @Table(name = "users")
+@Data
 public class User extends BaseEntity {
     @Column(nullable = false, unique = true)
     private String email;

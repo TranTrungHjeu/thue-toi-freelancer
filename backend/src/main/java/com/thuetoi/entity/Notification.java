@@ -1,10 +1,13 @@
 package com.thuetoi.entity;
 
-import javax.persistence.*;
+import lombok.Data;
+
+import jakarta.persistence.*;
 import java.time.LocalDateTime;
 
 @Entity
 @Table(name = "notification")
+@Data
 public class Notification extends BaseEntity {
     @Column(name = "user_id", nullable = false)
     private Long userId;

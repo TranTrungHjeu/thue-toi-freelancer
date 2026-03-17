@@ -13,9 +13,9 @@ public class HealthController {
         boolean serviceOk = true; // TODO: kiểm tra service
         boolean logicOk = true; // TODO: kiểm tra logic nghiệp vụ
         if (dbOk && serviceOk && logicOk) {
-            return ApiResponse.success("Healthy");
+            return ApiResponse.success("Healthy", null);
         } else {
-            return ApiResponse.error("HEALTH_ERROR", "Service unhealthy");
+            return ApiResponse.error("Service unhealthy");
         }
     }
 }
