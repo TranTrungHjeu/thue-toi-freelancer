@@ -15,6 +15,15 @@ public class ContractController {
     @Autowired
     private ContractService contractService;
 
+    /**
+     * Lấy tất cả hợp đồng
+     */
+    @GetMapping
+    public ApiResponse<List<Contract>> getAllContracts() {
+        List<Contract> contracts = contractService.getAllContracts();
+        return ApiResponse.success("Lấy tất cả hợp đồng", contracts);
+    }
+
     @PostMapping
     public ApiResponse createContract(@RequestBody Contract contract) {
         Contract created = contractService.createContract(contract);

@@ -19,6 +19,15 @@ public class ProjectController {
     private ProjectService projectService;
 
     /**
+     * Lấy tất cả dự án
+     */
+    @GetMapping
+    public ApiResponse<List<Project>> getAllProjects() {
+        List<Project> projects = projectService.getAllProjects();
+        return ApiResponse.success("Lấy tất cả dự án", projects);
+    }
+
+    /**
      * Tạo dự án mới
      */
     @PostMapping

@@ -13,6 +13,12 @@ import java.util.List;
 public class ContractService {
     @Autowired
     private ContractRepository contractRepository;
+    /**
+     * Lấy tất cả hợp đồng
+     */
+    public List<Contract> getAllContracts() {
+        return contractRepository.findAll();
+    }
 
     @Autowired
     private MilestoneRepository milestoneRepository;

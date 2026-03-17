@@ -23,6 +23,13 @@
             <artifactId>spring-boot-starter-web</artifactId>
         </dependency>
 
+        <!-- Jakarta Servlet API for HttpServletRequest/HttpSession (Spring Boot 3.x uses jakarta.*) -->
+        <dependency>
+            <groupId>jakarta.servlet</groupId>
+            <artifactId>jakarta.servlet-api</artifactId>
+            <scope>provided</scope>
+        </dependency>
+
         <!-- Spring Data JPA for Database Interaction -->
         <dependency>
             <groupId>org.springframework.boot</groupId>
@@ -50,18 +57,18 @@
         </dependency>
 
         <!-- Lombok to reduce boilerplate code -->
-        		<dependency>
-			<groupId>org.projectlombok</groupId>
-			<artifactId>lombok</artifactId>
-			<optional>true</optional>
-		</dependency>
+        <dependency>
+            <groupId>org.projectlombok</groupId>
+            <artifactId>lombok</artifactId>
+            <optional>true</optional>
+        </dependency>
 
-		<!-- ModelMapper: Tiện ích map dữ liệu giữa Entity và DTO -->
-		<dependency>
-			<groupId>org.modelmapper</groupId>
-			<artifactId>modelmapper</artifactId>
-			<version>3.2.0</version>
-		</dependency>
+        <!-- ModelMapper: Tiện ích map dữ liệu giữa Entity và DTO -->
+        <dependency>
+            <groupId>org.modelmapper</groupId>
+            <artifactId>modelmapper</artifactId>
+            <version>3.2.0</version>
+        </dependency>
 
         <!-- WebSocket for Realtime Chat/Notification (Bonus Point) -->
         <dependency>

@@ -19,6 +19,12 @@ import java.util.Optional;
 public class ProjectService {
     @Autowired
     private ProjectRepository projectRepository;
+    /**
+     * Lấy tất cả dự án
+     */
+    public List<Project> getAllProjects() {
+        return projectRepository.findAll();
+    }
 
     @Autowired
     private UserRepository userRepository;

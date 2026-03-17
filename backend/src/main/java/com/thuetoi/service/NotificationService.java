@@ -11,13 +11,19 @@ import java.util.List;
 public class NotificationService {
     @Autowired
     private NotificationRepository notificationRepository;
+    /**
+     * Lấy tất cả notification
+     */
+    public List<Notification> getAllNotifications() {
+        return notificationRepository.findAll();
+    }
 
     public Notification createNotification(Notification notification) {
         return notificationRepository.save(notification);
     }
 
     public List<Notification> getNotificationsByUser(Long userId) {
-        return notificationRepository.findAll(); // TODO: filter by user
+        return notificationRepository.findByUserId(userId);
     }
 
     public Notification markAsRead(Long notificationId) {

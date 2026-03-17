@@ -14,6 +14,15 @@ public class NotificationController {
     @Autowired
     private NotificationService notificationService;
 
+    /**
+     * Lấy tất cả notification
+     */
+    @GetMapping
+    public ApiResponse<List<Notification>> getAllNotifications() {
+        List<Notification> notifications = notificationService.getAllNotifications();
+        return ApiResponse.success("Lấy tất cả notification", notifications);
+    }
+
     @PostMapping
     public ApiResponse createNotification(@RequestBody Notification notification) {
         Notification created = notificationService.createNotification(notification);
@@ -21,9 +30,30 @@ public class NotificationController {
     }
 
     @GetMapping("/user/{userId}")
-    public ApiResponse getNotificationsByUser(@PathVariable Long userId) {
+    public ApiResponse<List<Notification>> getNotificationsByUser(@PathVariable Long userId) {
         List<Notification> notifications = notificationService.getNotificationsByUser(userId);
-        return ApiResponse.success(notifications);
+        return ApiResponse.success("Lấy notification theo userId", notifications);
+    }
+
+    /**
+     * Lấy notification của user đang đăng nhập
+     */
+    @GetMapping("/user/me")
+    public ApiResponse<List<Notification>> getNotificationsByCurrentUser(@RequestParam(required = false) Long userId, java.security.Principal principal) {
+        // Nếu frontend truyền userId thì lấy theo userId, không thì lấy theo principal
+        Long id = userId;
+        if (id == null && principal != null) {
+            try {
+                id = Long.parseLong(principal.getName());
+            } catch (Exception e) {
+                return ApiResponse.error("Không xác định được userId từ session");
+            }
+        }
+        if (id == null) {
+            return ApiResponse.error("Thiếu userId hoặc chưa đăng nhập");
+        }
+        List<Notification> notifications = notificationService.getNotificationsByUser(id);
+        return ApiResponse.success("Lấy notification của user đang đăng nhập", notifications);
     }
 
     @PutMapping("/{notificationId}/read")

@@ -13,14 +13,14 @@ const apiList = [
   {
     name: "Đăng nhập",
     method: "POST",
-    url: "/user/login",
+    url: "/auth/login",
     description: "Đăng nhập hệ thống",
     params: ["email", "password"],
   },
   {
     name: "Lấy thông tin cá nhân",
     method: "GET",
-    url: "/user/profile",
+    url: "/auth/profile",
     description: "Lấy thông tin user hiện tại",
     params: [],
   },
@@ -83,14 +83,14 @@ const apiList = [
   {
     name: "Danh sách notification",
     method: "GET",
-    url: "/api/notifications",
+    url: "/notifications",
     description: "Lấy danh sách notification",
     params: [],
   },
   {
     name: "Tạo notification",
     method: "POST",
-    url: "/api/notifications",
+    url: "/notifications",
     description: "Tạo notification mới",
     params: ["userId", "title", "content", "isRead"],
   },
@@ -101,22 +101,36 @@ function ApiTest() {
     const [loginEmail, setLoginEmail] = useState("");
     const [loginPassword, setLoginPassword] = useState("");
     const [loginStatus, setLoginStatus] = useState(null);
+    const [currentUser, setCurrentUser] = useState(() => {
+      try {
+        const user = localStorage.getItem('currentUser');
+        return user ? JSON.parse(user) : null;
+      } catch {
+        return null;
+      }
+    });
 
     const handleLogin = async (e) => {
       e.preventDefault();
       setLoginStatus("Đang đăng nhập...");
       try {
-        const res = await axios.post("/user/login", {
+        const res = await axios.post("/auth/login", {
           email: loginEmail,
           password: loginPassword,
         });
         if (res && res.success) {
           setLoginStatus("Đăng nhập thành công!");
+          setCurrentUser(res.data);
+          localStorage.setItem('currentUser', JSON.stringify(res.data));
         } else {
           setLoginStatus("Sai tài khoản hoặc mật khẩu");
+          setCurrentUser(null);
+          localStorage.removeItem('currentUser');
         }
       } catch (err) {
         setLoginStatus("Sai tài khoản hoặc mật khẩu");
+        setCurrentUser(null);
+        localStorage.removeItem('currentUser');
       }
     };
   const [selectedApi, setSelectedApi] = useState(apiList[0]);
@@ -165,6 +179,7 @@ function ApiTest() {
             value={loginEmail}
             onChange={e => setLoginEmail(e.target.value)}
             required
+            autoComplete="username"
           />
           <input
             type="password"
@@ -173,12 +188,18 @@ function ApiTest() {
             value={loginPassword}
             onChange={e => setLoginPassword(e.target.value)}
             required
+            autoComplete="current-password"
           />
           <button type="submit" className="bg-blue-600 text-white py-2 px-4 rounded font-semibold hover:bg-blue-700 transition">
             Đăng nhập
           </button>
         </form>
         {loginStatus && <div className="mt-2 text-sm text-green-600">{loginStatus}</div>}
+            {currentUser && (
+              <div className="mt-2 text-sm text-blue-600 font-semibold">
+                Đang đăng nhập: <span>{currentUser.email}</span>
+              </div>
+            )}
       </div>
 
       <div className="mb-6">

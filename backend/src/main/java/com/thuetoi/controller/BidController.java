@@ -19,6 +19,15 @@ public class BidController {
     private BidService bidService;
 
     /**
+     * Lấy tất cả bid
+     */
+    @GetMapping
+    public ApiResponse<List<Bid>> getAllBids() {
+        List<Bid> bids = bidService.getAllBids();
+        return ApiResponse.success("Lấy tất cả báo giá", bids);
+    }
+
+    /**
      * Freelancer gửi báo giá
      */
     @PostMapping

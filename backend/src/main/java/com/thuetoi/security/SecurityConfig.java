@@ -24,7 +24,16 @@ public class SecurityConfig {
             .csrf(AbstractHttpConfigurer::disable)
             .authorizeHttpRequests(auth -> auth
                 .requestMatchers("/api/health", "/api/auth/register", "/api/auth/login").permitAll()
-                .requestMatchers("/api/user/**", "/api/projects/**", "/api/bids/**", "/api/contracts/**", "/api/reviews/**", "/api/messages/**", "/api/notifications/**").authenticated()
+                .requestMatchers(
+                    "/api/auth/**",
+                    "/api/projects/**",
+                    "/api/bids/**",
+                    "/api/contracts/**",
+                    "/api/reviews/**",
+                    "/api/messages/**",
+                    "/api/notifications/**",
+                    "/api/milestones/**"
+                ).authenticated()
                 .anyRequest().denyAll()
             )
             ;

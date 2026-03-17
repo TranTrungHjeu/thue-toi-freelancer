@@ -20,6 +20,12 @@ import java.util.Optional;
 public class BidService {
     @Autowired
     private BidRepository bidRepository;
+        /**
+         * Lấy tất cả bid
+         */
+        public List<Bid> getAllBids() {
+            return bidRepository.findAll();
+        }
     @Autowired
     private ProjectRepository projectRepository;
     @Autowired
