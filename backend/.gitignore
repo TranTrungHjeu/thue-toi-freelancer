@@ -1,0 +1,20 @@
+# Loại trừ file build (output biên dịch)
+/target/
+*.class
+
+# Loại trừ file cấu hình IDE (IntelliJ, VSCode...)
+/.idea/
+*.iml
+
+# Loại trừ file log
+*.log
+
+# Loại trừ file hệ điều hành
+.DS_Store
+Thumbs.db
+
+# Loại trừ file môi trường
+.env
+
+# Loại trừ thư mục uploads
+/uploads/
