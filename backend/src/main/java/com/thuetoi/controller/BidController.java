@@ -13,7 +13,7 @@ import java.util.List;
  * Controller Bid: API gửi báo giá, xem danh sách, chọn bid
  */
 @RestController
-@RequestMapping("/api/v1/bids")
+@RequestMapping("/api/bids")
 public class BidController {
     @Autowired
     private BidService bidService;

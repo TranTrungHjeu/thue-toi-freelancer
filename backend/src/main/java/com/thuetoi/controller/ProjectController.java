@@ -13,7 +13,7 @@ import java.util.List;
  * Controller Project: API CRUD dự án, filter, validate
  */
 @RestController
-@RequestMapping("/api/v1/projects")
+@RequestMapping("/api/projects")
 public class ProjectController {
     @Autowired
     private ProjectService projectService;

@@ -12,7 +12,7 @@ import org.springframework.web.bind.annotation.*;
  * Controller User: API đăng ký, đăng nhập, lấy thông tin user
  */
 @RestController
-@RequestMapping("/api/v1/auth")
+@RequestMapping("/api/auth")
 public class UserController {
     @Autowired
     private UserService userService;
