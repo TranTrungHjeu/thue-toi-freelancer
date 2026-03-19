@@ -13,7 +13,7 @@ INSERT INTO users (
     )
 VALUES (
         'freelancer1@gmail.com',
-        'hash1',
+        '$2b$10$3joVRbCbSfcD1m5V/bfewuTgqC39dozbn5erz2XsUiwFa3doa3XNG',
         'Nguyễn Freelancer',
         'freelancer',
         'avatar1.jpg',
@@ -24,7 +24,7 @@ VALUES (
     ),
     (
         'customer1@gmail.com',
-        'hash2',
+        '$2b$10$3joVRbCbSfcD1m5V/bfewuTgqC39dozbn5erz2XsUiwFa3doa3XNG',
         'Trần Khách Hàng',
         'customer',
         'avatar2.jpg',
@@ -35,7 +35,7 @@ VALUES (
     ),
     (
         'admin@gmail.com',
-        'hash3',
+        '$2b$10$3joVRbCbSfcD1m5V/bfewuTgqC39dozbn5erz2XsUiwFa3doa3XNG',
         'Admin Hệ Thống',
         'admin',
         NULL,
