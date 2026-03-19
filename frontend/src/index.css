@@ -1,9 +1,59 @@
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
+@import "tailwindcss";
+
+@theme {
+  --font-sans: "Manrope", sans-serif;
+  --font-serif: "Lora", serif;
+
+  --color-primary-50: #f0fdf4;
+  --color-primary-100: #dcfce7;
+  --color-primary-500: #22c55e;
+  --color-primary-600: #16a34a;
+  --color-primary-700: #15803d;
+  
+  --color-secondary-900: #0f172a;
+  --color-secondary-800: #1e293b;
+  --color-secondary-700: #334155;
+
+  --color-accent-500: #3b82f6;
+
+  --color-error: #ef4444;
+  --color-warning: #f59e0b;
+  --color-info: #3b82f6;
+  --color-success: #22c55e;
+}
 
 @layer base {
+  * {
+    @apply !rounded-none;
+  }
+
   body {
-    @apply bg-gray-50 text-gray-900 font-sans antialiased;
+    @apply bg-gray-50 text-slate-900 font-sans antialiased selection:bg-primary-100;
+  }
+
+  h1, h2, h3, h4, h5, h6 {
+    @apply font-serif;
+  }
+}
+
+@layer components {
+  .glass {
+    @apply bg-white/80 backdrop-blur-md border border-white/20 shadow-none;
+  }
+  
+  .glass-dark {
+    @apply bg-slate-900/80 backdrop-blur-md border border-slate-800/50 shadow-none;
+  }
+
+  .sharp-card {
+    @apply bg-white border border-slate-200 p-6;
+  }
+
+  .btn-primary {
+    @apply bg-primary-600 text-white px-6 py-2 font-semibold hover:bg-primary-700 transition-colors disabled:opacity-50;
+  }
+
+  .btn-outline {
+    @apply border-2 border-secondary-900 text-secondary-900 px-6 py-2 font-semibold hover:bg-secondary-900 hover:text-white transition-all;
   }
 }

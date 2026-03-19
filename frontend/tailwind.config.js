@@ -6,6 +6,10 @@ export default {
   ],
   theme: {
     extend: {
+      fontFamily: {
+        sans: ['Manrope', 'sans-serif'],
+        serif: ['Lora', 'serif'],
+      },
       colors: {
         primary: {
           50: '#f0fdf4',
@@ -15,10 +19,17 @@ export default {
           700: '#15803d',
         },
         secondary: {
-          900: '#0f172a', /* dark slate */
+          900: '#0f172a',
           800: '#1e293b',
           700: '#334155',
-        }
+        },
+        accent: {
+          500: '#3b82f6',
+        },
+        error: '#ef4444',
+        warning: '#f59e0b',
+        info: '#3b82f6',
+        success: '#22c55e',
       }
     },
   },
