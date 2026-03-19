@@ -1,257 +1,235 @@
-
 import React, { useState } from 'react';
 import axios from '../api/axiosClient';
+import Button from '../components/common/Button';
+import Input from '../components/common/Input';
+import Card from '../components/common/Card';
+import Badge from '../components/common/Badge';
+import Modal from '../components/common/Modal';
+import Table from '../components/common/Table';
+import MainLayout from '../components/layout/MainLayout';
+import { H2, Text, Caption } from '../components/common/Typography';
+import StatCard from '../components/common/StatCard';
+import Skeleton from '../components/common/Skeleton';
+import Stepper from '../components/common/Stepper';
+import { useToast } from '../components/common/Toast';
+import { Wallet, StatsUpSquare, User, MultiBubble } from 'iconoir-react';
 
 const apiList = [
-  {
-    name: "Health Check",
-    method: "GET",
-    url: "/health",
-    description: "Kiểm tra trạng thái hệ thống",
-    params: [],
-  },
-  {
-    name: "Đăng nhập",
-    method: "POST",
-    url: "/auth/login",
-    description: "Đăng nhập hệ thống",
-    params: ["email", "password"],
-  },
-  {
-    name: "Lấy thông tin cá nhân",
-    method: "GET",
-    url: "/auth/profile",
-    description: "Lấy thông tin user hiện tại",
-    params: [],
-  },
-  {
-    name: "Danh sách dự án",
-    method: "GET",
-    url: "/projects",
-    description: "Lấy danh sách dự án",
-    params: [],
-  },
-  {
-    name: "Tạo dự án",
-    method: "POST",
-    url: "/projects",
-    description: "Tạo dự án mới",
-    params: ["title", "description", "budgetMin", "budgetMax", "deadline"],
-  },
-  {
-    name: "Danh sách bid",
-    method: "GET",
-    url: "/bids",
-    description: "Lấy danh sách bid",
-    params: [],
-  },
-  {
-    name: "Tạo bid",
-    method: "POST",
-    url: "/bids",
-    description: "Tạo bid mới",
-    params: ["projectId", "price", "description"],
-  },
-  {
-    name: "Danh sách hợp đồng",
-    method: "GET",
-    url: "/contracts",
-    description: "Lấy danh sách hợp đồng",
-    params: [],
-  },
-  {
-    name: "Tạo hợp đồng",
-    method: "POST",
-    url: "/contracts",
-    description: "Tạo hợp đồng mới",
-    params: ["projectId", "freelancerId", "clientId", "status"],
-  },
-  {
-    name: "Danh sách milestone",
-    method: "GET",
-    url: "/milestones",
-    description: "Lấy danh sách milestone",
-    params: [],
-  },
-  {
-    name: "Tạo milestone",
-    method: "POST",
-    url: "/milestones",
-    description: "Tạo milestone mới",
-    params: ["contractId", "title", "description", "amount", "dueDate", "status"],
-  },
-  {
-    name: "Danh sách notification",
-    method: "GET",
-    url: "/notifications",
-    description: "Lấy danh sách notification",
-    params: [],
-  },
-  {
-    name: "Tạo notification",
-    method: "POST",
-    url: "/notifications",
-    description: "Tạo notification mới",
-    params: ["userId", "title", "content", "isRead"],
-  },
+  { name: "Health Check", method: "GET", url: "/health", description: "Kiểm tra trạng thái hệ thống", params: [] },
+  { name: "Đăng nhập", method: "POST", url: "/auth/login", description: "Đăng nhập hệ thống", params: ["email", "password"] },
+  { name: "Danh sách dự án", method: "GET", url: "/projects", description: "Lấy danh sách dự án", params: [] },
 ];
 
 function ApiTest() {
-    // Đăng nhập
-    const [loginEmail, setLoginEmail] = useState("");
-    const [loginPassword, setLoginPassword] = useState("");
-    const [loginStatus, setLoginStatus] = useState(null);
-    const [currentUser, setCurrentUser] = useState(() => {
-      try {
-        const user = localStorage.getItem('currentUser');
-        return user ? JSON.parse(user) : null;
-      } catch {
-        return null;
-      }
-    });
+  const [loginEmail, setLoginEmail] = useState("");
+  const [loginPassword, setLoginPassword] = useState("");
+  const [loginStatus, setLoginStatus] = useState(null);
+  const [currentUser, setCurrentUser] = useState(() => {
+    try {
+      const user = localStorage.getItem('currentUser');
+      return user ? JSON.parse(user) : null;
+    } catch { return null; }
+  });
 
-    const handleLogin = async (e) => {
-      e.preventDefault();
-      setLoginStatus("Đang đăng nhập...");
-      try {
-        const res = await axios.post("/auth/login", {
-          email: loginEmail,
-          password: loginPassword,
-        });
-        if (res && res.success) {
-          setLoginStatus("Đăng nhập thành công!");
-          setCurrentUser(res.data);
-          localStorage.setItem('currentUser', JSON.stringify(res.data));
-        } else {
-          setLoginStatus("Sai tài khoản hoặc mật khẩu");
-          setCurrentUser(null);
-          localStorage.removeItem('currentUser');
-        }
-      } catch (err) {
-        setLoginStatus("Sai tài khoản hoặc mật khẩu");
-        setCurrentUser(null);
-        localStorage.removeItem('currentUser');
-      }
-    };
+  const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedApi, setSelectedApi] = useState(apiList[0]);
   const [params, setParams] = useState({});
   const [response, setResponse] = useState(null);
   const [loading, setLoading] = useState(false);
 
-  const handleChangeApi = (api) => {
-    setSelectedApi(api);
-    setParams({});
-    setResponse(null);
-  };
+  const { addToast } = useToast();
 
-  const handleChangeParam = (key, value) => {
-    setParams((prev) => ({ ...prev, [key]: value }));
+  const handleLogin = async (e) => {
+    e.preventDefault();
+    setLoginStatus("Đang đăng nhập...");
+    try {
+      const res = await axios.post("/auth/login", { email: loginEmail, password: loginPassword });
+      if (res && res.success) {
+        setLoginStatus("Đăng nhập thành công!");
+        setCurrentUser(res.data);
+        localStorage.setItem('currentUser', JSON.stringify(res.data));
+        addToast("Đăng nhập thành công!", "success");
+      } else {
+        setLoginStatus("Sai tài khoản hoặc mật khẩu");
+        addToast("Sai tài khoản hoặc mật khẩu", "error");
+      }
+    } catch { 
+      setLoginStatus("Lỗi kết nối server"); 
+      addToast("Lỗi kết nối server", "error");
+    }
   };
 
   const handleSend = async () => {
     setLoading(true);
     setResponse(null);
     try {
-      let res;
-      if (selectedApi.method === "GET") {
-        res = await axios.get(selectedApi.url, { params });
-      } else {
-        res = await axios.post(selectedApi.url, params);
-      }
+      const res = selectedApi.method === "GET"
+        ? await axios.get(selectedApi.url, { params })
+        : await axios.post(selectedApi.url, params);
       setResponse(res);
+      addToast(`Gửi yêu cầu tới ${selectedApi.name} thành công`, "success");
     } catch (err) {
-      setResponse(err);
-    } finally {
-      setLoading(false);
-    }
+      setResponse(err.response?.data || err.message);
+      addToast("Gửi yêu cầu thất bại", "error");
+    } finally { setLoading(false); }
   };
+
   return (
-    <div className="max-w-2xl mx-auto mt-10 p-6 bg-white rounded-lg shadow-md">
-      <h2 className="text-2xl font-bold mb-4">API Test UI</h2>
-      {/* Form đăng nhập đơn giản */}
-      <div className="mb-6 border-b pb-4">
-        <h3 className="text-lg font-semibold mb-2">Đăng nhập để test API</h3>
-        <form onSubmit={handleLogin} className="flex gap-2 items-center">
-          <input
-            type="email"
-            className="p-2 border rounded"
-            placeholder="Email"
-            value={loginEmail}
-            onChange={e => setLoginEmail(e.target.value)}
-            required
-            autoComplete="username"
-          />
-          <input
-            type="password"
-            className="p-2 border rounded"
-            placeholder="Mật khẩu"
-            value={loginPassword}
-            onChange={e => setLoginPassword(e.target.value)}
-            required
-            autoComplete="current-password"
-          />
-          <button type="submit" className="bg-blue-600 text-white py-2 px-4 rounded font-semibold hover:bg-blue-700 transition">
-            Đăng nhập
-          </button>
-        </form>
-        {loginStatus && <div className="mt-2 text-sm text-green-600">{loginStatus}</div>}
-            {currentUser && (
-              <div className="mt-2 text-sm text-blue-600 font-semibold">
-                Đang đăng nhập: <span>{currentUser.email}</span>
-              </div>
-            )}
+    <MainLayout user={currentUser}>
+      {/* Top Section */}
+      <div className="flex justify-between items-center mb-4">
+        <div className="flex flex-col gap-1">
+          <H2 className="!mb-0 text-3xl">API Laboratory</H2>
+          <Text className="text-sm">Môi trường thử nghiệm dịch vụ Thuê Tôi</Text>
+        </div>
+        <div className="flex gap-3">
+          <Button variant="outline" onClick={() => setIsModalOpen(true)}>Xem Guide</Button>
+          <Button onClick={() => window.location.reload()}>Làm mới</Button>
+        </div>
       </div>
 
-      <div className="mb-6">
-        <label className="block mb-2 font-semibold">Chọn API:</label>
-        <select
-          className="w-full p-2 border rounded"
-          value={selectedApi.name}
-          onChange={(e) => handleChangeApi(apiList.find(api => api.name === e.target.value))}
-        >
-          {apiList.map((api, idx) => (
-            <option key={api.name + idx} value={api.name}>{api.name}</option>
-          ))}
-        </select>
-      </div>
+      {loading ? (
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+          <Skeleton height="h-32" />
+          <Skeleton height="h-32" />
+          <Skeleton height="h-32" />
+        </div>
+      ) : (
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+          <StatCard 
+            label="Tổng Thu Nhập" 
+            value="$12,450" 
+            icon={Wallet} 
+            trend="up" 
+            trendValue="+12%" 
+          />
+          <StatCard 
+            label="Dự Án Hoàn Thành" 
+            value="48" 
+            icon={StatsUpSquare} 
+            trend="up" 
+            trendValue="+5" 
+            animation="scale"
+          />
+          <StatCard 
+            label="Đánh Giá Trung Bình" 
+            value="4.9/5" 
+            icon={MultiBubble} 
+            trend="up" 
+            trendValue="High" 
+            animation="float"
+          />
+        </div>
+      )}
 
-          <div className="mb-6">
-            <label className="block mb-2 font-semibold">Mô tả:</label>
-            <div className="bg-gray-100 p-2 rounded">{selectedApi.description}</div>
-          </div>
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 items-start">
+        {/* Left Column - Auth & Config */}
+        <div className="lg:col-span-1 flex flex-col gap-8">
+          <Card className="bg-slate-900 text-white border-none shadow-xl relative overflow-hidden">
+            <div className="absolute top-0 right-0 p-4 opacity-10">
+              <H2 className="text-6xl !text-white select-none">AUTH</H2>
+            </div>
+            <H2 className="text-lg mb-6 uppercase tracking-widest text-primary-500">Authentication</H2>
+            <form onSubmit={handleLogin} className="flex flex-col gap-5 relative z-10">
+              <Input
+                label={<span className="text-slate-300">Email Address</span>}
+                value={loginEmail}
+                onChange={e => setLoginEmail(e.target.value)}
+                className="!bg-slate-800 border-slate-700 !text-white"
+              />
+              <Input
+                label={<span className="text-slate-300">Key Phrase</span>}
+                type="password"
+                value={loginPassword}
+                onChange={e => setLoginPassword(e.target.value)}
+                className="!bg-slate-800 border-slate-700 !text-white"
+              />
+              <Button type="submit" className="w-full mt-2">Access Portal</Button>
+            </form>
+            {loginStatus && <Text className="mt-4 text-xs italic text-primary-400">{loginStatus}</Text>}
+          </Card>
 
-          {selectedApi.params.length > 0 && (
-            <div className="mb-6">
-              <label className="block mb-2 font-semibold">Nhập tham số:</label>
-              {selectedApi.params.map((param, idx) => (
-                <input
-                  key={param + idx}
-                  className="w-full p-2 mb-2 border rounded"
-                  placeholder={param}
-                  value={params[param] || ""}
-                  onChange={e => handleChangeParam(param, e.target.value)}
-                />
+          <Card>
+            <H2 className="text-lg mb-4 uppercase tracking-widest">Select Endpoint</H2>
+            <select
+              className="w-full p-2.5 border border-slate-300 bg-white font-sans outline-none focus:border-primary-500 transition-colors"
+              value={selectedApi.name}
+              onChange={(e) => setSelectedApi(apiList.find(a => a.name === e.target.value))}
+            >
+              {apiList.map(api => <option key={api.name} value={api.name}>{api.name}</option>)}
+            </select>
+          </Card>
+        </div>
+
+        {/* Right Column - Execution & Results */}
+        <div className="lg:col-span-2 flex flex-col gap-8">
+          <Card>
+            <div className="flex justify-between items-center mb-6">
+              <H2 className="text-lg !mb-0 uppercase tracking-widest">Request Payload</H2>
+              <Badge color="info">{selectedApi.method}</Badge>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-6">
+              {selectedApi.params.map(p => (
+                <Input key={p} label={p} placeholder={`Value for ${p}`} onChange={e => setParams(prev => ({ ...prev, [p]: e.target.value }))} />
               ))}
             </div>
-          )}
 
-          <button
-            className="w-full bg-blue-600 text-white py-2 rounded font-semibold hover:bg-blue-700 transition mb-4"
-            onClick={handleSend}
-            disabled={loading}
-          >
-            {loading ? "Đang gửi..." : `Gửi ${selectedApi.method}`}
-          </button>
+            <Button className="w-full py-4 text-lg tracking-widest" onClick={handleSend} disabled={loading}>
+              Execute {selectedApi.url}
+            </Button>
+          </Card>
 
           {response && (
-            <div className="mt-6">
-              <label className="block mb-2 font-semibold">Kết quả:</label>
-              <pre className="bg-gray-100 p-2 rounded text-sm overflow-x-auto">
+            <Card className="!p-0 border-secondary-900 bg-secondary-900 overflow-hidden shadow-2xl">
+              <div className="bg-slate-800 px-6 py-3 border-b border-slate-700 flex justify-between items-center">
+                <div className="flex gap-1.5">
+                  <div className="w-3 h-3 bg-red-500 rounded-none" />
+                  <div className="w-3 h-3 bg-amber-500 rounded-none" />
+                  <div className="w-3 h-3 bg-green-500 rounded-none" />
+                </div>
+                <Caption className="text-slate-400 font-mono text-[10px]">Response Inspector v1.0</Caption>
+              </div>
+              <pre className="p-6 text-slate-400 font-mono text-sm overflow-x-auto">
                 {JSON.stringify(response, null, 2)}
               </pre>
-            </div>
+            </Card>
           )}
-    </div>
+        </div>
+      </div>
+
+      <Modal
+        isOpen={isModalOpen}
+        onClose={() => setIsModalOpen(false)}
+        title="Developer Guide"
+      >
+        <div className="flex flex-col gap-6">
+          <div>
+            <Caption className="mb-2 block uppercase tracking-widest text-primary-600">Workflow Progress</Caption>
+            <Stepper 
+              steps={["Yêu cầu", "Báo giá", "Triển khai", "Hoàn tất"]} 
+              currentStep={1} 
+              className="mt-4 mb-10"
+            />
+          </div>
+
+          <div className="pt-4 border-t border-slate-100">
+            <Text>Ví dụ về <strong>Table</strong> đồng bộ với thiết kế Sharpness:</Text>
+            <Table
+              headers={["Project", "Client", "Budget"]}
+              data={[
+                { name: "Thiết kế Landing Page", client: "Mr. Anh", budget: "$500" },
+                { name: "Backend API Spring", client: "Ms. Linh", budget: "$1.200" },
+              ]}
+            />
+          </div>
+          <div className="mt-4 flex justify-end">
+            <Button onClick={() => setIsModalOpen(false)}>Đã hiểu</Button>
+          </div>
+        </div>
+      </Modal>
+
+    </MainLayout>
   );
 }
 

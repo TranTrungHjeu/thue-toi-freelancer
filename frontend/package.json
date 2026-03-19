@@ -12,7 +12,9 @@
   "dependencies": {
     "autoprefixer": "^10.4.27",
     "axios": "^1.13.6",
+    "iconoir-react": "^7.10.0",
     "js-cookie": "^3.0.5",
+    "motion": "^12.4.7",
     "postcss": "^8.5.8",
     "react": "^19.2.4",
     "react-dom": "^19.2.4",
@@ -21,6 +23,7 @@
   },
   "devDependencies": {
     "@eslint/js": "^9.39.4",
+    "@tailwindcss/vite": "^4.2.1",
     "@types/react": "^19.2.14",
     "@types/react-dom": "^19.2.3",
     "@vitejs/plugin-react": "^6.0.0",

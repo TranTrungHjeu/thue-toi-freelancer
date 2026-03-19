@@ -51,14 +51,19 @@ Nếu bạn muốn dùng công cụ như DBeaver hoặc MySQL Workbench để xe
 ### Hỗ trợ (Troubleshoot)
 
 1. **Xem Log hệ thống:** Nếu Backend/Frontend không lên mạng, hãy chạy lệnh này để xem bản ghi lỗi:
+
    ```bash
    docker-compose logs -f
    ```
+
 2. **Tắt máy chủ an toàn:** Khi bạn ngưng code và muốn tắt dự án để giài phóng Ram:
+
    ```bash
    docker-compose down
    ```
+
 3. **Reset Database "sạch sẽ":** Nếu bạn muốn xoá trắng dữ liệu DB hiện diện trong kịch bản dev:
+
    ```bash
    docker-compose down -v
    ```
@@ -104,8 +109,28 @@ Tất cả thành viên cần tuân thủ quy chuẩn để đảm bảo code đ
 
 ---
 
+## Hệ thống UI/UX (Strict Sharpness)
+
+Dự án sử dụng ngôn ngữ thiết kế **Strict Sharpness** (Góc vuông, viền đậm, tương phản cao) để tạo sự chuyên nghiệp cho nền tảng Freelancer.
+
+### 1. Thư viện thành phần (UI Kit)
+Tất cả các thành phần được xây dựng sẵn và lưu trữ tại `frontend/src/components/common`. Các thành viên **vui lòng tái sử dụng**, không tự ý viết lại CSS:
+- **Navigation**: MobileDrawer, BottomNav, NavGroup, Breadcrumbs.
+- **Data Display**: ResponsiveTable, KanbanBoard, ActivityCharts, SkillRadar, MilestoneTracker.
+- **Interaction**: ActionSheet, FloatingActionButton (FAB), CommandPalette (Ctrl+K), TagInput.
+- **Feedback**: Toast (Success/Error), Modal, SuccessAnimation (Confetti), Skeleton.
+
+### 2. Gallery tương tác
+
+Để xem và test tất cả các thành phần UI đang có, hãy truy cập:
+
+- [http://localhost:5173/gallery](http://localhost:5173/gallery)
+
+---
+
 **Xem chi tiết:**
 
-- [docs/CONVENTIONS.md](docs/CONVENTIONS.md) — Quy chuẩn đặt tên
+- [docs/CONVENTIONS.md](docs/CONVENTIONS.md) — Quy chuẩn đặt tên & code
+- [docs/architecture/ui_standard.md](docs/architecture/ui_standard.md) — **Quy chuẩn UI & Mobile UX (QUAN TRỌNG)**
 - [docs/TEAM_GUIDE.md](docs/TEAM_GUIDE.md) — Quy trình làm việc nhóm
 - [docs/architecture/auth_session_flow.md](docs/architecture/auth_session_flow.md) — Luồng xác thực/session
