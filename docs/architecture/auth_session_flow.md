@@ -30,26 +30,61 @@ Tất cả các lệnh `axios.get()` hay `post()` bắt buộc phải truyền c
 5. **Client**: Từ lần gọi API thứ 2 trở đi, Browser tự động đính kèm Cookie `JSESSIONID`. Server móc ra được Giỏ hàng cũ.
 
 ### Flow 2: Đăng Nhập & Xác Thực Tài Khoản (Auth Flow)
-1.  **Đăng ký (`POST /api/v1/users/sign-up`)**:
+1.  **Đăng ký (`POST /api/v1/auths/sign-up`)**:
     *   Client gửi `email`, `password`, `fullName`, `role`.
     *   Server tạo user với trạng thái `verified = false`.
+    *   **Body Example:**
+        ```json
+        {
+            "email": "user@example.com",
+            "password": "password123",
+            "fullName": "Nguyen Van A",
+            "role": "freelancer"
+        }
+        ```
 2.  **Gửi OTP (`POST /api/v1/auth/send-otp`)**:
     *   Client gửi `email` của tài khoản vừa đăng ký.
     *   Server tạo mã OTP, lưu vào DB và gửi tới email người dùng.
+    *   **Body Example:**
+        ```json
+        {
+            "email": "user@example.com"
+        }
+        ```
 3.  **Xác thực OTP (`POST /api/v1/auth/verify-otp`)**:
     *   Client gửi `email` và `otp` người dùng nhập.
     *   Server kiểm tra OTP. Nếu hợp lệ, cập nhật trạng thái user thành `verified = true`.
-4.  **Đăng nhập (`POST /api/v1/users/sign-in`)**:
+    *   **Body Example:**
+        ```json
+        {
+            "email": "user@example.com",
+            "otp": "123456"
+        }
+        ```
+4.  **Đăng nhập (`POST /api/v1/auths/sign-in`)**:
     *   Client gửi `email`, `password`.
     *   Server chỉ cho phép đăng nhập nếu `verified = true`.
     *   Nếu thành công, Server trả về `accessToken` và `refreshToken`.
-5.  **Làm mới Token (`POST /api/v1/users/refresh-token`)**:
+    *   **Body Example:**
+        ```json
+        {
+            "email": "user@example.com",
+            "password": "password123"
+        }
+        ```
+5.  **Làm mới Token (`POST /api/v1/auths/refresh-token`)**:
     *   Khi `accessToken` hết hạn, Client gửi `refreshToken` để lấy cặp token mới.
-6.  **Đăng xuất (`POST /api/v1/users/sign-out`)**:
-    *   Client gửi `accessToken`.
+    *   **Body Example:**
+        ```json
+        {
+            "refreshToken": "your_refresh_token_here"
+        }
+        ```
+6.  **Đăng xuất (`POST /api/v1/auths/sign-out`)**:
+    *   Client gửi `accessToken` trong Header `Authorization`. Không cần body.
     *   Server sẽ vô hiệu hoá `refreshToken` tương ứng trong DB.
-7.  **Lấy thông tin người dùng (`GET /api/v1/users/current-user`)**:
-    *   Client gửi `accessToken` để lấy thông tin user đang đăng nhập.
+7.  **Lấy thông tin người dùng (`GET /api/v1/auths/current-user`)**:
+    *   Client gửi `accessToken` trong Header `Authorization`. Không cần body.
 
 ### Flow 3: Thanh Toán (Checkout & Clear Session)
 1. **Client**: Người dùng vào Giỏ Hàng, bấm "Thanh Toán". Gọi `POST /api/v1/orders/checkout`.
