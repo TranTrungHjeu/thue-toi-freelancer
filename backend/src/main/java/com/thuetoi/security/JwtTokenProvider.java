@@ -58,6 +58,11 @@ public class JwtTokenProvider {
         return parseClaims(token, getAccessTokenKey()).getSubject();
     }
 
+    public String getRoleFromAccessToken(String token) {
+        Object role = parseClaims(token, getAccessTokenKey()).get("role");
+        return role == null ? null : role.toString();
+    }
+
     public String getSubjectFromRefreshToken(String token) {
         return parseClaims(token, getRefreshTokenKey()).getSubject();
     }

@@ -1,59 +1,69 @@
 import React, { useState } from 'react';
+import { Outlet, useLocation } from 'react-router-dom';
+import { Bell, Home, Page, PageSearch, ProfileCircle, ViewGrid } from 'iconoir-react';
 import Header from './Header';
 import Sidebar from './Sidebar';
 import MobileDrawer from './MobileDrawer';
 import BottomNav from './BottomNav';
-import { Home, Suitcase, ChatBubble, Settings, User } from 'iconoir-react';
+import { useAuth } from '../../hooks/useAuth';
 
-/**
- * MainLayout following "Strict Sharpness" architectural layout.
- * Optimized for mobile with Drawer and BottomNav.
- */
-const MainLayout = ({ children, user }) => {
+const MainLayout = () => {
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
+  const { user, logout } = useAuth();
+  const location = useLocation();
 
   const navigation = [
     {
-      title: "Ứng dụng",
-      icon: Home,
+      title: 'Workspace',
       items: [
-        { label: "Bảng điều khiển", icon: null },
-        { label: "Dự án của tôi", icon: null },
-        { label: "Tin nhắn", icon: null, badge: "3" },
-      ]
+        { label: 'Tong quan', to: '/workspace', icon: Home },
+        { label: 'Du an', to: '/workspace/projects', icon: ViewGrid },
+        { label: 'Hop dong', to: '/workspace/contracts', icon: PageSearch },
+        { label: 'Thong bao', to: '/workspace/notifications', icon: Bell },
+        { label: 'Ho so', to: '/workspace/profile', icon: ProfileCircle },
+      ],
     },
     {
-      title: "Thị trường",
-      icon: Suitcase,
+      title: 'Resources',
       items: [
-        { label: "Tìm việc làm", icon: null },
-        { label: "Tìm Freelancer", icon: null },
-      ]
-    }
+        { label: 'UI Gallery', to: '/gallery', icon: Page },
+        { label: 'API Lab', to: '/api-lab', icon: PageSearch },
+      ],
+    },
+  ];
+
+  const mobileNavigation = [
+    { label: 'Tong quan', to: '/workspace', icon: Home },
+    { label: 'Du an', to: '/workspace/projects', icon: ViewGrid },
+    { label: 'Hop dong', to: '/workspace/contracts', icon: PageSearch },
+    { label: 'Thong bao', to: '/workspace/notifications', icon: Bell },
+    { label: 'Ho so', to: '/workspace/profile', icon: ProfileCircle },
   ];
 
   return (
     <div className="min-h-screen bg-gray-50 flex flex-col">
       <Header user={user} onOpenMenu={() => setIsDrawerOpen(true)} />
-      
-      <MobileDrawer 
-        isOpen={isDrawerOpen} 
-        onClose={() => setIsDrawerOpen(false)} 
+
+      <MobileDrawer
+        isOpen={isDrawerOpen}
+        onClose={() => setIsDrawerOpen(false)}
         navigation={navigation}
+        currentPath={location.pathname}
+        onLogout={logout}
       />
 
       <div className="flex flex-1 pt-16 pb-16 lg:pb-0">
         <div className="hidden lg:block">
-          <Sidebar />
+          <Sidebar navigation={navigation} currentPath={location.pathname} onLogout={logout} />
         </div>
-        <main className="flex-1 p-4 md:p-8 animate-in fade-in slide-in-from-bottom-2 duration-300 overflow-x-hidden">
-          <div className="max-w-6xl mx-auto flex flex-col gap-8">
-            {children}
+        <main className="flex-1 overflow-x-hidden p-4 pb-20 md:p-8 lg:pb-8">
+          <div className="mx-auto flex max-w-6xl flex-col gap-8">
+            <Outlet />
           </div>
         </main>
       </div>
 
-      <BottomNav />
+      <BottomNav items={mobileNavigation} currentPath={location.pathname} />
     </div>
   );
 };

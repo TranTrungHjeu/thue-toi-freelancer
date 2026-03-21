@@ -1,62 +1,153 @@
-# Kiến Trúc Nhận Diện Người Dùng (Auth & Session Flow)
+# Kiến Trúc Xác Thực JWT + OTP (Auth Flow)
 
-Tài liệu này giải thích cách Frontend (ReactJS) và Backend (Spring Boot) giao tiếp bảo mật với nhau để thoả mãn đúng yêu cầu đồ án: **"ReactJS gọi API" + "Giỏ hàng phải dùng HTTP Session"**.
+Tài liệu này mô tả luồng xác thực chính thức của dự án **Thuê Tôi** sau khi thống nhất theo mô hình:
 
-## 1. Vấn Đề Gặp Phải (The Problem)
-Theo truyền thống, HTTP Session (JSESSIONID) hoạt động mượt mà khi Backend tự render giao diện (JSP/Thymeleaf) vì nó cùng một tên miền (Origin). 
-Tuy nhiên, khi ReactJS (Chạy ở `localhost:5173`) gọi API sang Spring Boot (`localhost:8080`), trình duyệt sẽ chặn Cookie (Cross-Origin Resource Sharing - CORS) khiến 1 người dùng gọi API 2 lần sẽ bị máy chủ coi là 2 Khách Hàng khác nhau (Mất Session Giỏ Hàng).
+- `JWT access token` cho các API nghiệp vụ.
+- `Refresh token` lưu dưới dạng `HttpOnly cookie` để refresh an toàn.
+- `OTP email` dùng cho bước xác thực tài khoản trước khi đăng nhập.
 
-## 2. Giải Pháp Chuẩn Chuyên Nghiệp (The Solution)
-Chúng ta sẽ giải quyết bằng kiến trúc **"Credentials Included CORS" + "Spring Session JDBC"**.
+## 1. Mục tiêu Kiến trúc
 
-### Cấu hình Backend (Spring Boot)
-1. **Bật CORS Origin Explicit:** Chặn dùng `*` cho `allowedOrigins`. Bắt buộc khai báo đích danh `http://localhost:5173`.
-2. **Bật AllowCredentials:** Cài đặt `allowCredentials = true` trên bộ lọc CORS. Đây là chìa khoá để Response trả về được đính kèm Header `Set-Cookie`.
-3. **Database Session Store:** Thay vì lưu Session trên RAM (Tomcat Memory) rất dễ bay màu khi tắt bật code, ta cài `spring.session.store-type=jdbc`. Khi đó Spring Boot sẽ tự tạo 2 bảng `spring_session` và `spring_session_attributes` trong MySQL để ghim Giỏ hàng vĩnh viễn cho đến khi bị xoá.
+Hệ thống cần giải quyết đồng thời 4 yêu cầu nghiệp vụ:
 
-### Cấu hình Frontend (ReactJS / Axios)
-Tất cả các lệnh `axios.get()` hay `post()` bắt buộc phải truyền cờ `withCredentials: true`.
-*(Đã được cấu hình cứng trong file `src/api/axiosClient.js` của dự án, Developer không cần nhớ).*
+1. ReactJS gọi API tách biệt với Backend Spring Boot.
+2. Người dùng đăng nhập được trên SPA mà không phải nhập lại liên tục.
+3. Tài khoản mới phải xác thực email trước khi được tham gia nghiệp vụ.
+4. Backend vẫn kiểm soát được việc revoke/rotate refresh token khi đăng xuất hoặc refresh.
+
+## 2. Nguyên tắc Kỹ thuật
+
+### 2.1. Access Token
+
+- Là JWT sống ngắn.
+- Frontend lưu ở local state hoặc local storage tùy chiến lược UI.
+- Mọi request cần đăng nhập phải gửi:
+
+```http
+Authorization: Bearer <access_token>
+```
+
+### 2.2. Refresh Token
+
+- Không trả về để frontend tự lưu thủ công.
+- Được backend set vào `HttpOnly cookie`.
+- Frontend phải bật `withCredentials: true` để trình duyệt tự gửi cookie khi gọi `/api/v1/auth/refresh`.
+- Refresh token được lưu trong DB dưới dạng mã băm để phục vụ revoke/rotate.
+
+### 2.3. OTP Xác thực Email
+
+- User mới đăng ký sẽ có trạng thái `verified = false`.
+- OTP chỉ dùng cho mục đích `verify_email`.
+- Chỉ khi OTP hợp lệ, user mới chuyển sang `verified = true` và được phép login.
+- Runtime chuẩn không cung cấp endpoint debug để đọc OTP trực tiếp từ hệ thống.
+
+---
+
+## 3. Luồng Nghiệp Vụ Chuẩn
+
+### Flow 1: Đăng ký tài khoản
+
+1. **Client** gọi `POST /api/v1/auth/register`.
+2. **Server** validate `email`, `password`, `fullName`, `role`.
+3. **Server** chỉ chấp nhận `freelancer` hoặc `customer`.
+4. **Server** tạo user với:
+   - `is_active = true`
+   - `verified = false`
+5. **Server** sinh OTP xác thực email, lưu vào DB và gửi email.
+6. **Client** nhận thông báo đăng ký thành công và chuyển sang màn nhập OTP.
+
+### Flow 2: Xác thực email bằng OTP
+
+1. **Client** gọi `POST /api/v1/auth/verify-email-otp` với `email` và `otp`.
+2. **Server** kiểm tra:
+   - OTP có tồn tại hay không
+   - OTP đã dùng chưa
+   - OTP còn hạn hay không
+   - OTP có khớp với email hay không
+3. **Server** cập nhật `verified = true` cho user nếu hợp lệ.
+4. **Client** nhận thông báo xác thực thành công và có thể chuyển sang bước đăng nhập.
+
+### Flow 3: Gửi lại OTP
+
+1. **Client** gọi `POST /api/v1/auth/resend-verification-otp`.
+2. **Server** kiểm tra:
+   - User có tồn tại không
+   - User đã xác thực chưa
+   - Có đang gửi OTP quá nhanh hay không
+3. **Server** sinh OTP mới và gửi lại email.
+
+### Flow 4: Đăng nhập
+
+1. **Client** gọi `POST /api/v1/auth/login` với `email`, `password`.
+2. **Server** kiểm tra:
+   - Email và mật khẩu đúng
+   - Tài khoản còn hoạt động
+   - Tài khoản đã xác thực email
+3. **Server** sinh `access token`.
+4. **Server** sinh `refresh token`, lưu bản băm vào DB, đồng thời set vào `HttpOnly cookie`.
+5. **Server** trả `accessToken` và `user profile` trong body.
+6. **Client** dùng access token cho các request nghiệp vụ tiếp theo.
+
+### Flow 5: Truy cập API yêu cầu đăng nhập
+
+1. **Client** gửi `Authorization: Bearer <access_token>`.
+2. **JWT Filter** xác thực token, lấy `userId` và `role` từ claims.
+3. **Security Context** gắn user hiện tại vào request.
+4. **Controller/Service** đọc principal để kiểm tra quyền và ownership nghiệp vụ.
+
+### Flow 6: Refresh Access Token
+
+1. **Client** nhận `401` khi access token hết hạn hoặc gọi chủ động `POST /api/v1/auth/refresh`.
+2. **Browser** tự gửi `refresh token cookie`.
+3. **Server** kiểm tra refresh token:
+   - JWT hợp lệ
+   - Có tồn tại bản ghi băm trong DB
+   - Chưa bị revoke
+   - Chưa hết hạn
+4. **Server** revoke refresh token cũ.
+5. **Server** phát hành access token mới và refresh token mới.
+6. **Server** set lại `HttpOnly cookie` mới.
+7. **Client** dùng access token mới để retry request cũ.
+
+### Flow 7: Đăng xuất
+
+1. **Client** gọi `POST /api/v1/auth/logout`.
+2. **Browser** tự gửi refresh token cookie hiện tại.
+3. **Server** revoke refresh token đó trong DB.
+4. **Server** trả `Set-Cookie` để xóa cookie ở trình duyệt.
+5. **Client** xóa access token cục bộ và state user.
 
 ---
 
-## 3. Luồng Nghiệp Vụ (Business Flows)
+## 4. Ràng buộc Nghiệp vụ
 
-### Flow 1: Khách Vô Danh Thêm Vào Giỏ Hàng (Guest Add-to-Cart)
-1. **Client**: Người dùng bấm "Thêm dịch vụ Logo vào giỏ". `axiosClient` gọi `POST /api/v1/cart/items`.
-2. **Server**: Nhận Request. Thấy chưa có Session ID -> Tạo Session mới (Lưu giỏ hàng vào bảng MySQL Session).
-3. **Server**: Trả kết quả `200 OK` kèm Header `Set-Cookie: JSESSIONID=abc123xyz...`
-4. **Browser**: Tự động lưu Cookie `JSESSIONID` vào Local.
-5. **Client**: Từ lần gọi API thứ 2 trở đi, Browser tự động đính kèm Cookie `JSESSIONID`. Server móc ra được Giỏ hàng cũ.
-
-### Flow 2: Đăng Nhập & Xác Thực Tài Khoản (Auth Flow)
-1.  **Đăng ký (`POST /api/v1/users/sign-up`)**:
-    *   Client gửi `email`, `password`, `fullName`, `role`.
-    *   Server tạo user với trạng thái `verified = false`.
-2.  **Gửi OTP (`POST /api/v1/auth/send-otp`)**:
-    *   Client gửi `email` của tài khoản vừa đăng ký.
-    *   Server tạo mã OTP, lưu vào DB và gửi tới email người dùng.
-3.  **Xác thực OTP (`POST /api/v1/auth/verify-otp`)**:
-    *   Client gửi `email` và `otp` người dùng nhập.
-    *   Server kiểm tra OTP. Nếu hợp lệ, cập nhật trạng thái user thành `verified = true`.
-4.  **Đăng nhập (`POST /api/v1/users/sign-in`)**:
-    *   Client gửi `email`, `password`.
-    *   Server chỉ cho phép đăng nhập nếu `verified = true`.
-    *   Nếu thành công, Server trả về `accessToken` và `refreshToken`.
-5.  **Làm mới Token (`POST /api/v1/users/refresh-token`)**:
-    *   Khi `accessToken` hết hạn, Client gửi `refreshToken` để lấy cặp token mới.
-6.  **Đăng xuất (`POST /api/v1/users/sign-out`)**:
-    *   Client gửi `accessToken`.
-    *   Server sẽ vô hiệu hoá `refreshToken` tương ứng trong DB.
-7.  **Lấy thông tin người dùng (`GET /api/v1/users/current-user`)**:
-    *   Client gửi `accessToken` để lấy thông tin user đang đăng nhập.
-
-### Flow 3: Thanh Toán (Checkout & Clear Session)
-1. **Client**: Người dùng vào Giỏ Hàng, bấm "Thanh Toán". Gọi `POST /api/v1/orders/checkout`.
-2. **Server**: Kiểm tra Security -> Lấy Giỏ Hàng từ Session hiện tại (JSESSIONID).
-3. **Server**: Tạo bảng `Order` ghi vào CSDL.
-4. **Server**: Xoá sạch (Invalidate / Clear) dữ liệu Giỏ Hàng trong Session.
-5. **Client**: Nhận `200 OK`, chuyển trang sang màn "Cảm ơn", gọi API lấy Giỏ Hàng mới sẽ thấy trống rỗng (Đúng yêu cầu đề bài).
+- User chưa xác thực email:
+  - Được đăng ký lại OTP.
+  - Chưa được đăng nhập.
+  - Chưa được tạo project, gửi bid, hay tham gia nghiệp vụ cần xác thực.
+- User role `admin`:
+  - Không được phép đăng ký công khai từ frontend.
+- Các API mang tính “của tôi”:
+  - Không nhận `userId` từ body/query nếu có thể suy ra từ access token.
+  - Ưu tiên đọc principal hiện tại từ JWT.
 
 ---
-*Lưu ý cho Developer React: Các bạn không cần thao tác đọc/ghi Cookie thủ công. Việc đó trình duyệt và Axios (`withCredentials`) sẽ tự lo. Chỉ việc quản lý state UI.*
+
+## 5. Tác động tới Frontend
+
+- Axios phải bật `withCredentials: true`.
+- Axios phải tự gắn header bearer token khi đã đăng nhập.
+- Khi gặp `401`, frontend nên thử refresh access token bằng cookie rồi retry request một lần.
+- Frontend không đọc hoặc ghi refresh token thủ công.
+
+---
+
+## 6. Tóm tắt Endpoint Chuẩn
+
+- `POST /api/v1/auth/register`
+- `POST /api/v1/auth/verify-email-otp`
+- `POST /api/v1/auth/resend-verification-otp`
+- `POST /api/v1/auth/login`
+- `POST /api/v1/auth/refresh`
+- `POST /api/v1/auth/logout`
+- `GET /api/v1/auth/profile`

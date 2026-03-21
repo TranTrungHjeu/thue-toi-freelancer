@@ -1,20 +1,22 @@
-# Loại trừ file build (output biên dịch)
+# Build outputs
 /target/
 *.class
 
-# Loại trừ file cấu hình IDE (IntelliJ, VSCode...)
+# IDE
 /.idea/
 *.iml
+.vscode/
 
-# Loại trừ file log
+# Logs
 *.log
 
-# Loại trừ file hệ điều hành
+# OS files
 .DS_Store
 Thumbs.db
 
-# Loại trừ file môi trường
+# Local environment
 .env
+.env.*
 
-# Loại trừ thư mục uploads
+# Runtime uploads
 /uploads/

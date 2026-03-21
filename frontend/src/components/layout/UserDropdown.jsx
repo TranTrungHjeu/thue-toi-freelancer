@@ -1,18 +1,18 @@
 "use client";
 
-import React, { useState, useRef, useEffect } from 'react';
-import { motion, AnimatePresence } from "motion/react";
-import { User, LogOut, Settings, Page, Bell } from 'iconoir-react';
+import React, { useEffect, useRef, useState } from 'react';
+import { Link, useNavigate } from 'react-router-dom';
+import { AnimatePresence } from 'motion/react';
+import { Bell, LogOut, Page, Settings, User } from 'iconoir-react';
 import { Caption } from '../common/Typography';
 import Avatar from '../common/Avatar';
+import { useAuth } from '../../hooks/useAuth';
 
-/**
- * Professional User Dropdown menu for Header.
- * Strictly sharp, follows the design system's interactive rules.
- */
 const UserDropdown = ({ user }) => {
   const [isOpen, setIsOpen] = useState(false);
   const dropdownRef = useRef(null);
+  const navigate = useNavigate();
+  const { logout } = useAuth();
 
   useEffect(() => {
     const handleClickOutside = (event) => {
@@ -20,70 +20,66 @@ const UserDropdown = ({ user }) => {
         setIsOpen(false);
       }
     };
-    document.addEventListener("mousedown", handleClickOutside);
-    return () => document.removeEventListener("mousedown", handleClickOutside);
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
   const menuItems = [
-    { icon: User, label: 'Hồ sơ cá nhân', path: '#profile' },
-    { icon: Page, label: 'Dự án của tôi', path: '#my-projects' },
-    { icon: Bell, label: 'Thông báo', path: '#notifications' },
-    { icon: Settings, label: 'Cài đặt', path: '#settings' },
+    { icon: User, label: 'Ho so ca nhan', path: '/workspace/profile' },
+    { icon: Page, label: 'Du an cua toi', path: '/workspace/projects' },
+    { icon: Bell, label: 'Thong bao', path: '/workspace/notifications' },
+    { icon: Settings, label: 'Tong quan', path: '/workspace' },
   ];
 
   return (
     <div className="relative" ref={dropdownRef}>
-      <button 
+      <button
         onClick={() => setIsOpen(!isOpen)}
-        className="flex items-center gap-3 p-1 hover:bg-slate-50 transition-colors border border-transparent hover:border-slate-200"
+        className="flex items-center gap-3 border border-transparent p-1 transition-colors hover:border-slate-200 hover:bg-slate-50"
       >
-        <Avatar size="sm" src={user?.avatar} />
-        <div className="hidden md:flex flex-col items-start leading-none pr-2">
-          <span className="text-sm font-bold text-secondary-900">{user?.name || 'Tài khoản'}</span>
-          <Caption className="text-[10px] uppercase font-bold text-primary-600">Freelancer</Caption>
+        <Avatar size="sm" src={user?.avatarUrl || user?.avatar} />
+        <div className="hidden flex-col items-start leading-none pr-2 md:flex">
+          <span className="text-sm font-bold text-secondary-900">{user?.fullName || user?.name || 'Tai khoan'}</span>
+          <Caption className="text-[10px] uppercase font-bold text-primary-600">{user?.role || 'user'}</Caption>
         </div>
       </button>
 
       <AnimatePresence>
         {isOpen && (
-          <motion.div
-            initial={{ opacity: 0, y: 10, scale: 0.95 }}
-            animate={{ opacity: 1, y: 0, scale: 1 }}
-            exit={{ opacity: 0, y: 10, scale: 0.95 }}
-            transition={{ duration: 0.2 }}
-            className="absolute right-0 mt-2 w-64 bg-white border border-slate-200 shadow-2xl z-50 p-2"
-          >
-            <div className="px-3 py-4 border-b border-slate-100 mb-2">
+          <div className="absolute right-0 z-50 mt-2 w-64 border border-slate-200 bg-white p-2 shadow-2xl">
+            <div className="mb-2 border-b border-slate-100 px-3 py-4">
               <span className="block text-sm font-bold text-secondary-900">{user?.email}</span>
-              <Caption>ID: #291024</Caption>
+              <Caption>ID: #{user?.id || '---'}</Caption>
             </div>
 
             <div className="flex flex-col gap-1">
-              {menuItems.map((item, idx) => (
-                <a
-                  key={idx}
-                  href={item.path}
-                  className="flex items-center gap-3 px-3 py-2.5 text-sm text-slate-600 hover:bg-slate-50 hover:text-secondary-900 transition-colors"
+              {menuItems.map((item) => (
+                <Link
+                  key={item.path}
+                  to={item.path}
+                  onClick={() => setIsOpen(false)}
+                  className="flex items-center gap-3 px-3 py-2.5 text-sm text-slate-600 transition-colors hover:bg-slate-50 hover:text-secondary-900"
                 >
-                  <item.icon className="w-5 h-5 text-slate-400" />
+                  <item.icon className="h-5 w-5 text-slate-400" />
                   {item.label}
-                </a>
+                </Link>
               ))}
             </div>
 
-            <div className="mt-2 pt-2 border-t border-slate-100">
-              <button 
-                className="w-full flex items-center gap-3 px-3 py-2.5 text-sm text-red-600 hover:bg-red-50 transition-colors"
-                onClick={() => {
-                  localStorage.removeItem('currentUser');
-                  window.location.reload();
+            <div className="mt-2 border-t border-slate-100 pt-2">
+              <button
+                className="flex w-full items-center gap-3 px-3 py-2.5 text-sm text-red-600 transition-colors hover:bg-red-50"
+                onClick={async () => {
+                  await logout();
+                  navigate('/auth/login', { replace: true });
                 }}
               >
-                <LogOut className="w-5 h-5" />
-                Đăng xuất
+                <LogOut className="h-5 w-5" />
+                Dang xuat
               </button>
             </div>
-          </motion.div>
+          </div>
         )}
       </AnimatePresence>
     </div>

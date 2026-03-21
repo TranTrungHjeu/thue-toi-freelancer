@@ -13,7 +13,7 @@ import java.util.List;
  * Controller Bid: API gửi báo giá, xem danh sách, chọn bid
  */
 @RestController
-@RequestMapping("/api/bids")
+@RequestMapping("/api/v1/bids")
 public class BidController {
     @Autowired
     private BidService bidService;
@@ -79,6 +79,6 @@ public class BidController {
     public ApiResponse<Bid> getBid(@PathVariable Long id) {
         return bidService.getBid(id)
                 .map(bid -> ApiResponse.success("Lấy chi tiết báo giá thành công", bid))
-                .orElseGet(() -> ApiResponse.error("Không tìm thấy báo giá"));
+                .orElseGet(() -> ApiResponse.error("ERR_BID_01", "Không tìm thấy báo giá"));
     }
 }

@@ -1,8 +1,6 @@
-version: '3.8'
-
 services:
   # ----------------------------------------------
-  # CSDL MySQL
+  # CSDL MySQL local
   # ----------------------------------------------
   mysql-db:
     image: mysql:8.0
@@ -33,9 +31,11 @@ services:
     ports:
       - "8080:8080"
     environment:
-      - DB_URL=jdbc:mysql://mysql-db:3306/thuetoi?useSSL=false&serverTimezone=UTC&allowPublicKeyRetrieval=true
-      - DB_USER=root
-      - DB_PASSWORD=root
+      TZ: Asia/Saigon
+      RESEND_API_KEY: ${RESEND_API_KEY}
+      RESEND_FROM: ${RESEND_FROM:-Thue Toi <onboarding@resend.dev>}
+      APP_AUTH_REFRESH_COOKIE_SECURE: ${APP_AUTH_REFRESH_COOKIE_SECURE:-false}
+      APP_AUTH_REFRESH_COOKIE_SAME_SITE: ${APP_AUTH_REFRESH_COOKIE_SAME_SITE:-Lax}
     volumes:
       - ./backend/uploads:/app/uploads
     depends_on:

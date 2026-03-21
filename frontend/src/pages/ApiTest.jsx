@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import axios from '../api/axiosClient';
 import Button from '../components/common/Button';
 import Input from '../components/common/Input';
@@ -15,9 +15,9 @@ import { useToast } from '../components/common/Toast';
 import { Wallet, StatsUpSquare, User, MultiBubble } from 'iconoir-react';
 
 const apiList = [
-  { name: "Health Check", method: "GET", url: "/health", description: "Kiểm tra trạng thái hệ thống", params: [] },
-  { name: "Đăng nhập", method: "POST", url: "/auth/login", description: "Đăng nhập hệ thống", params: ["email", "password"] },
-  { name: "Danh sách dự án", method: "GET", url: "/projects", description: "Lấy danh sách dự án", params: [] },
+  { name: "Health Check", method: "GET", url: "/v1/health", description: "Kiểm tra trạng thái hệ thống", params: [] },
+  { name: "Đăng nhập", method: "POST", url: "/v1/auth/login", description: "Đăng nhập hệ thống", params: ["email", "password"] },
+  { name: "Danh sách dự án", method: "GET", url: "/v1/projects", description: "Lấy danh sách dự án", params: [] },
 ];
 
 function ApiTest() {
@@ -39,23 +39,40 @@ function ApiTest() {
 
   const { addToast } = useToast();
 
+  useEffect(() => {
+    const loadCurrentUser = async () => {
+      try {
+        const res = await axios.get('/v1/auth/profile');
+        if (res?.success) {
+          setCurrentUser(res.data);
+          localStorage.setItem('currentUser', JSON.stringify(res.data));
+        }
+      } catch {
+        setCurrentUser(null);
+        localStorage.removeItem('currentUser');
+      }
+    };
+    loadCurrentUser();
+  }, []);
+
   const handleLogin = async (e) => {
     e.preventDefault();
     setLoginStatus("Đang đăng nhập...");
     try {
-      const res = await axios.post("/auth/login", { email: loginEmail, password: loginPassword });
+      const res = await axios.post("/v1/auth/login", { email: loginEmail, password: loginPassword });
       if (res && res.success) {
         setLoginStatus("Đăng nhập thành công!");
-        setCurrentUser(res.data);
-        localStorage.setItem('currentUser', JSON.stringify(res.data));
+        setCurrentUser(res.data.user);
+        localStorage.setItem('currentUser', JSON.stringify(res.data.user));
         addToast("Đăng nhập thành công!", "success");
       } else {
-        setLoginStatus("Sai tài khoản hoặc mật khẩu");
-        addToast("Sai tài khoản hoặc mật khẩu", "error");
+        setLoginStatus(res?.message || "Đăng nhập thất bại");
+        addToast(res?.message || "Đăng nhập thất bại", "error");
       }
-    } catch { 
-      setLoginStatus("Lỗi kết nối server"); 
-      addToast("Lỗi kết nối server", "error");
+    } catch (err) {
+      const errorMessage = err?.message || "Lỗi kết nối server";
+      setLoginStatus(errorMessage);
+      addToast(errorMessage, "error");
     }
   };
 

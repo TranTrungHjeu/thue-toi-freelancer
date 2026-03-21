@@ -14,8 +14,8 @@ const Input = ({ label, error, className = '', ...props }) => {
       )}
       <input
         className={`
-          border border-slate-200 px-4 py-2 bg-white
-          focus:border-primary-500 focus:ring-1 focus:ring-primary-500 outline-none
+          min-h-11 border-2 px-4 py-2 bg-white
+          focus:border-primary-500 focus:ring-0 outline-none
           transition-colors font-sans
           ${error ? 'border-error' : 'border-slate-300'}
         `}

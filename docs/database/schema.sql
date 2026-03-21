@@ -13,22 +13,25 @@ CREATE TABLE users (
     updated_at DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT 'Ngày cập nhật'
 );
 
--- Bảng email_otp: Lưu mã OTP để xác thực email
-CREATE TABLE email_otp (
+-- Bảng email_otps: Lưu mã OTP để xác thực email và hỗ trợ quên mật khẩu về sau
+CREATE TABLE email_otps (
     id BIGINT PRIMARY KEY AUTO_INCREMENT COMMENT 'Khóa chính',
     email VARCHAR(255) NOT NULL COMMENT 'Email nhận OTP',
     otp VARCHAR(10) NOT NULL COMMENT 'Mã OTP',
+    purpose VARCHAR(50) NOT NULL COMMENT 'Mục đích OTP: verify_email, reset_password',
     expire_time DATETIME NOT NULL COMMENT 'Thời điểm hết hạn OTP',
     used BOOLEAN DEFAULT FALSE COMMENT 'OTP đã được sử dụng hay chưa',
+    used_at DATETIME COMMENT 'Thời điểm OTP được sử dụng',
     created_at DATETIME NOT NULL COMMENT 'Ngày tạo',
-    INDEX idx_email_otp (email, otp)
+    INDEX idx_email_otps_email_purpose (email, purpose),
+    INDEX idx_email_otps_email_otp (email, otp)
 );
 
 -- Bảng refresh_tokens: Lưu refresh token để làm mới access token và thu hồi khi logout
 CREATE TABLE refresh_tokens (
     id BIGINT PRIMARY KEY AUTO_INCREMENT COMMENT 'Khóa chính, mã refresh token',
     user_id BIGINT NOT NULL COMMENT 'Mã người dùng sở hữu token',
-    token VARCHAR(512) UNIQUE NOT NULL COMMENT 'Refresh token (JWT)',
+    token_hash VARCHAR(128) UNIQUE NOT NULL COMMENT 'Mã băm SHA-256 của refresh token',
     expires_at DATETIME NOT NULL COMMENT 'Thời điểm hết hạn refresh token',
     revoked BOOLEAN DEFAULT FALSE COMMENT 'Token đã bị thu hồi hay chưa',
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP COMMENT 'Ngày tạo',
@@ -186,24 +189,4 @@ CREATE TABLE notifications (
     INDEX idx_user_id (user_id),
     INDEX idx_type (type),
     INDEX idx_is_read (is_read)
-);
-CREATE TABLE SPRING_SESSION (
-    PRIMARY_ID CHAR(36) NOT NULL,
-    SESSION_ID CHAR(36) NOT NULL,
-    CREATION_TIME BIGINT NOT NULL,
-    LAST_ACCESS_TIME BIGINT NOT NULL,
-    MAX_INACTIVE_INTERVAL INT NOT NULL,
-    EXPIRY_TIME BIGINT NOT NULL,
-    PRINCIPAL_NAME VARCHAR(100),
-    CONSTRAINT SPRING_SESSION_PK PRIMARY KEY (PRIMARY_ID)
-);
-CREATE UNIQUE INDEX SPRING_SESSION_IX1 ON SPRING_SESSION (SESSION_ID);
-CREATE INDEX SPRING_SESSION_IX2 ON SPRING_SESSION (EXPIRY_TIME);
-CREATE INDEX SPRING_SESSION_IX3 ON SPRING_SESSION (PRINCIPAL_NAME);
-CREATE TABLE SPRING_SESSION_ATTRIBUTES (
-    SESSION_PRIMARY_ID CHAR(36) NOT NULL,
-    ATTRIBUTE_NAME VARCHAR(200) NOT NULL,
-    ATTRIBUTE_BYTES BLOB NOT NULL,
-    CONSTRAINT SPRING_SESSION_ATTRIBUTES_PK PRIMARY KEY (SESSION_PRIMARY_ID, ATTRIBUTE_NAME),
-    CONSTRAINT SPRING_SESSION_ATTRIBUTES_FK FOREIGN KEY (SESSION_PRIMARY_ID) REFERENCES SPRING_SESSION(PRIMARY_ID) ON DELETE CASCADE
 );

@@ -1,50 +1,79 @@
 package com.thuetoi.service;
 
+import com.thuetoi.exception.BusinessException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
+import org.springframework.http.HttpStatus;
+import org.springframework.web.client.HttpStatusCodeException;
+
+import java.util.List;
+import java.util.Map;
 
 @Service
 public class EmailService {
 
     private static final Logger logger = LoggerFactory.getLogger(EmailService.class);
+    private static final String RESEND_URL = "https://api.resend.com/emails";
 
     @Value("${resend.api.key}")
     private String apiKey;
 
-    private final String RESEND_URL = "https://api.resend.com/emails";
+    @Value("${resend.from:Thue Toi <onboarding@resend.dev>}")
+    private String fromAddress;
+
+    private final RestTemplate restTemplate = new RestTemplate();
 
     public void sendOtpEmail(String toEmail, String otp) {
-        RestTemplate restTemplate = new RestTemplate();
+        if (apiKey == null || apiKey.isBlank()) {
+            throw new BusinessException("ERR_SYS_03", "Dịch vụ gửi email chưa được cấu hình", HttpStatus.INTERNAL_SERVER_ERROR);
+        }
 
         HttpHeaders headers = new HttpHeaders();
         headers.set("Authorization", "Bearer " + apiKey);
         headers.setContentType(MediaType.APPLICATION_JSON);
 
-        String emailHtml = String.format("<h2>Your OTP is: %s</h2><p>This OTP will expire in 5 minutes.</p>", otp);
+        String emailHtml = """
+            <div style="font-family:Arial,sans-serif;line-height:1.6;color:#0f172a">
+              <h2 style="margin-bottom:8px;">Ma xac thuc email cua ban</h2>
+              <p style="margin:0 0 16px;">Su dung ma OTP ben duoi de kich hoat tai khoan Thuê Tôi.</p>
+              <div style="display:inline-block;padding:12px 20px;border:2px solid #0f172a;font-size:24px;font-weight:700;letter-spacing:0.32em;">
+                %s
+              </div>
+              <p style="margin:16px 0 0;">Ma nay se het han sau 5 phut.</p>
+            </div>
+            """.formatted(otp);
 
-        String body = String.format("""
-        {
-          "from": "onboarding@resend.dev",
-          "to": ["%s"],
-          "subject": "Your One-Time Password (OTP)",
-          "html": "%s"
-        }
-        """, toEmail, emailHtml.replace("\"", "\\\""));
+        Map<String, Object> payload = Map.of(
+            "from", fromAddress,
+            "to", List.of(toEmail),
+            "subject", "Thuê Tôi - Ma xac thuc email",
+            "html", emailHtml
+        );
 
-        HttpEntity<String> request = new HttpEntity<>(body, headers);
+        HttpEntity<Map<String, Object>> request = new HttpEntity<>(payload, headers);
 
         try {
-            restTemplate.postForObject(RESEND_URL, request, String.class);
+            ResponseEntity<String> response = restTemplate.postForEntity(RESEND_URL, request, String.class);
+            if (!response.getStatusCode().is2xxSuccessful()) {
+                throw new BusinessException("ERR_SYS_03", "Không thể gửi OTP xác thực email", HttpStatus.INTERNAL_SERVER_ERROR);
+            }
             logger.info("OTP email sent successfully to {}", toEmail);
+        } catch (HttpStatusCodeException ex) {
+            logger.error("Resend rejected OTP email for {} with status {} and body {}", toEmail, ex.getStatusCode(), ex.getResponseBodyAsString());
+            throw new BusinessException("ERR_SYS_03", "Không thể gửi OTP xác thực email", HttpStatus.INTERNAL_SERVER_ERROR, ex);
         } catch (Exception e) {
             logger.error("Error sending OTP email to {}: {}", toEmail, e.getMessage());
-            // Consider re-throwing a custom exception to be handled by the controller
+            if (e instanceof BusinessException businessException) {
+                throw businessException;
+            }
+            throw new BusinessException("ERR_SYS_03", "Không thể gửi OTP xác thực email", HttpStatus.INTERNAL_SERVER_ERROR, e);
         }
     }
 }

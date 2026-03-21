@@ -7,54 +7,26 @@ yarn-error.log*
 pnpm-debug.log*
 lerna-debug.log*
 
-# Loại trừ file log
-logs
-*.log
-npm-debug.log*
-yarn-debug.log*
-yarn-error.log*
-pnpm-debug.log*
-lerna-debug.log*
-
+# Build outputs
 node_modules
 dist
 dist-ssr
 *.local
 
-# Loại trừ file build (output biên dịch)
-node_modules
-dist
-dist-ssr
-*.local
-
-# Editor directories and files
+# IDE
 .vscode/*
 !.vscode/extensions.json
 .idea
-.DS_Store
 *.suo
 *.ntvs*
 *.njsproj
 *.sln
 *.sw?
 
-# Loại trừ file cấu hình IDE (IntelliJ, VSCode...)
-.vscode/*
-!.vscode/extensions.json
-.idea
-.DS_Store
-*.suo
-*.ntvs*
-*.njsproj
-*.sln
-*.sw?
-
-# Loại trừ file hệ điều hành
+# OS files
 .DS_Store
 Thumbs.db
 
-# Loại trừ file môi trường
+# Local environment
 .env
-
-# Loại trừ thư mục uploads
-/uploads/
+.env.*

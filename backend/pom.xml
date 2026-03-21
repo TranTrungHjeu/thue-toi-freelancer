@@ -42,13 +42,6 @@
             <artifactId>spring-boot-starter-security</artifactId>
         </dependency>
 
-        <!-- Spring Session for Cart management (Assignment Requirement) -->
-        <!-- We use spring-session-jdbc to store session in MySQL -->
-        <dependency>
-            <groupId>org.springframework.session</groupId>
-            <artifactId>spring-session-jdbc</artifactId>
-        </dependency>
-
         <!-- MySQL Database Driver -->
         <dependency>
             <groupId>com.mysql</groupId>

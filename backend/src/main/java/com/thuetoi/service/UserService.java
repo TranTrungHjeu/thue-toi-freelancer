@@ -5,6 +5,7 @@ import com.thuetoi.entity.User;
 import com.thuetoi.repository.UserRepository;
 import com.thuetoi.exception.BusinessException;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -27,6 +28,9 @@ public class UserService {
     @Autowired
     private PasswordEncoder passwordEncoder;
 
+    @Autowired
+    private OtpService otpService;
+
     /**
      * Đăng ký tài khoản mới.
      * User được tạo với trạng thái chưa xác thực (verified = false).
@@ -36,12 +40,12 @@ public class UserService {
     public AuthUserResponse register(String email, String password, String fullName, String role, String profileDescription) {
         String normalizedRole = normalizeRole(role);
         if ("admin".equals(normalizedRole)) {
-            throw new BusinessException("ERR_AUTH_14", "Không thể đăng ký với vai trò admin");
+            throw new BusinessException("ERR_AUTH_14", "Không thể đăng ký với vai trò admin", HttpStatus.FORBIDDEN);
         }
 
         String normalizedEmail = normalizeEmail(email);
         if (userRepository.existsByEmail(normalizedEmail)) {
-            throw new BusinessException("ERR_AUTH_05", "Email đã tồn tại");
+            throw new BusinessException("ERR_AUTH_05", "Email đã tồn tại", HttpStatus.CONFLICT);
         }
 
         User user = new User();
@@ -54,6 +58,7 @@ public class UserService {
         user.setVerified(false);
 
         User savedUser = userRepository.save(user);
+        otpService.sendVerificationOtp(savedUser.getEmail());
 
         return toAuthUserResponse(savedUser);
     }
@@ -69,26 +74,21 @@ public class UserService {
     public User authenticate(String email, String password) {
         String normalizedEmail = normalizeEmail(email);
         User user = userRepository.findByEmail(normalizedEmail);
-        if (user == null) {
-            throw new BusinessException("ERR_AUTH_12", "Sai email");
-        }
-        if (!passwordEncoder.matches(password, user.getPasswordHash())) {
-            throw new BusinessException("ERR_AUTH_13", "Sai mật khẩu");
+        if (user == null || !passwordEncoder.matches(password, user.getPasswordHash())) {
+            throw new BusinessException("ERR_AUTH_02", "Sai email hoặc mật khẩu", HttpStatus.UNAUTHORIZED);
         }
         if (!Boolean.TRUE.equals(user.getIsActive())) {
-            throw new BusinessException("ERR_AUTH_03", "Tài khoản đã bị khoá");
+            throw new BusinessException("ERR_AUTH_03", "Tài khoản đã bị khoá", HttpStatus.FORBIDDEN);
         }
         if (!Boolean.TRUE.equals(user.getVerified())) {
-            throw new BusinessException("ERR_AUTH_16", "Vui lòng xác thực tài khoản trước khi đăng nhập.");
+            throw new BusinessException("ERR_AUTH_07", "Tài khoản chưa xác thực email", HttpStatus.FORBIDDEN);
         }
         return user;
     }
 
-    public AuthUserResponse getAuthProfile(String email) {
-        User user = getUserByEmail(email);
-        if (user == null) {
-            throw new BusinessException("ERR_AUTH_04", "Không tìm thấy user");
-        }
+    public AuthUserResponse getAuthProfile(Long userId) {
+        User user = userRepository.findById(userId)
+            .orElseThrow(() -> new BusinessException("ERR_USER_01", "Không tìm thấy người dùng", HttpStatus.NOT_FOUND));
         return toAuthUserResponse(user);
     }
 
@@ -102,7 +102,11 @@ public class UserService {
     private String normalizeRole(String role) {
         String normalizedRole = role == null ? "" : role.trim().toLowerCase(Locale.ROOT);
         if (!"freelancer".equals(normalizedRole) && !"customer".equals(normalizedRole) && !"admin".equals(normalizedRole)) {
-            throw new BusinessException("ERR_AUTH_06", "Vai trò không hợp lệ. Chỉ chấp nhận freelancer, customer hoặc admin");
+            throw new BusinessException(
+                "ERR_AUTH_06",
+                "Vai trò không hợp lệ. Chỉ chấp nhận freelancer hoặc customer",
+                HttpStatus.BAD_REQUEST
+            );
         }
         return normalizedRole;
     }
