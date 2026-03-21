@@ -85,7 +85,14 @@ Tất cả các lệnh `axios.get()` hay `post()` bắt buộc phải truyền c
     *   Server sẽ vô hiệu hoá `refreshToken` tương ứng trong DB.
 7.  **Lấy thông tin người dùng (`GET /api/v1/auths/current-user`)**:
     *   Client gửi `accessToken` trong Header `Authorization`. Không cần body.
-
+8.  **Gửi lại OTP (`POST /api/v1/auth/resend-verification`)**:
+    *   Khi `verifyOtp` hết hạn, Client gửi `resendVerification` để lấy cặp OTP mới.
+    *   **Body Example:**
+        ```json
+        {
+            "email": "example@gmail.com"
+        }
+        ```                                                                    
 ### Flow 3: Thanh Toán (Checkout & Clear Session)
 1. **Client**: Người dùng vào Giỏ Hàng, bấm "Thanh Toán". Gọi `POST /api/v1/orders/checkout`.
 2. **Server**: Kiểm tra Security -> Lấy Giỏ Hàng từ Session hiện tại (JSESSIONID).

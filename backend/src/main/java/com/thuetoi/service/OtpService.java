@@ -74,4 +74,17 @@ public class OtpService {
         userRepository.save(user);
         otpRepository.save(emailOtp);
     }
+
+    public void resendOtp(String email) {
+        User user = userRepository.findByEmail(email);
+        if (user == null) {
+            throw new BusinessException("ERR_USER_01", "Không tìm thấy người dùng với email này");
+        }
+
+        if (Boolean.TRUE.equals(user.getIsActive())) {
+            throw new BusinessException("ERR_AUTH_12", "Tài khoản đã được kích hoạt.");
+        }
+
+        sendOtp(email);
+    }
 }

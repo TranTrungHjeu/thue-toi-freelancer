@@ -1,8 +1,10 @@
 package com.thuetoi.controller;
 
 import com.thuetoi.dto.request.OtpRequest;
+import com.thuetoi.dto.request.ResendVerificationRequest;
 import com.thuetoi.dto.request.VerifyOtpRequest;
 import com.thuetoi.dto.response.ApiResponse;
+import com.thuetoi.service.AuthService;
 import com.thuetoi.service.OtpService;
 import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -18,6 +20,9 @@ public class AuthController {
     @Autowired
     private OtpService otpService;
 
+    @Autowired
+    private AuthService authService;
+
     @PostMapping("/send-otp")
     public ApiResponse<Void> sendOtp(@Valid @RequestBody OtpRequest request) {
         otpService.sendOtp(request.getEmail());
@@ -28,5 +33,11 @@ public class AuthController {
     public ApiResponse<Void> verifyOtp(@Valid @RequestBody VerifyOtpRequest request) {
         otpService.verifyOtp(request.getEmail(), request.getOtp());
         return ApiResponse.success("OTP verified successfully. Your account is now active.", null);
+    }
+
+    @PostMapping("/resend-verification")
+    public ApiResponse<Void> resendVerification(@Valid @RequestBody ResendVerificationRequest request) {
+        otpService.resendOtp(request.getEmail());
+        return ApiResponse.success("OTP has been resent to your email.", null);
     }
 }

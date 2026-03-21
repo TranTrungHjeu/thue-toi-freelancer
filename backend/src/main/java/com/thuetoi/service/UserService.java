@@ -50,7 +50,7 @@ public class UserService {
         user.setFullName(fullName);
         user.setRole(normalizedRole);
         user.setProfileDescription(normalizeProfileDescription(profileDescription));
-        user.setIsActive(true); // User is active but must be verified to login
+        user.setIsActive(false); // User is not active until verified
         user.setVerified(false);
 
         User savedUser = userRepository.save(user);
