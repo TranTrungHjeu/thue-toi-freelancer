@@ -31,5 +31,7 @@ public class User extends BaseEntity {
 
     private Boolean isActive = true;
 
+    private Boolean verified = false;
+
     // Getter, Setter, Constructor
 }

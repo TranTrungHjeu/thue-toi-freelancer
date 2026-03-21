@@ -96,16 +96,50 @@ Tất cả thành viên cần tuân thủ quy chuẩn để đảm bảo code đ
 - Commit message: `[Tên_Module] Mô tả ngắn gọn`, ví dụ: `[Auth] Thêm chức năng đăng nhập`.
 - Khi hoàn thành, tạo Pull Request về `develop` để review.
 
-### 3. Kiến trúc xác thực & session (Auth & Session Flow)
+### 3. Kiến trúc xác thực JWT (Auth Flow)
 
-- **Frontend (ReactJS):** Luôn gửi API với `withCredentials: true` (axios đã cấu hình sẵn).
-- **Backend (Spring Boot):**
-  - CORS chỉ cho phép origin `http://localhost:5173`, bật allowCredentials.
-  - Lưu session vào MySQL (`spring.session.store-type=jdbc`).
-- **Luồng nghiệp vụ:**
-  - Khách thêm vào giỏ hàng: Server tạo session, trả về cookie JSESSIONID.
-  - Đăng nhập: Server xác thực, gán session cho user.
-  - Thanh toán: Server lấy session hiện tại, tạo đơn hàng.
+- **Frontend (ReactJS):** Gửi header `Authorization: Bearer <access_token>` cho các API cần đăng nhập.
+- **Backend (Spring Boot):** Xác thực stateless bằng JWT access token, refresh token lưu DB (`refresh_tokens`) để rotate/revoke.
+
+**Auth API cho FE sử dụng:**
+
+- `POST /api/v1/auths/sign-up`
+  - Body: `email`, `password`, `fullName`, `role`
+- `POST /api/v1/auths/sign-in`
+  - Body: `email`, `password`
+  - Response: `accessToken`, `refreshToken`, `tokenType`
+  - Validation đăng nhập:
+    - Nếu sai email, BE trả HTTP `400` với format:
+      ```json
+      {
+        "success": false,
+        "message": "Sai email",
+        "data": null
+      }
+      ```
+    - Nếu sai mật khẩu, BE trả HTTP `400` với format:
+      ```json
+      {
+        "success": false,
+        "message": "Sai mật khẩu",
+        "data": null
+      }
+      ```
+- `POST /api/v1/auths/refresh-token`
+  - Body: `refreshToken`
+  - Response: cặp token mới
+- `POST /api/v1/auths/sign-out`
+  - Header: `Authorization: Bearer <access_token>`
+  - Tác dụng: thu hồi refresh token còn hiệu lực
+- `GET /api/v1/auths/current-user`
+  - Header: `Authorization: Bearer <access_token>`
+  - Tác dụng: lấy thông tin user hiện tại
+
+**HTTP Status code (Auth):**
+
+- `200`: thao tác thành công
+- `400`: dữ liệu đầu vào không hợp lệ, sai email, hoặc sai mật khẩu
+- `401`: thiếu hoặc token không hợp lệ khi truy cập API yêu cầu đăng nhập
 
 ---
 

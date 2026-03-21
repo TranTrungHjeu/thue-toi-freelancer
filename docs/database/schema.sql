@@ -8,8 +8,35 @@ CREATE TABLE users (
     avatar_url VARCHAR(255) COMMENT 'Đường dẫn ảnh đại diện',
     profile_description TEXT COMMENT 'Mô tả cá nhân, giới thiệu',
     is_active BOOLEAN DEFAULT TRUE COMMENT 'Trạng thái hoạt động',
+    verified BOOLEAN DEFAULT FALSE COMMENT 'Tài khoản đã xác thực email hay chưa',
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP COMMENT 'Ngày tạo',
     updated_at DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT 'Ngày cập nhật'
+);
+
+-- Bảng email_otp: Lưu mã OTP để xác thực email
+CREATE TABLE email_otp (
+    id BIGINT PRIMARY KEY AUTO_INCREMENT COMMENT 'Khóa chính',
+    email VARCHAR(255) NOT NULL COMMENT 'Email nhận OTP',
+    otp VARCHAR(10) NOT NULL COMMENT 'Mã OTP',
+    expire_time DATETIME NOT NULL COMMENT 'Thời điểm hết hạn OTP',
+    used BOOLEAN DEFAULT FALSE COMMENT 'OTP đã được sử dụng hay chưa',
+    created_at DATETIME NOT NULL COMMENT 'Ngày tạo',
+    INDEX idx_email_otp (email, otp)
+);
+
+-- Bảng refresh_tokens: Lưu refresh token để làm mới access token và thu hồi khi logout
+CREATE TABLE refresh_tokens (
+    id BIGINT PRIMARY KEY AUTO_INCREMENT COMMENT 'Khóa chính, mã refresh token',
+    user_id BIGINT NOT NULL COMMENT 'Mã người dùng sở hữu token',
+    token VARCHAR(512) UNIQUE NOT NULL COMMENT 'Refresh token (JWT)',
+    expires_at DATETIME NOT NULL COMMENT 'Thời điểm hết hạn refresh token',
+    revoked BOOLEAN DEFAULT FALSE COMMENT 'Token đã bị thu hồi hay chưa',
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP COMMENT 'Ngày tạo',
+    updated_at DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT 'Ngày cập nhật',
+    FOREIGN KEY (user_id) REFERENCES users(id),
+    INDEX idx_refresh_user_id (user_id),
+    INDEX idx_refresh_revoked (revoked),
+    INDEX idx_refresh_expires_at (expires_at)
 );
 -- Bảng skills: Danh sách kỹ năng chuẩn hóa
 CREATE TABLE skills (
