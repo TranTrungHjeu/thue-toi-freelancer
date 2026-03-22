@@ -70,7 +70,7 @@ const WorkspaceDashboardPage = () => {
           });
         }
       } catch (error) {
-        addToast(error?.message || 'Khong the tai dashboard.', 'error');
+        addToast(error?.message || 'Không thể tải dashboard.', 'error');
       } finally {
         setLoading(false);
       }
@@ -83,14 +83,14 @@ const WorkspaceDashboardPage = () => {
 
   const statCards = user?.role === 'customer'
     ? [
-        { label: 'Du an cua ban', value: dashboardData.customerProjects.length, icon: ViewGrid },
-        { label: 'Hop dong lien quan', value: dashboardData.contracts.length, icon: PageSearch },
-        { label: 'Thong bao chua doc', value: unreadNotifications, icon: Bell },
+        { label: 'Dự án của bạn', value: dashboardData.customerProjects.length, icon: ViewGrid },
+        { label: 'Hợp đồng liên quan', value: dashboardData.contracts.length, icon: PageSearch },
+        { label: 'Thông báo chưa đọc', value: unreadNotifications, icon: Bell },
       ]
     : [
-        { label: 'Project dang mo', value: dashboardData.marketplaceProjects.length, icon: ViewGrid },
-        { label: 'Bao gia cua ban', value: dashboardData.myBids.length, icon: StatsUpSquare },
-        { label: 'Hop dong lien quan', value: dashboardData.contracts.length, icon: PageSearch },
+        { label: 'Project đang mở', value: dashboardData.marketplaceProjects.length, icon: ViewGrid },
+        { label: 'Báo giá của bạn', value: dashboardData.myBids.length, icon: StatsUpSquare },
+        { label: 'Hợp đồng liên quan', value: dashboardData.contracts.length, icon: PageSearch },
       ];
 
   return (
@@ -98,58 +98,58 @@ const WorkspaceDashboardPage = () => {
       <section className="grid gap-5 lg:grid-cols-[1.15fr_0.85fr]">
         <Card className="border-2 border-slate-200 bg-white p-6 md:p-8">
           <Caption className="text-[11px] uppercase tracking-[0.18em] text-primary-700">
-            Dashboard
+            Tổng quan
           </Caption>
           <H1 className="mt-3 text-4xl">
-            Chao mung {user?.fullName}, workspace da san sang.
+            Chào mừng {user?.fullName}, workspace đã sẵn sàng.
           </H1>
           <Text className="mt-4 text-slate-600">
-            Ban dang dang nhap voi vai tro <strong>{formatRole(user?.role)}</strong>. Frontend hien dang bam sat
-            cac API auth, project, bid, contract va notification da co san o backend.
+            Bạn đang đăng nhập với vai trò <strong>{formatRole(user?.role)}</strong>. Frontend hiện đang bám sát
+            các API auth, project, bid, contract và notification đã có sẵn ở backend.
           </Text>
 
           <div className="mt-6 flex flex-wrap gap-3">
             <Button onClick={() => navigate('/workspace/projects')}>
-              {user?.role === 'customer' ? 'Quan ly du an' : 'Tim project va gui bid'}
+              {user?.role === 'customer' ? 'Quản lý dự án' : 'Tìm project và gửi bid'}
             </Button>
             <Button variant="outline" onClick={() => navigate('/workspace/contracts')}>
-              Xem hop dong
+              Xem hợp đồng
             </Button>
             <Button variant="ghost" onClick={() => navigate('/workspace/profile')}>
-              Ho so cua toi
+              Hồ sơ của tôi
             </Button>
           </div>
         </Card>
 
         <Card className="border-2 border-secondary-900 bg-secondary-900 p-6 text-white">
           <Caption className="text-[11px] uppercase tracking-[0.18em] text-primary-100">
-            Account Status
+            Trạng thái tài khoản
           </Caption>
           <div className="mt-4 flex flex-wrap gap-2">
             <Badge color="success" className="border-slate-600 bg-primary-100 text-primary-800">
-              Verified
+              Đã xác thực
             </Badge>
             <Badge color={user?.isActive ? 'success' : 'error'} className="border-slate-600 bg-slate-100 text-slate-800">
-              {user?.isActive ? 'Active' : 'Locked'}
+              {user?.isActive ? 'Đang hoạt động' : 'Đã khoá'}
             </Badge>
           </div>
           <Text className="mt-4 text-sm text-slate-300">
-            Frontend dang doc profile hien tai truc tiep tu backend thay vi dung local mock state.
+            Frontend đang đọc profile hiện tại trực tiếp từ backend thay vì dùng local mock state.
           </Text>
           <div className="mt-6 border border-slate-700 bg-slate-800/60 p-4">
             <div className="flex items-center gap-3">
               <Lock className="h-5 w-5 text-primary-300" />
-              <span className="text-sm font-semibold text-white">JWT + refresh cookie dang hoat dong</span>
+              <span className="text-sm font-semibold text-white">JWT + refresh cookie đang hoạt động</span>
             </div>
             <Text className="mt-3 text-sm text-slate-300">
-              Khi access token het han, client se thu refresh mot lan bang cookie truoc khi xoa auth state.
+              Khi access token hết hạn, client sẽ thử refresh một lần bằng cookie trước khi xoá auth state.
             </Text>
           </div>
         </Card>
       </section>
 
-      <Callout type="success" title="Workspace da bam sat workflow">
-        Dang ky, verify OTP, dang nhap, roi vao workspace role-based. Tu day, customer co the tao project va freelancer co the gui bid tren du lieu that tu backend.
+      <Callout type="success" title="Workspace đã bám sát workflow">
+        Đăng ký, verify OTP, đăng nhập, rồi vào workspace role-based. Từ đây, khách hàng có thể tạo project và freelancer có thể gửi bid trên dữ liệu thật từ backend.
       </Callout>
 
       <section className="grid gap-4 md:grid-cols-3">
@@ -173,14 +173,14 @@ const WorkspaceDashboardPage = () => {
           <div className="flex items-center justify-between gap-3">
             <div>
               <Caption className="text-[11px] uppercase tracking-[0.18em] text-primary-700">
-                {user?.role === 'customer' ? 'Projects' : 'Marketplace'}
+                {user?.role === 'customer' ? 'Dự án' : 'Marketplace'}
               </Caption>
               <H2 className="mt-2 text-2xl">
-                {user?.role === 'customer' ? 'Du an gan day' : 'Project dang mo'}
+                {user?.role === 'customer' ? 'Dự án gần đây' : 'Project đang mở'}
               </H2>
             </div>
             <Button variant="ghost" onClick={() => navigate('/workspace/projects')}>
-              Xem tat ca
+              Xem tất cả
             </Button>
           </div>
 
@@ -193,25 +193,25 @@ const WorkspaceDashboardPage = () => {
                     <div>
                       <div className="text-sm font-bold text-secondary-900">{project.title}</div>
                       <Caption className="text-xs text-slate-500">
-                        Han cuoi: {formatDate(project.deadline)}
+                        Hạn cuối: {formatDate(project.deadline)}
                       </Caption>
                     </div>
                     <Badge color="success">{project.status || 'open'}</Badge>
                   </div>
                   <Text className="mt-3 text-sm text-slate-600">
-                    {project.description || 'Chua co mo ta chi tiet cho project nay.'}
+                    {project.description || 'Chưa có mô tả chi tiết cho project này.'}
                   </Text>
                   <div className="mt-3 text-sm font-semibold text-slate-700">
-                    Ngan sach: {buildBudgetRange(project)}
+                    Ngân sách: {buildBudgetRange(project)}
                   </div>
                 </div>
               ))}
 
             {!loading && (user?.role === 'customer' ? dashboardData.customerProjects : dashboardData.marketplaceProjects).length === 0 && (
-              <Callout type="info" title="Chua co du lieu">
+              <Callout type="info" title="Chưa có dữ liệu">
                 {user?.role === 'customer'
-                  ? 'Ban chua dang project nao. Hay tao project dau tien tu trang Du an.'
-                  : 'Chua co project dang mo phu hop de hien thi luc nay.'}
+                  ? 'Bạn chưa đăng project nào. Hãy tạo project đầu tiên từ trang Dự án.'
+                  : 'Chưa có project đang mở phù hợp để hiển thị lúc này.'}
               </Callout>
             )}
           </div>
@@ -221,14 +221,14 @@ const WorkspaceDashboardPage = () => {
           <div className="flex items-center justify-between gap-3">
             <div>
               <Caption className="text-[11px] uppercase tracking-[0.18em] text-primary-700">
-                Notifications
+                Thông báo
               </Caption>
               <H2 className="mt-2 text-2xl">
-                Cap nhat moi nhat
+                Cập nhật mới nhất
               </H2>
             </div>
             <Button variant="ghost" onClick={() => navigate('/workspace/notifications')}>
-              Quan ly
+              Quản lý
             </Button>
           </div>
 
@@ -243,7 +243,7 @@ const WorkspaceDashboardPage = () => {
                     </Caption>
                   </div>
                   <Badge color={notification.isRead ? 'info' : 'warning'}>
-                    {notification.isRead ? 'Da doc' : 'Moi'}
+                    {notification.isRead ? 'Đã đọc' : 'Mới'}
                   </Badge>
                 </div>
                 <Text className="mt-3 text-sm text-slate-600">
@@ -253,8 +253,8 @@ const WorkspaceDashboardPage = () => {
             ))}
 
             {!loading && dashboardData.notifications.length === 0 && (
-              <Callout type="info" title="Thong bao trong">
-                He thong chua co thong bao moi cho tai khoan nay.
+              <Callout type="info" title="Thông báo trống">
+                Hệ thống chưa có thông báo mới cho tài khoản này.
               </Callout>
             )}
           </div>
@@ -264,10 +264,10 @@ const WorkspaceDashboardPage = () => {
       {user?.role === 'freelancer' && (
         <Card className="border-2 border-slate-200 bg-white p-6">
           <Caption className="text-[11px] uppercase tracking-[0.18em] text-primary-700">
-            My bids
+            Báo giá của tôi
           </Caption>
           <H2 className="mt-2 text-2xl">
-            Bao gia gan day
+            Báo giá gần đây
           </H2>
           <div className="mt-5 grid gap-3 md:grid-cols-2">
             {dashboardData.myBids.slice(0, 4).map((bid) => (
@@ -281,14 +281,14 @@ const WorkspaceDashboardPage = () => {
                   </Badge>
                 </div>
                 <Text className="mt-3 text-sm text-slate-600">
-                  Gia de xuat: {formatCurrency(bid.price)}
+                  Giá đề xuất: {formatCurrency(bid.price)}
                 </Text>
               </div>
             ))}
 
             {!loading && dashboardData.myBids.length === 0 && (
-              <Callout type="info" title="Chua co bao gia">
-                Ban chua gui bid nao. Hay vao trang Du an de nop de xuat dau tien.
+              <Callout type="info" title="Chưa có báo giá">
+                Bạn chưa gửi bid nào. Hãy vào trang Dự án để nộp đề xuất đầu tiên.
               </Callout>
             )}
           </div>
