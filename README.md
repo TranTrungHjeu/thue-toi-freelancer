@@ -18,17 +18,29 @@ Hãy đảm bảo bạn đã mở phần mềm **Docker Desktop** và biểu tư
 
 ### Bước 2: Tải các dịch vụ (Build & Run)
 
+Trước khi chạy, hãy tạo file `.env` ở thư mục gốc để Docker Compose nạp các biến bí mật local. Tối thiểu cần có:
+
+```bash
+RESEND_API_KEY=your_resend_api_key
+RESEND_FROM=Thue Toi <onboarding@resend.dev>
+APP_AUTH_REFRESH_COOKIE_SECURE=false
+APP_AUTH_REFRESH_COOKIE_SAME_SITE=Lax
+```
+
+File `.env` local không được commit lên Git.
+
 Mở Terminal (hoặc Command Prompt / Git Bash) tại thư mục gốc của dự án (`thue-toi-freelancer`) và chạy lệnh sau:
 
 ```bash
-docker-compose up -d --build
+docker compose up -d --build
 ```
 
 **Lưu ý:**
 
 - Lần chạy đầu tiên sẽ tốn khoảng 3-5 phút vì Docker phải tải môi trường Maven (để compile Java) và Node.js từ Internet về, sau đó tải các thư viện.
-- Những lần sau, bạn chỉ cần chạy `docker-compose up -d` là dự án lên ngay lập tức.
+- Những lần sau, bạn chỉ cần chạy `docker compose up -d`.
 - Tham số `-d` giúp hệ thống chạy ngầm để bạn có thể tiếp tục sử dụng Terminal.
+- Luồng OTP hiện chỉ chạy qua email thật bằng Resend. Không còn endpoint debug đọc OTP local trong runtime chuẩn.
 
 ### Bước 3: Kiểm tra hệ thống (Verification)
 
@@ -36,36 +48,53 @@ Sau khi quá trình trên hoàn tất (Terminal hiện chữ `Started` hoặc đ
 
 - **Frontend (ReactJS):** [http://localhost:5173](http://localhost:5173)
   _(Cấu hình Hot-reload tĩnh: Bạn sửa code trong thư mục `/frontend`, trình duyệt sẽ tự tải lại)._
-- **Backend API (Spring Boot):** [http://localhost:8080/api](http://localhost:8080/api)
-  _(Để xem API, hãy truy cập các endpoint tuỳ chỉnh của Controller sau này)._
+- **Backend API (Spring Boot):** [http://localhost:8080/api/v1/health](http://localhost:8080/api/v1/health)
+  _(Đây là endpoint health-check mẫu. Các API nghiệp vụ sẽ nằm dưới namespace `/api/v1/*`)._
 
-**Về cơ sở dữ liệu MySQL:**
-Docker đã tự dựng một máy chủ MySQL ở công 3306.
+Docker sẽ dựng một máy chủ MySQL ở cổng `3307` trên máy local.
 
 - **Tên Database**: `thuetoi`
 - **Username**: `root`
 - **Password**: `root`
 
-Nếu bạn muốn dùng công cụ như DBeaver hoặc MySQL Workbench để xem dữ liệu, hãy điền các thông tin trên và trỏ Host về `localhost:3306`.
+Nếu bạn muốn dùng công cụ như DBeaver hoặc MySQL Workbench để xem dữ liệu, hãy điền các thông tin trên và trỏ Host về `localhost:3307`.
+
+### Ghi chú deploy VPS
+
+Khi deploy full stack lên VPS, bạn vẫn có thể override các giá trị mặc định của backend bằng biến môi trường chuẩn Spring Boot như:
+
+```bash
+SPRING_DATASOURCE_URL
+SPRING_DATASOURCE_USERNAME
+SPRING_DATASOURCE_PASSWORD
+APP_JWT_ACCESS_TOKEN_SECRET
+APP_JWT_REFRESH_TOKEN_SECRET
+RESEND_API_KEY
+RESEND_FROM
+APP_AUTH_REFRESH_COOKIE_SECURE
+APP_AUTH_REFRESH_COOKIE_SAME_SITE
+```
+
+Các giá trị mặc định local hiện được đặt trong [backend/src/main/resources/application.properties](backend/src/main/resources/application.properties).
 
 ### Hỗ trợ (Troubleshoot)
 
 1. **Xem Log hệ thống:** Nếu Backend/Frontend không lên mạng, hãy chạy lệnh này để xem bản ghi lỗi:
 
    ```bash
-   docker-compose logs -f
+   docker compose logs -f
    ```
 
 2. **Tắt máy chủ an toàn:** Khi bạn ngưng code và muốn tắt dự án để giài phóng Ram:
 
    ```bash
-   docker-compose down
+   docker compose down
    ```
 
 3. **Reset Database "sạch sẽ":** Nếu bạn muốn xoá trắng dữ liệu DB hiện diện trong kịch bản dev:
 
    ```bash
-   docker-compose down -v
+   docker compose down -v
    ```
 
 ---
@@ -96,16 +125,47 @@ Tất cả thành viên cần tuân thủ quy chuẩn để đảm bảo code đ
 - Commit message: `[Tên_Module] Mô tả ngắn gọn`, ví dụ: `[Auth] Thêm chức năng đăng nhập`.
 - Khi hoàn thành, tạo Pull Request về `develop` để review.
 
-### 3. Kiến trúc xác thực & session (Auth & Session Flow)
+### 3. Kiến trúc xác thực JWT + OTP (Auth Flow)
 
-- **Frontend (ReactJS):** Luôn gửi API với `withCredentials: true` (axios đã cấu hình sẵn).
+- **Frontend (ReactJS):**
+  - Gửi header `Authorization: Bearer <access_token>` cho các API yêu cầu đăng nhập.
+  - Luôn giữ `withCredentials: true` để trình duyệt tự gửi `refresh token` lưu dưới dạng `HttpOnly cookie`.
 - **Backend (Spring Boot):**
-  - CORS chỉ cho phép origin `http://localhost:5173`, bật allowCredentials.
-  - Lưu session vào MySQL (`spring.session.store-type=jdbc`).
-- **Luồng nghiệp vụ:**
-  - Khách thêm vào giỏ hàng: Server tạo session, trả về cookie JSESSIONID.
-  - Đăng nhập: Server xác thực, gán session cho user.
-  - Thanh toán: Server lấy session hiện tại, tạo đơn hàng.
+  - Xác thực stateless bằng JWT access token.
+  - Lưu `refresh token` vào bảng `refresh_tokens` dưới dạng mã băm để rotate/revoke.
+  - Dùng OTP email để xác thực tài khoản trước khi cho phép đăng nhập.
+
+**Auth API cho FE sử dụng:**
+
+- `POST /api/v1/auth/register`
+  - Body: `email`, `password`, `fullName`, `role`, `profileDescription`
+  - Tạo tài khoản `freelancer` hoặc `customer`, đồng thời tự động gửi OTP xác thực email.
+- `POST /api/v1/auth/verify-email-otp`
+  - Body: `email`, `otp`
+  - Xác thực email và kích hoạt khả năng đăng nhập.
+- `POST /api/v1/auth/resend-verification-otp`
+  - Body: `email`
+  - Gửi lại OTP xác thực email, có cooldown chống spam.
+- `POST /api/v1/auth/login`
+  - Body: `email`, `password`
+  - Response body: `tokenType`, `accessToken`, `accessTokenExpiresIn`, `user`
+  - Response cookie: `thue_toi_refresh_token` (`HttpOnly`)
+- `POST /api/v1/auth/refresh`
+  - Không gửi body.
+  - Trình duyệt tự gửi refresh token cookie, backend rotate cookie và trả access token mới trong body.
+- `POST /api/v1/auth/logout`
+  - Thu hồi refresh token hiện tại và xóa cookie.
+- `GET /api/v1/auth/profile`
+  - Lấy thông tin người dùng hiện tại từ access token.
+
+**HTTP Status code (Auth):**
+
+- `200`: thao tác thành công
+- `400`: dữ liệu đầu vào không hợp lệ hoặc OTP sai/hết hạn
+- `401`: chưa đăng nhập, access token không hợp lệ, refresh token không hợp lệ
+- `403`: tài khoản bị khóa hoặc chưa xác thực email
+- `409`: email đã tồn tại hoặc tài khoản đã xác thực email
+- `429`: gửi lại OTP quá nhanh
 
 ---
 
@@ -133,4 +193,4 @@ Tất cả các thành phần được xây dựng sẵn và lưu trữ tại `f
 - [docs/CONVENTIONS.md](docs/CONVENTIONS.md) — Quy chuẩn đặt tên & code
 - [docs/architecture/ui_standard.md](docs/architecture/ui_standard.md) — **Quy chuẩn UI & Mobile UX (QUAN TRỌNG)**
 - [docs/TEAM_GUIDE.md](docs/TEAM_GUIDE.md) — Quy trình làm việc nhóm
-- [docs/architecture/auth_session_flow.md](docs/architecture/auth_session_flow.md) — Luồng xác thực/session
+- [docs/architecture/auth_session_flow.md](docs/architecture/auth_session_flow.md) — Luồng xác thực JWT + OTP

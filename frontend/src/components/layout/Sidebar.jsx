@@ -1,67 +1,46 @@
 import React from 'react';
-import { Home, Suitcase, Notes, Bell, Settings, LogOut, Package, Database, Key, StatsUpSquare, User } from 'iconoir-react';
-import AnimatedIcon from '../common/AnimatedIcon';
-import NavGroup from './NavGroup';
+import { NavLink } from 'react-router-dom';
+import { LogOut } from 'iconoir-react';
+import { Caption } from '../common/Typography';
+import Button from '../common/Button';
 
-/**
- * Standard Sidebar component following "Strict Sharpness".
- * Fixed width, sharp borders.
- */
-const Sidebar = () => {
+const Sidebar = ({ navigation = [], currentPath = '', onLogout }) => {
   return (
-    <aside className="w-64 h-full bg-white border-r border-slate-200 flex flex-col py-6 overflow-y-auto">
-      <nav className="flex-1 flex flex-col gap-1 px-3">
-        <a href="#" className="flex items-center gap-3 px-4 py-3 text-sm font-medium text-slate-600 hover:bg-slate-50 hover:text-secondary-900 transition-colors">
-          <AnimatedIcon icon={Home} animation="float" />
-          Dashboard
-        </a>
-        <a href="#gallery" className="flex items-center gap-3 px-4 py-3 text-sm font-medium text-primary-700 bg-primary-50 border-r-4 border-primary-500 transition-colors">
-          <AnimatedIcon icon={Package} animation="scale" />
-          UI Gallery
-        </a>
-
-        <div className="my-2 border-t border-slate-100" />
-
-        <NavGroup 
-          icon={Suitcase} 
-          label="Dự án & Việc làm" 
-          items={[
-            { label: 'Tất cả dự án', path: '#projects' },
-            { label: 'Việc của tôi', path: '#my-jobs' },
-            { label: 'Hợp đồng', path: '#contracts' },
-          ]}
-        />
-
-        <NavGroup 
-          icon={Database} 
-          label="Hệ thống & API" 
-          items={[
-            { label: 'API Testing', path: '#api-test' },
-            { label: 'Webhooks', path: '#webhooks' },
-            { label: 'Tài liệu Dev', path: '#docs' },
-          ]}
-        />
-
-        <NavGroup 
-          icon={StatsUpSquare} 
-          label="Báo cáo & Tài chính" 
-          items={[
-            { label: 'Doanh thu', path: '#revenue' },
-            { label: 'Thuế & Phí', path: '#tax' },
-          ]}
-        />
-
-        <a href="#settings" className="flex items-center gap-3 px-4 py-3 text-sm font-medium text-slate-600 hover:bg-slate-50 hover:text-secondary-900 transition-colors">
-          <AnimatedIcon icon={Settings} animation="rotate" />
-          Cài đặt hệ thống
-        </a>
+    <aside className="flex h-full w-64 flex-col overflow-y-auto border-r border-slate-200 bg-white py-6">
+      <nav className="flex flex-1 flex-col gap-1 px-3">
+        {navigation.map((group) => (
+          <div key={group.title} className="mb-4 border-b border-slate-100 pb-4 last:mb-0 last:border-b-0 last:pb-0">
+            <Caption className="px-3 text-[11px] font-bold uppercase tracking-[0.18em] text-slate-400">
+              {group.title}
+            </Caption>
+            <div className="mt-2 flex flex-col gap-1">
+              {group.items.map((item) => {
+                const isActive = currentPath === item.to;
+                return (
+                  <NavLink
+                    key={item.to}
+                    to={item.to}
+                    className={`flex items-center gap-3 border-l-4 px-3 py-3 text-sm font-semibold transition-colors ${
+                      isActive
+                        ? 'border-primary-600 bg-primary-50 text-primary-700'
+                        : 'border-transparent text-slate-600 hover:border-slate-200 hover:bg-slate-50 hover:text-secondary-900'
+                    }`}
+                  >
+                    <item.icon className="h-5 w-5" />
+                    {item.label}
+                  </NavLink>
+                );
+              })}
+            </div>
+          </div>
+        ))}
       </nav>
-      
+
       <div className="px-3">
-        <button className="w-full flex items-center gap-3 px-4 py-3 text-sm font-medium text-red-600 hover:bg-red-50 transition-colors">
-          <AnimatedIcon icon={LogOut} animation="scale" />
-          Đăng xuất
-        </button>
+        <Button variant="ghost" className="w-full justify-start text-red-600 hover:border-red-100 hover:bg-red-50" onClick={onLogout}>
+          <LogOut className="h-5 w-5" />
+          Dang xuat
+        </Button>
       </div>
     </aside>
   );

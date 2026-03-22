@@ -28,9 +28,7 @@ export const useFetch = () => {
             }
             
             const response = await axiosClient(config);
-            // Giả định axiosClient interceptor đã bóc tách ApiResponse và trả về luôn response.data
-            // Nếu interceptor trả trực tiếp cấu trúc { success, code, data }:
-            const result = response.data !== undefined ? response : response.data;
+            const result = response;
             if (result.success) {
                 setData(result.data);
                 return result.data;
@@ -39,9 +37,11 @@ export const useFetch = () => {
             }
             
         } catch (err) {
-            const errMessage = err.response?.data?.message || err.message || 'Lỗi mạng hoặc không thể kết nối server';
-            const errCode = err.response?.data?.code || 'ERR_SYS_00';
-            const errorObj = { message: errMessage, code: errCode };
+            const errorObj = {
+                message: err?.message || 'Lỗi mạng hoặc không thể kết nối server',
+                code: err?.code || 'ERR_SYS_00',
+                errors: err?.errors || null,
+            };
             
             setError(errorObj);
             throw errorObj; // Ném lỗi ra ngoài để component giao diện xử lý (VD: Hiện thông báo Toast)

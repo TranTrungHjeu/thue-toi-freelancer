@@ -13,7 +13,7 @@ import java.util.List;
  * Controller Project: API CRUD dự án, filter, validate
  */
 @RestController
-@RequestMapping("/api/projects")
+@RequestMapping("/api/v1/projects")
 public class ProjectController {
     @Autowired
     private ProjectService projectService;
@@ -61,7 +61,7 @@ public class ProjectController {
     public ApiResponse<Project> getProject(@PathVariable Long id) {
         return projectService.getProject(id)
                 .map(project -> ApiResponse.success("Lấy chi tiết dự án thành công", project))
-                .orElseGet(() -> ApiResponse.error("Không tìm thấy dự án"));
+                .orElseGet(() -> ApiResponse.error("ERR_PROJECT_01", "Không tìm thấy dự án"));
     }
 
     /**

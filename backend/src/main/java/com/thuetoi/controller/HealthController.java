@@ -6,7 +6,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 @RestController
 public class HealthController {
-    @GetMapping("/api/health")
+    @GetMapping("/api/v1/health")
     public ApiResponse healthCheck() {
         // Kiểm tra các nghiệp vụ: DB, service, logic
         boolean dbOk = true; // TODO: kiểm tra kết nối DB
@@ -15,7 +15,7 @@ public class HealthController {
         if (dbOk && serviceOk && logicOk) {
             return ApiResponse.success("Healthy", null);
         } else {
-            return ApiResponse.error("Service unhealthy");
+            return ApiResponse.error("ERR_SYS_01", "Service unhealthy");
         }
     }
 }

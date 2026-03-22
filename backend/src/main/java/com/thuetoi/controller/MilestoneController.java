@@ -9,7 +9,7 @@ import org.springframework.web.bind.annotation.*;
 import java.util.List;
 
 @RestController
-@RequestMapping("/api/milestones")
+@RequestMapping("/api/v1/milestones")
 public class MilestoneController {
     @Autowired
     private MilestoneRepository milestoneRepository;

@@ -9,7 +9,7 @@ import org.springframework.web.bind.annotation.*;
 import java.util.List;
 
 @RestController
-@RequestMapping("/api/notifications")
+@RequestMapping("/api/v1/notifications")
 public class NotificationController {
     @Autowired
     private NotificationService notificationService;
@@ -39,18 +39,15 @@ public class NotificationController {
      * Lấy notification của user đang đăng nhập
      */
     @GetMapping("/user/me")
-    public ApiResponse<List<Notification>> getNotificationsByCurrentUser(@RequestParam(required = false) Long userId, java.security.Principal principal) {
-        // Nếu frontend truyền userId thì lấy theo userId, không thì lấy theo principal
-        Long id = userId;
-        if (id == null && principal != null) {
-            try {
-                id = Long.parseLong(principal.getName());
-            } catch (Exception e) {
-                return ApiResponse.error("Không xác định được userId từ session");
-            }
+    public ApiResponse<List<Notification>> getNotificationsByCurrentUser(java.security.Principal principal) {
+        if (principal == null) {
+            return ApiResponse.error("ERR_AUTH_01", "Người dùng chưa đăng nhập");
         }
-        if (id == null) {
-            return ApiResponse.error("Thiếu userId hoặc chưa đăng nhập");
+        Long id;
+        try {
+            id = Long.parseLong(principal.getName());
+        } catch (Exception e) {
+            return ApiResponse.error("ERR_AUTH_12", "Access token không hợp lệ");
         }
         List<Notification> notifications = notificationService.getNotificationsByUser(id);
         return ApiResponse.success("Lấy notification của user đang đăng nhập", notifications);
