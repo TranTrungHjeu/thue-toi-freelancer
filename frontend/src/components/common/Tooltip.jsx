@@ -3,6 +3,8 @@
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 
+const MotionDiv = motion.div;
+
 /**
  * Sharp Tooltip for micro-explanations.
  * Strictly sharp borders, minimal animation.
@@ -31,7 +33,7 @@ const Tooltip = ({
       {children}
       <AnimatePresence>
         {isVisible && (
-          <motion.div
+          <MotionDiv
             initial={{ opacity: 0, scale: 0.95 }}
             animate={{ opacity: 1, scale: 1 }}
             exit={{ opacity: 0, scale: 0.95 }}
@@ -52,7 +54,7 @@ const Tooltip = ({
               ${position === 'left' ? 'right-[-4px] top-1/2 -translate-y-1/2' : ''}
               ${position === 'right' ? 'left-[-4px] top-1/2 -translate-y-1/2' : ''}
             `} />
-          </motion.div>
+          </MotionDiv>
         )}
       </AnimatePresence>
     </div>

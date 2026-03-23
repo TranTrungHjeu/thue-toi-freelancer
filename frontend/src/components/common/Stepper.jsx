@@ -4,6 +4,8 @@ import React from 'react';
 import { motion } from "motion/react";
 import { Check } from "iconoir-react";
 
+const MotionDiv = motion.div;
+
 /**
  * Stepper component for multi-step processes.
  */
@@ -14,7 +16,7 @@ const Stepper = ({ steps, currentStep, className = "" }) => {
         <React.Fragment key={idx}>
           {/* Step Circle/Box */}
           <div className="relative flex flex-col items-center group">
-            <motion.div
+            <MotionDiv
               initial={false}
               animate={{
                 backgroundColor: idx <= currentStep ? "var(--color-primary-500)" : "var(--color-slate-100)",
@@ -32,7 +34,7 @@ const Stepper = ({ steps, currentStep, className = "" }) => {
               ) : (
                 idx + 1
               )}
-            </motion.div>
+            </MotionDiv>
             
             {/* Label */}
             <div className="absolute top-12 whitespace-nowrap">
@@ -45,7 +47,7 @@ const Stepper = ({ steps, currentStep, className = "" }) => {
           {/* Connector Line */}
           {idx < steps.length - 1 && (
             <div className="flex-1 h-[2px] bg-slate-100 mx-2 relative overflow-hidden">
-              <motion.div 
+              <MotionDiv 
                 initial={{ width: "0%" }}
                 animate={{ width: idx < currentStep ? "100%" : "0%" }}
                 className="absolute inset-0 bg-primary-500"

@@ -1,12 +1,11 @@
 "use client";
 
-import React, { createContext, useContext, useState, useCallback } from 'react';
+import React, { useState, useCallback } from 'react';
 import { motion, AnimatePresence } from "motion/react";
 import { Xmark, CheckCircle, WarningTriangle, InfoCircle } from "iconoir-react";
+import { ToastContext } from '../../contexts/ToastContext';
 
-const ToastContext = createContext();
-
-export const useToast = () => useContext(ToastContext);
+const MotionDiv = motion.div;
 
 /**
  * Global Toast Notification System.
@@ -45,7 +44,7 @@ export const ToastProvider = ({ children }) => {
       <div className="fixed top-6 right-6 z-[60] flex flex-col gap-3 w-full max-w-sm pointer-events-none">
         <AnimatePresence>
           {toasts.map((toast) => (
-            <motion.div
+            <MotionDiv
               key={toast.id}
               initial={{ x: 100, opacity: 0 }}
               animate={{ x: 0, opacity: 1 }}
@@ -66,7 +65,7 @@ export const ToastProvider = ({ children }) => {
               >
                 <Xmark className="w-4 h-4" />
               </button>
-            </motion.div>
+            </MotionDiv>
           ))}
         </AnimatePresence>
       </div>

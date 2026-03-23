@@ -1,11 +1,15 @@
 package com.thuetoi.controller;
 
 import com.thuetoi.dto.request.BidRequest;
+import com.thuetoi.dto.request.BidStatusRequest;
 import com.thuetoi.dto.response.ApiResponse;
 import com.thuetoi.entity.Bid;
+import com.thuetoi.exception.BusinessException;
 import com.thuetoi.security.CurrentUserProvider;
 import com.thuetoi.service.BidService;
+import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.*;
 
 import java.security.Principal;
@@ -37,7 +41,7 @@ public class BidController {
      * Freelancer gửi báo giá
      */
     @PostMapping
-    public ApiResponse<Bid> createBid(@RequestBody BidRequest request, Principal principal) {
+    public ApiResponse<Bid> createBid(@Valid @RequestBody BidRequest request, Principal principal) {
         Long currentUserId = currentUserProvider.requireCurrentUserId(principal);
         Bid bid = bidService.createBid(
             request.getProjectId(),
@@ -94,7 +98,11 @@ public class BidController {
      * Cập nhật trạng thái bid
      */
     @PutMapping("/{bidId}/status")
-    public ApiResponse<Bid> updateBidStatus(@PathVariable Long bidId, @RequestBody BidRequest request, Principal principal) {
+    public ApiResponse<Bid> updateBidStatus(
+        @PathVariable Long bidId,
+        @Valid @RequestBody BidStatusRequest request,
+        Principal principal
+    ) {
         Long currentUserId = currentUserProvider.requireCurrentUserId(principal);
         Bid bid = bidService.updateBidStatus(bidId, currentUserId, request.getStatus());
         return ApiResponse.success("Cập nhật trạng thái báo giá thành công", bid);
@@ -106,8 +114,8 @@ public class BidController {
     @GetMapping("/{id}")
     public ApiResponse<Bid> getBid(@PathVariable Long id, Principal principal) {
         Long currentUserId = currentUserProvider.requireCurrentUserId(principal);
-        return bidService.getBid(id, currentUserId)
-            .map(bid -> ApiResponse.success("Lấy chi tiết báo giá thành công", bid))
-            .orElseGet(() -> ApiResponse.error("ERR_BID_01", "Không tìm thấy báo giá"));
+        Bid bid = bidService.getBid(id, currentUserId)
+            .orElseThrow(() -> new BusinessException("ERR_BID_01", "Không tìm thấy báo giá", HttpStatus.NOT_FOUND));
+        return ApiResponse.success("Lấy chi tiết báo giá thành công", bid);
     }
 }

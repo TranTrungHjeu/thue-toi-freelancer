@@ -5,6 +5,8 @@ import { AnimatePresence, motion } from 'motion/react';
 import { NavArrowDown } from 'iconoir-react';
 import AnimatedIcon from '../common/AnimatedIcon';
 
+const MotionDiv = motion.div;
+
 /**
  * Collapsible Navigation Group for Sidebar.
  * Supports multi-level nesting with "Strict Sharpness" style.
@@ -31,17 +33,17 @@ const NavGroup = ({
           {Icon && <AnimatedIcon icon={Icon} animation="scale" />}
           <span>{label}</span>
         </div>
-        <motion.div
+        <MotionDiv
           animate={{ rotate: isOpen ? 180 : 0 }}
           transition={{ duration: 0.2 }}
         >
           <NavArrowDown className="w-4 h-4 text-slate-400" />
-        </motion.div>
+        </MotionDiv>
       </button>
 
       <AnimatePresence>
         {isOpen && (
-          <motion.div
+          <MotionDiv
             initial={{ height: 0, opacity: 0 }}
             animate={{ height: 'auto', opacity: 1 }}
             exit={{ height: 0, opacity: 0 }}
@@ -61,7 +63,7 @@ const NavGroup = ({
                 </a>
               ))}
             </div>
-          </motion.div>
+          </MotionDiv>
         )}
       </AnimatePresence>
     </div>

@@ -11,7 +11,7 @@ import { H2, Text, Caption } from '../components/common/Typography';
 import StatCard from '../components/common/StatCard';
 import Skeleton from '../components/common/Skeleton';
 import Stepper from '../components/common/Stepper';
-import { useToast } from '../components/common/Toast';
+import { useToast } from '../hooks/useToast';
 import { Wallet, StatsUpSquare, User, MultiBubble } from 'iconoir-react';
 
 const apiList = [
@@ -86,7 +86,7 @@ function ApiTest() {
       setResponse(res);
       addToast(`Gửi yêu cầu tới ${selectedApi.name} thành công`, "success");
     } catch (err) {
-      setResponse(err.response?.data || err.message);
+      setResponse(err?.success !== undefined ? err : err.response?.data || err.message);
       addToast("Gửi yêu cầu thất bại", "error");
     } finally { setLoading(false); }
   };

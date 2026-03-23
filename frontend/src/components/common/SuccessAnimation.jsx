@@ -3,6 +3,8 @@
 import React, { useEffect, useState } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 
+const MotionDiv = motion.div;
+
 /**
  * Success Animation using motion/react.
  * Confetti effects for meaningful moments.
@@ -43,7 +45,7 @@ const SuccessAnimation = ({
     <div className={`fixed inset-0 pointer-events-none z-[200] overflow-hidden ${className}`}>
       <AnimatePresence>
         {pieces.map((p) => (
-          <motion.div
+          <MotionDiv
             key={p.id}
             initial={{ y: -50, x: `${p.x}vw`, rotate: 0, opacity: 1 }}
             animate={{ 

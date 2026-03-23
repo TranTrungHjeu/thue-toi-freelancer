@@ -23,7 +23,17 @@ public class NotificationService {
         return getNotificationsByUser(userId);
     }
 
-    public Notification createNotification(Notification notification) {
+    public Notification createNotification(Long userId, String type, String title, String content, String link) {
+        Notification notification = new Notification();
+        notification.setUserId(userId);
+        notification.setType(type);
+        notification.setTitle(title == null ? null : title.trim());
+        notification.setContent(normalizeText(content));
+        notification.setLink(normalizeText(link));
+
+        if (notification.getTitle() == null || notification.getTitle().isEmpty()) {
+            throw new BusinessException("ERR_SYS_02", "Tiêu đề thông báo không được để trống", HttpStatus.BAD_REQUEST);
+        }
         if (notification.getType() == null || notification.getType().trim().isEmpty()) {
             notification.setType("system");
         } else {
@@ -37,14 +47,7 @@ public class NotificationService {
 
     @Transactional
     public Notification createNotificationForUser(Long userId, String type, String title, String content, String link) {
-        Notification notification = new Notification();
-        notification.setUserId(userId);
-        notification.setType(type);
-        notification.setTitle(title);
-        notification.setContent(content);
-        notification.setLink(link);
-        notification.setIsRead(false);
-        return createNotification(notification);
+        return createNotification(userId, type, title, content, link);
     }
 
     public List<Notification> getNotificationsByUser(Long userId) {
@@ -60,5 +63,13 @@ public class NotificationService {
         }
         notification.setIsRead(true);
         return notificationRepository.save(notification);
+    }
+
+    private String normalizeText(String value) {
+        if (value == null) {
+            return null;
+        }
+        String normalized = value.trim();
+        return normalized.isEmpty() ? null : normalized;
     }
 }

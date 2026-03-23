@@ -13,6 +13,8 @@ services:
       - "3307:3306"
     volumes:
       - mysql_data:/var/lib/mysql
+      - ./docs/database/schema.sql:/docker-entrypoint-initdb.d/01-schema.sql:ro
+      - ./docs/database/seed.sql:/docker-entrypoint-initdb.d/02-seed.sql:ro
     healthcheck:
       test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
       interval: 10s
@@ -33,7 +35,7 @@ services:
     environment:
       TZ: Asia/Saigon
       RESEND_API_KEY: ${RESEND_API_KEY}
-      RESEND_FROM: ${RESEND_FROM:-Thue Toi <onboarding@resend.dev>}
+      RESEND_FROM: ${RESEND_FROM:-Thue Toi <noreply@thuetoi.id.vn>}
       APP_AUTH_REFRESH_COOKIE_SECURE: ${APP_AUTH_REFRESH_COOKIE_SECURE:-false}
       APP_AUTH_REFRESH_COOKIE_SAME_SITE: ${APP_AUTH_REFRESH_COOKIE_SAME_SITE:-Lax}
     volumes:

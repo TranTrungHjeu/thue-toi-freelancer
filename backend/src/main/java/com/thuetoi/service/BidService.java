@@ -1,12 +1,10 @@
 package com.thuetoi.service;
 
 import com.thuetoi.entity.Bid;
-import com.thuetoi.entity.Contract;
 import com.thuetoi.entity.Project;
 import com.thuetoi.entity.User;
 import com.thuetoi.exception.BusinessException;
 import com.thuetoi.repository.BidRepository;
-import com.thuetoi.repository.ContractRepository;
 import com.thuetoi.repository.ProjectRepository;
 import com.thuetoi.repository.UserRepository;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -14,16 +12,18 @@ import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Locale;
 import java.util.Optional;
+import java.util.Set;
 
 /**
- * Service Bid: Xử lý logic nghiệp vụ báo giá
+ * Service Bid: Xử lý logic nghiệp vụ báo giá.
  */
 @Service
 public class BidService {
+    private static final Set<String> ALLOWED_BID_STATUSES = Set.of("pending", "accepted", "rejected", "withdrawn");
+
     @Autowired
     private BidRepository bidRepository;
 
@@ -34,13 +34,10 @@ public class BidService {
     private UserRepository userRepository;
 
     @Autowired
-    private ContractRepository contractRepository;
-
-    @Autowired
-    private NotificationService notificationService;
+    private ContractService contractService;
 
     /**
-     * Lấy toàn bộ bid mà user hiện tại được phép xem
+     * Lấy toàn bộ bid mà user hiện tại được phép xem.
      */
     public List<Bid> getAllBids(Long userId) {
         User currentUser = getRequiredUser(userId);
@@ -51,7 +48,7 @@ public class BidService {
     }
 
     /**
-     * Freelancer gửi báo giá cho dự án
+     * Freelancer gửi báo giá cho dự án.
      */
     @Transactional
     public Bid createBid(Long projectId, Long freelancerId, Double price, String message, String estimatedTime, String attachments) {
@@ -80,7 +77,7 @@ public class BidService {
     }
 
     /**
-     * Lấy danh sách bid theo dự án
+     * Lấy danh sách bid theo dự án.
      */
     public List<Bid> getBidsByProject(Long projectId, Long userId) {
         Project project = projectRepository.findById(projectId)
@@ -90,7 +87,7 @@ public class BidService {
     }
 
     /**
-     * Lấy danh sách bid của freelancer
+     * Lấy danh sách bid của freelancer.
      */
     public List<Bid> getBidsByFreelancer(Long freelancerId, Long currentUserId) {
         if (!freelancerId.equals(currentUserId)) {
@@ -101,77 +98,53 @@ public class BidService {
     }
 
     /**
-     * Chọn bid (customer accept)
+     * Chọn bid (customer accept) và tạo hợp đồng theo luồng chuẩn.
      */
     @Transactional
     public Bid acceptBid(Long bidId, Long currentUserId) {
-        Bid bid = getRequiredBid(bidId);
-        Project project = bid.getProject();
-
-        ensureProjectOwner(project, currentUserId);
-        if (!"open".equalsIgnoreCase(project.getStatus())) {
-            throw new BusinessException("ERR_SYS_02", "Project này không còn ở trạng thái mở để chấp nhận bid", HttpStatus.BAD_REQUEST);
-        }
-        if (contractRepository.findByProjectId(project.getId()).isPresent()) {
-            throw new BusinessException("ERR_CONTRACT_02", "Project này đã có hợp đồng", HttpStatus.CONFLICT);
-        }
-
-        List<Bid> projectBids = bidRepository.findByProjectId(project.getId());
-        Bid acceptedBid = bid;
-        for (Bid currentBid : projectBids) {
-            if (currentBid.getId().equals(bidId)) {
-                currentBid.setStatus("accepted");
-                acceptedBid = currentBid;
-            } else {
-                currentBid.setStatus("rejected");
-            }
-        }
-        bidRepository.saveAll(projectBids);
-
-        project.setStatus("in_progress");
-        projectRepository.save(project);
-
-        Contract contract = new Contract();
-        contract.setProjectId(project.getId());
-        contract.setFreelancerId(acceptedBid.getFreelancer().getId());
-        contract.setClientId(project.getUser().getId());
-        contract.setTotalAmount(acceptedBid.getPrice());
-        contract.setProgress(0);
-        contract.setStatus("in_progress");
-        contract.setStartDate(LocalDateTime.now());
-        contractRepository.save(contract);
-
-        notificationService.createNotificationForUser(
-            acceptedBid.getFreelancer().getId(),
-            "contract",
-            "Bid của bạn đã được chấp nhận",
-            "Khách hàng đã chấp nhận báo giá cho project \"" + project.getTitle() + "\".",
-            "/workspace/contracts"
-        );
-
-        return acceptedBid;
+        contractService.createContractFromBid(currentUserId, bidId);
+        return getRequiredBid(bidId);
     }
 
     /**
-     * Cập nhật trạng thái bid
+     * Cập nhật trạng thái bid theo đúng quyền sở hữu.
      */
     @Transactional
     public Bid updateBidStatus(Long bidId, Long currentUserId, String status) {
         Bid bid = getRequiredBid(bidId);
         boolean isBidOwner = bid.getFreelancer().getId().equals(currentUserId);
         boolean isProjectOwner = bid.getProject().getUser().getId().equals(currentUserId);
+
         if (!isBidOwner && !isProjectOwner) {
             throw new BusinessException("ERR_AUTH_04", "Bạn không có quyền cập nhật bid này", HttpStatus.FORBIDDEN);
         }
-        if (status == null || status.trim().isEmpty()) {
-            throw new BusinessException("ERR_SYS_02", "Trạng thái bid không được để trống", HttpStatus.BAD_REQUEST);
+
+        String normalizedStatus = normalizeBidStatus(status);
+        if ("accepted".equals(normalizedStatus)) {
+            throw new BusinessException("ERR_SYS_02", "Bid chỉ có thể được chấp nhận qua endpoint accept", HttpStatus.BAD_REQUEST);
         }
-        bid.setStatus(status.trim().toLowerCase(Locale.ROOT));
+        if (!"pending".equalsIgnoreCase(bid.getStatus())) {
+            throw new BusinessException("ERR_SYS_02", "Chỉ bid đang chờ mới được cập nhật trạng thái thủ công", HttpStatus.BAD_REQUEST);
+        }
+
+        if (isBidOwner) {
+            if (!"withdrawn".equals(normalizedStatus)) {
+                throw new BusinessException("ERR_AUTH_04", "Freelancer chỉ có thể rút bid của mình", HttpStatus.FORBIDDEN);
+            }
+            bid.setStatus("withdrawn");
+            return bidRepository.save(bid);
+        }
+
+        if (!"rejected".equals(normalizedStatus)) {
+            throw new BusinessException("ERR_AUTH_04", "Customer chỉ có thể từ chối bid qua endpoint cập nhật trạng thái", HttpStatus.FORBIDDEN);
+        }
+
+        bid.setStatus("rejected");
         return bidRepository.save(bid);
     }
 
     /**
-     * Lấy chi tiết bid
+     * Lấy chi tiết bid.
      */
     public Optional<Bid> getBid(Long id, Long currentUserId) {
         Bid bid = getRequiredBid(id);
@@ -218,5 +191,16 @@ public class BidService {
         }
         String normalized = value.trim();
         return normalized.isEmpty() ? null : normalized;
+    }
+
+    private String normalizeBidStatus(String status) {
+        if (status == null || status.trim().isEmpty()) {
+            throw new BusinessException("ERR_SYS_02", "Trạng thái bid không được để trống", HttpStatus.BAD_REQUEST);
+        }
+        String normalizedStatus = status.trim().toLowerCase(Locale.ROOT);
+        if (!ALLOWED_BID_STATUSES.contains(normalizedStatus)) {
+            throw new BusinessException("ERR_SYS_02", "Trạng thái bid không hợp lệ", HttpStatus.BAD_REQUEST);
+        }
+        return normalizedStatus;
     }
 }

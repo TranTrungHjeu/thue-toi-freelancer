@@ -1,4 +1,7 @@
 .env
 .env.*
+backend/uploads/
+backend/target/
+frontend/dist/
 .cursor
 .cursor.*
