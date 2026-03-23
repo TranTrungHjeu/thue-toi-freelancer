@@ -35,7 +35,7 @@ services:
     environment:
       TZ: Asia/Saigon
       RESEND_API_KEY: ${RESEND_API_KEY}
-      RESEND_FROM: ${RESEND_FROM:-Thue Toi <onboarding@resend.dev>}
+      RESEND_FROM: ${RESEND_FROM:-Thue Toi <noreply@thuetoi.id.vn>}
       APP_AUTH_REFRESH_COOKIE_SECURE: ${APP_AUTH_REFRESH_COOKIE_SECURE:-false}
       APP_AUTH_REFRESH_COOKIE_SAME_SITE: ${APP_AUTH_REFRESH_COOKIE_SAME_SITE:-Lax}
     volumes:
