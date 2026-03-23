@@ -14,17 +14,17 @@ const NotFoundPage = () => {
           404
         </div>
         <H1 className="mt-4 text-4xl">
-          Khong tim thay trang ban can.
+          Không tìm thấy trang bạn cần.
         </H1>
         <Text className="mt-4 text-slate-600">
-          Hay quay ve landing page hoac workspace de tiep tuc dung cac luong nghiep vu da duoc hoan thien.
+          Hãy quay về trang chủ hoặc workspace để tiếp tục dùng các luồng nghiệp vụ đã được hoàn thiện.
         </Text>
         <div className="mt-6 flex justify-center gap-3">
           <Button variant="outline" onClick={() => navigate('/')}>
-            Ve trang chu
+            Về trang chủ
           </Button>
           <Button onClick={() => navigate('/workspace')}>
-            Vao workspace
+            Vào workspace
           </Button>
         </div>
       </Card>

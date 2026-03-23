@@ -61,7 +61,7 @@ const ProjectsPage = () => {
         setMyBids(bidsResponse.data || []);
       }
     } catch (error) {
-      addToast(error?.message || 'Khong the tai trang du an.', 'error');
+      addToast(error?.message || 'Không thể tải trang dự án.', 'error');
     } finally {
       setLoading(false);
     }
@@ -108,11 +108,11 @@ const ProjectsPage = () => {
         budgetMax: Number(projectForm.budgetMax),
         deadline: projectForm.deadline ? new Date(projectForm.deadline).toISOString() : null,
       });
-      addToast('Da tao project moi thanh cong.', 'success');
+      addToast('Đã tạo project mới thành công.', 'success');
       setProjectForm(initialProjectForm);
       await loadPageData();
     } catch (error) {
-      addToast(error?.message || 'Khong the tao project.', 'error');
+      addToast(error?.message || 'Không thể tạo project.', 'error');
     } finally {
       setSubmittingProject(false);
     }
@@ -126,7 +126,7 @@ const ProjectsPage = () => {
       const response = await marketplaceApi.getBidsByProject(project.id);
       setSelectedProjectBids(response.data || []);
     } catch (error) {
-      addToast(error?.message || 'Khong the tai danh sach bid.', 'error');
+      addToast(error?.message || 'Không thể tải danh sách bid.', 'error');
     } finally {
       setLoadingProjectBids(false);
     }
@@ -135,19 +135,19 @@ const ProjectsPage = () => {
   const handleAcceptBid = async (bidId) => {
     try {
       await marketplaceApi.acceptBid(bidId);
-      addToast('Da cap nhat trang thai bid thanh cong.', 'success');
+      addToast('Đã cập nhật trạng thái bid thành công.', 'success');
       if (selectedProject) {
         await handleLoadProjectBids(selectedProject);
       }
     } catch (error) {
-      addToast(error?.message || 'Khong the chap nhan bid.', 'error');
+      addToast(error?.message || 'Không thể chấp nhận bid.', 'error');
     }
   };
 
   const handleSubmitBid = async (event) => {
     event.preventDefault();
     if (!selectedProject) {
-      addToast('Hay chon mot project truoc khi gui bid.', 'warning');
+      addToast('Hãy chọn một project trước khi gửi bid.', 'warning');
       return;
     }
 
@@ -161,11 +161,11 @@ const ProjectsPage = () => {
         message: bidForm.message,
         attachments: '',
       });
-      addToast('Da gui bid thanh cong.', 'success');
+      addToast('Đã gửi bid thành công.', 'success');
       setBidForm(initialBidForm);
       await loadPageData();
     } catch (error) {
-      addToast(error?.message || 'Khong the gui bid.', 'error');
+      addToast(error?.message || 'Không thể gửi bid.', 'error');
     } finally {
       setSubmittingBid(false);
     }
@@ -176,27 +176,27 @@ const ProjectsPage = () => {
       <section className="grid gap-5 lg:grid-cols-[1.1fr_0.9fr]">
         <Card className="border-2 border-slate-200 bg-white p-6 md:p-8">
           <Caption className="text-[11px] uppercase tracking-[0.18em] text-primary-700">
-            Projects
+            Dự án
           </Caption>
           <H1 className="mt-3 text-4xl">
-            {isCustomer ? 'Quan ly project va xu ly bid' : 'Duyet project va gui bao gia'}
+            {isCustomer ? 'Quản lý project và xử lý bid' : 'Duyệt project và gửi báo giá'}
           </H1>
           <Text className="mt-4 text-slate-600">
-            Frontend nay dang goi truc tiep cac endpoint `projects` va `bids` hien co cua backend, khong con dung mock gallery flow.
+            Frontend này đang gọi trực tiếp các endpoint <code>projects</code> và <code>bids</code> hiện có của backend, không còn dùng mock gallery flow.
           </Text>
         </Card>
 
         <Card className="border-2 border-secondary-900 bg-secondary-900 p-6 text-white">
           <Caption className="text-[11px] uppercase tracking-[0.18em] text-primary-100">
-            Business note
+            Ghi chú nghiệp vụ
           </Caption>
           <H2 className="mt-3 text-2xl text-white">
-            {isCustomer ? 'Tu post job den chon bid' : 'Tu marketplace den proposal'}
+            {isCustomer ? 'Từ đăng job đến chọn bid' : 'Từ marketplace đến proposal'}
           </H2>
           <Text className="mt-4 text-sm text-slate-300">
             {isCustomer
-              ? 'Customer co the dang project, xem bid theo tung project, va chap nhan bid da phu hop.'
-              : 'Freelancer co the loc project dang mo, mo proposal composer, va quan ly lich su bid da gui.'}
+              ? 'Khách hàng có thể đăng project, xem bid theo từng project, và chấp nhận bid đã phù hợp.'
+              : 'Freelancer có thể lọc project đang mở, mở proposal composer, và quản lý lịch sử bid đã gửi.'}
           </Text>
         </Card>
       </section>
@@ -206,7 +206,7 @@ const ProjectsPage = () => {
           <section className="grid gap-4 md:grid-cols-3">
             <Card className="border-2 border-slate-200 bg-white p-5">
               <Caption className="text-[11px] uppercase tracking-[0.18em] text-slate-500">
-                Tong so project
+                Tổng số project
               </Caption>
               <div className="mt-4 text-4xl font-black text-secondary-900">
                 {loading ? '...' : customerProjectSummary.total}
@@ -214,7 +214,7 @@ const ProjectsPage = () => {
             </Card>
             <Card className="border-2 border-slate-200 bg-white p-5">
               <Caption className="text-[11px] uppercase tracking-[0.18em] text-slate-500">
-                Project dang mo
+                Project đang mở
               </Caption>
               <div className="mt-4 text-4xl font-black text-secondary-900">
                 {loading ? '...' : customerProjectSummary.open}
@@ -222,10 +222,10 @@ const ProjectsPage = () => {
             </Card>
             <Card className="border-2 border-slate-200 bg-white p-5">
               <Caption className="text-[11px] uppercase tracking-[0.18em] text-slate-500">
-                Luong duoc bam sat
+                Luồng được bám sát
               </Caption>
               <Text className="mt-4 text-sm text-slate-600">
-                Dang project, nhan bid, chap nhan bid, roi chuyen sang buoc hop dong.
+                Đăng project, nhận bid, chấp nhận bid, rồi chuyển sang bước hợp đồng.
               </Text>
             </Card>
           </section>
@@ -233,31 +233,31 @@ const ProjectsPage = () => {
           <section className="grid gap-6 lg:grid-cols-[0.95fr_1.05fr]">
             <Card className="border-2 border-slate-200 bg-white p-6">
               <Caption className="text-[11px] uppercase tracking-[0.18em] text-primary-700">
-                Create project
+                Tạo project
               </Caption>
               <H2 className="mt-2 text-2xl">
-                Dang project moi
+                Đăng project mới
               </H2>
               <form className="mt-5 flex flex-col gap-4" onSubmit={handleCreateProject}>
-                <Input label="Tieu de" placeholder="VD: Xay dung landing page gioi thieu san pham" value={projectForm.title} onChange={handleProjectFieldChange('title')} />
-                <Textarea label="Mo ta project" placeholder="Neu ro bai toan, deliverable, moc thoi gian va ky nang mong muon." value={projectForm.description} onChange={handleProjectFieldChange('description')} />
+                <Input label="Tiêu đề" placeholder="VD: Xây dựng landing page giới thiệu sản phẩm" value={projectForm.title} onChange={handleProjectFieldChange('title')} />
+                <Textarea label="Mô tả project" placeholder="Nêu rõ bài toán, deliverable, mốc thời gian và kỹ năng mong muốn." value={projectForm.description} onChange={handleProjectFieldChange('description')} />
                 <div className="grid gap-4 md:grid-cols-2">
-                  <Input label="Ngan sach tu" type="number" min="0" value={projectForm.budgetMin} onChange={handleProjectFieldChange('budgetMin')} />
-                  <Input label="Den" type="number" min="0" value={projectForm.budgetMax} onChange={handleProjectFieldChange('budgetMax')} />
+                  <Input label="Ngân sách từ" type="number" min="0" value={projectForm.budgetMin} onChange={handleProjectFieldChange('budgetMin')} />
+                  <Input label="Đến" type="number" min="0" value={projectForm.budgetMax} onChange={handleProjectFieldChange('budgetMax')} />
                 </div>
                 <Input label="Deadline" type="date" value={projectForm.deadline} onChange={handleProjectFieldChange('deadline')} />
                 <Button type="submit" disabled={submittingProject}>
-                  {submittingProject ? 'Dang tao project...' : 'Dang project'}
+                  {submittingProject ? 'Đang tạo project...' : 'Đăng project'}
                 </Button>
               </form>
             </Card>
 
             <Card className="border-2 border-slate-200 bg-white p-6">
               <Caption className="text-[11px] uppercase tracking-[0.18em] text-primary-700">
-                Project list
+                Danh sách project
               </Caption>
               <H2 className="mt-2 text-2xl">
-                Project cua ban
+                Project của bạn
               </H2>
               <div className="mt-5 flex flex-col gap-3">
                 {projects.map((project) => {
@@ -268,7 +268,7 @@ const ProjectsPage = () => {
                         <div>
                           <div className="text-sm font-bold text-secondary-900">{project.title}</div>
                           <Caption className="text-xs text-slate-500">
-                            Deadline: {formatDate(project.deadline)}
+                            Hạn: {formatDate(project.deadline)}
                           </Caption>
                         </div>
                         <Badge color={statusMeta.color}>
@@ -276,10 +276,10 @@ const ProjectsPage = () => {
                         </Badge>
                       </div>
                       <Text className="mt-3 text-sm text-slate-600">
-                        {project.description || 'Chua co mo ta chi tiet cho project nay.'}
+                        {project.description || 'Chưa có mô tả chi tiết cho project này.'}
                       </Text>
                       <div className="mt-3 text-sm font-semibold text-slate-700">
-                        Ngan sach: {buildBudgetRange(project)}
+                        Ngân sách: {buildBudgetRange(project)}
                       </div>
                       <div className="mt-4 flex flex-wrap gap-3">
                         <Button variant="outline" onClick={() => handleLoadProjectBids(project)}>
@@ -291,8 +291,8 @@ const ProjectsPage = () => {
                 })}
 
                 {!loading && projects.length === 0 && (
-                  <Callout type="info" title="Chua co project">
-                    Ban chua dang project nao. Hay bat dau tu form ben trai.
+                  <Callout type="info" title="Chưa có project">
+                    Bạn chưa đăng project nào. Hãy bắt đầu từ form bên trái.
                   </Callout>
                 )}
               </div>
@@ -302,15 +302,15 @@ const ProjectsPage = () => {
           {selectedProject && (
             <Card className="border-2 border-slate-200 bg-white p-6">
               <Caption className="text-[11px] uppercase tracking-[0.18em] text-primary-700">
-                Project bids
+                Báo giá cho project
               </Caption>
               <H2 className="mt-2 text-2xl">
-                Bao gia cho: {selectedProject.title}
+                Báo giá cho: {selectedProject.title}
               </H2>
               <div className="mt-5 flex flex-col gap-3">
                 {loadingProjectBids && (
                   <Text className="text-sm text-slate-500">
-                    Dang tai danh sach bid...
+                    Đang tải danh sách bid...
                   </Text>
                 )}
 
@@ -324,7 +324,7 @@ const ProjectsPage = () => {
                             {bid.freelancer?.fullName || `Freelancer #${bid.freelancer?.id || bid.id}`}
                           </div>
                           <Caption className="text-xs text-slate-500">
-                            De xuat luc: {formatDateTime(bid.createdAt)}
+                            Đề xuất lúc: {formatDateTime(bid.createdAt)}
                           </Caption>
                         </div>
                         <Badge color={statusMeta.color}>
@@ -332,18 +332,18 @@ const ProjectsPage = () => {
                         </Badge>
                       </div>
                       <div className="mt-3 text-sm font-semibold text-slate-700">
-                        Gia de xuat: {formatCurrency(bid.price)}
+                        Giá đề xuất: {formatCurrency(bid.price)}
                       </div>
                       <Text className="mt-2 text-sm text-slate-600">
-                        {bid.message || 'Freelancer chua dien message cho proposal nay.'}
+                        {bid.message || 'Freelancer chưa điền message cho proposal này.'}
                       </Text>
                       <Text className="mt-2 text-sm text-slate-500">
-                        Thoi gian du kien: {bid.estimatedTime || 'Dang cap nhat'}
+                        Thời gian dự kiến: {bid.estimatedTime || 'Đang cập nhật'}
                       </Text>
                       {bid.status !== 'accepted' && (
                         <div className="mt-4">
                           <Button onClick={() => handleAcceptBid(bid.id)}>
-                            Chap nhan bid
+                            Chấp nhận bid
                           </Button>
                         </div>
                       )}
@@ -352,8 +352,8 @@ const ProjectsPage = () => {
                 })}
 
                 {!loadingProjectBids && selectedProjectBids.length === 0 && (
-                  <Callout type="info" title="Chua co bid">
-                    Project nay chua nhan duoc proposal nao tu freelancer.
+                  <Callout type="info" title="Chưa có bid">
+                    Project này chưa nhận được proposal nào từ freelancer.
                   </Callout>
                 )}
               </div>
@@ -364,10 +364,10 @@ const ProjectsPage = () => {
         <section className="grid gap-6 lg:grid-cols-[1.05fr_0.95fr]">
           <Card className="border-2 border-slate-200 bg-white p-6">
             <Caption className="text-[11px] uppercase tracking-[0.18em] text-primary-700">
-              Marketplace projects
+              Dự án marketplace
             </Caption>
             <H2 className="mt-2 text-2xl">
-              Project dang mo
+              Project đang mở
             </H2>
             <div className="mt-5 flex flex-col gap-3">
               {projects.map((project) => {
@@ -378,7 +378,7 @@ const ProjectsPage = () => {
                       <div>
                         <div className="text-sm font-bold text-secondary-900">{project.title}</div>
                         <Caption className="text-xs text-slate-500">
-                          Chu project: {project.user?.fullName || `Customer #${project.user?.id || '---'}`}
+                          Chủ project: {project.user?.fullName || `Khách hàng #${project.user?.id || '---'}`}
                         </Caption>
                       </div>
                       <Badge color={statusMeta.color}>
@@ -386,17 +386,17 @@ const ProjectsPage = () => {
                       </Badge>
                     </div>
                     <Text className="mt-3 text-sm text-slate-600">
-                      {project.description || 'Khach hang chua dien mo ta cho project nay.'}
+                      {project.description || 'Khách hàng chưa điền mô tả cho project này.'}
                     </Text>
                     <div className="mt-3 text-sm font-semibold text-slate-700">
-                      Ngan sach: {buildBudgetRange(project)}
+                      Ngân sách: {buildBudgetRange(project)}
                     </div>
                     <div className="mt-2 text-sm text-slate-500">
-                      Deadline: {formatDate(project.deadline)}
+                      Hạn: {formatDate(project.deadline)}
                     </div>
                     <div className="mt-4">
                       <Button variant="outline" onClick={() => setSelectedProject(project)}>
-                        Chon project nay
+                        Chọn project này
                       </Button>
                     </div>
                   </div>
@@ -404,8 +404,8 @@ const ProjectsPage = () => {
               })}
 
               {!loading && projects.length === 0 && (
-                <Callout type="info" title="Chua co project">
-                  Hien tai chua co project dang mo de gui proposal.
+                <Callout type="info" title="Chưa có project">
+                  Hiện tại chưa có project đang mở để gửi proposal.
                 </Callout>
               )}
             </div>
@@ -414,22 +414,22 @@ const ProjectsPage = () => {
           <div className="flex flex-col gap-6">
             <Card className="border-2 border-slate-200 bg-white p-6">
               <Caption className="text-[11px] uppercase tracking-[0.18em] text-primary-700">
-                Proposal composer
+                Soạn đề xuất
               </Caption>
               <H2 className="mt-2 text-2xl">
-                {selectedProject ? `Gui bid cho: ${selectedProject.title}` : 'Chon mot project de gui bid'}
+                {selectedProject ? `Gửi bid cho: ${selectedProject.title}` : 'Chọn một project để gửi bid'}
               </H2>
               {!selectedProject ? (
-                <Callout type="info" title="Hay chon project">
-                  Chon mot card project o cot ben trai, sau do dien gia, thoi gian va thong diep de gui proposal.
+                <Callout type="info" title="Hãy chọn project">
+                  Chọn một card project ở cột bên trái, sau đó điền giá, thời gian và thông điệp để gửi proposal.
                 </Callout>
               ) : (
                 <form className="mt-5 flex flex-col gap-4" onSubmit={handleSubmitBid}>
-                  <Input label="Gia de xuat" type="number" min="0" value={bidForm.price} onChange={handleBidFieldChange('price')} />
-                  <Input label="Thoi gian du kien" placeholder="VD: 7 ngay lam viec" value={bidForm.estimatedTime} onChange={handleBidFieldChange('estimatedTime')} />
-                  <Textarea label="Thong diep de xuat" placeholder="Tom tat cach ban se tiep can project nay." value={bidForm.message} onChange={handleBidFieldChange('message')} />
+                  <Input label="Giá đề xuất" type="number" min="0" value={bidForm.price} onChange={handleBidFieldChange('price')} />
+                  <Input label="Thời gian dự kiến" placeholder="VD: 7 ngày làm việc" value={bidForm.estimatedTime} onChange={handleBidFieldChange('estimatedTime')} />
+                  <Textarea label="Thông điệp đề xuất" placeholder="Tóm tắt cách bạn sẽ tiếp cận project này." value={bidForm.message} onChange={handleBidFieldChange('message')} />
                   <Button type="submit" disabled={submittingBid}>
-                    {submittingBid ? 'Dang gui bid...' : 'Gui bid'}
+                    {submittingBid ? 'Đang gửi bid...' : 'Gửi bid'}
                   </Button>
                 </form>
               )}
@@ -437,10 +437,10 @@ const ProjectsPage = () => {
 
             <Card className="border-2 border-slate-200 bg-white p-6">
               <Caption className="text-[11px] uppercase tracking-[0.18em] text-primary-700">
-                My bids
+                Báo giá của tôi
               </Caption>
               <H2 className="mt-2 text-2xl">
-                Bao gia da gui
+                Báo giá đã gửi
               </H2>
               <div className="mt-5 flex flex-col gap-3">
                 {myBids.map((bid) => {
@@ -453,7 +453,7 @@ const ProjectsPage = () => {
                             {bid.project?.title || `Project #${bid.project?.id || bid.id}`}
                           </div>
                           <Caption className="text-xs text-slate-500">
-                            Gia de xuat: {formatCurrency(bid.price)}
+                            Giá đề xuất: {formatCurrency(bid.price)}
                           </Caption>
                         </div>
                         <Badge color={statusMeta.color}>
@@ -461,15 +461,15 @@ const ProjectsPage = () => {
                         </Badge>
                       </div>
                       <Text className="mt-3 text-sm text-slate-600">
-                        {bid.message || 'Chua co note cho bid nay.'}
+                        {bid.message || 'Chưa có note cho bid này.'}
                       </Text>
                     </div>
                   );
                 })}
 
                 {!loading && myBids.length === 0 && (
-                  <Callout type="info" title="Chua gui bid">
-                    Chon mot project dang mo va gui proposal de bat dau.
+                  <Callout type="info" title="Chưa gửi bid">
+                    Chọn một project đang mở và gửi proposal để bắt đầu.
                   </Callout>
                 )}
               </div>

@@ -28,11 +28,11 @@ const VerifyEmailPage = () => {
 
     try {
       await authApi.verifyEmailOtp({ email, otp });
-      addToast('Xac thuc email thanh cong. Ban co the dang nhap ngay.', 'success');
+      addToast('Xác thực email thành công. Bạn có thể đăng nhập ngay.', 'success');
       navigate(`/auth/login?email=${encodeURIComponent(email)}`);
     } catch (error) {
-      setFormError(error?.message || 'Khong the xac thuc OTP.');
-      addToast(error?.message || 'Xac thuc that bai', 'error');
+      setFormError(error?.message || 'Không thể xác thực OTP.');
+      addToast(error?.message || 'Xác thực thất bại', 'error');
     } finally {
       setLoading(false);
     }
@@ -44,10 +44,10 @@ const VerifyEmailPage = () => {
 
     try {
       await authApi.resendVerificationOtp(email);
-      addToast('Da gui lai OTP xac thuc email.', 'success');
+      addToast('Đã gửi lại OTP xác thực email.', 'success');
     } catch (error) {
-      setFormError(error?.message || 'Khong the gui lai OTP.');
-      addToast(error?.message || 'Gui lai OTP that bai', 'error');
+      setFormError(error?.message || 'Không thể gửi lại OTP.');
+      addToast(error?.message || 'Gửi lại OTP thất bại', 'error');
     } finally {
       setResending(false);
     }
@@ -55,19 +55,19 @@ const VerifyEmailPage = () => {
 
   return (
     <AuthShell
-      eyebrow="Verify OTP"
-      title="Xac thuc email de mo khoa dang nhap va workspace."
-      description="Backend chi cho phep login khi tai khoan da verified. Buoc nay dam bao frontend theo dung workflow nghiep vu vua duoc chot."
+      eyebrow="Xác thực OTP"
+      title="Xác thực email để mở khoá đăng nhập và workspace."
+      description="Backend chỉ cho phép login khi tài khoản đã verified. Bước này đảm bảo frontend theo đúng workflow nghiệp vụ vừa được chốt."
       tips={[
         {
           eyebrow: 'Cooldown',
-          title: 'Resend co gioi han',
-          description: 'Neu backend tra ve ERR_AUTH_10, frontend se giu thong bao va de ban cho het cooldown truoc khi gui lai.',
+          title: 'Resend có giới hạn',
+          description: 'Nếu backend trả về ERR_AUTH_10, frontend sẽ giữ thông báo và để bạn chờ hết cooldown trước khi gửi lại.',
         },
         {
-          eyebrow: 'Mailbox flow',
-          title: 'OTP di qua email that',
-          description: 'Frontend khong doc OTP tu endpoint debug. Nguoi dung xac thuc bang ma nhan trong hop thu da dang ky.',
+          eyebrow: 'Luồng hộp thư',
+          title: 'OTP đi qua email thật',
+          description: 'Frontend không đọc OTP từ endpoint debug. Người dùng xác thực bằng mã nhận trong hộp thư đã đăng ký.',
         },
       ]}
     >
@@ -75,18 +75,18 @@ const VerifyEmailPage = () => {
         <form className="flex flex-col gap-4" onSubmit={handleVerify}>
           <div className="flex flex-col gap-1">
             <span className="text-[11px] font-bold uppercase tracking-[0.18em] text-primary-700">
-              Verify email
+              Xác thực email
             </span>
             <h2 className="text-2xl font-serif font-semibold text-secondary-900">
-              Kich hoat tai khoan
+              Kích hoạt tài khoản
             </h2>
             <Caption className="text-sm text-slate-500">
-              OTP chi co hieu luc trong thoi gian ngan, vi vay ban nen xac thuc ngay sau khi dang ky.
+              OTP chỉ có hiệu lực trong thời gian ngắn, vì vậy bạn nên xác thực ngay sau khi đăng ký.
             </Caption>
           </div>
 
           {formError && (
-            <Callout type="danger" title="Khong the xac thuc">
+            <Callout type="danger" title="Không thể xác thực">
               {formError}
             </Callout>
           )}
@@ -101,8 +101,8 @@ const VerifyEmailPage = () => {
           />
 
           <Input
-            label="Ma OTP"
-            placeholder="Nhap 6 chu so"
+            label="Mã OTP"
+            placeholder="Nhập 6 chữ số"
             value={otp}
             onChange={(event) => setOtp(event.target.value)}
             inputMode="numeric"
@@ -110,19 +110,19 @@ const VerifyEmailPage = () => {
 
           <div className="grid gap-3 md:grid-cols-2">
             <Button type="submit" disabled={loading}>
-              {loading ? 'Dang xac thuc...' : 'Xac thuc tai khoan'}
+              {loading ? 'Đang xác thực...' : 'Xác thực tài khoản'}
             </Button>
             <Button type="button" variant="outline" onClick={handleResend} disabled={resending}>
-              {resending ? 'Dang gui lai...' : 'Gui lai OTP'}
+              {resending ? 'Đang gửi lại...' : 'Gửi lại OTP'}
             </Button>
           </div>
 
           <div className="flex items-center justify-between gap-3 border-t border-slate-100 pt-4 text-sm">
             <Link to="/auth/register" className="font-semibold text-slate-600 hover:text-secondary-900">
-              Quay lai dang ky
+              Quay lại đăng ký
             </Link>
             <Link to={`/auth/login?email=${encodeURIComponent(email)}`} className="font-semibold text-primary-700 hover:text-primary-800">
-              Da verified? Dang nhap
+              Đã verified? Đăng nhập
             </Link>
           </div>
         </form>

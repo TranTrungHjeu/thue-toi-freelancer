@@ -15,7 +15,7 @@ import { useToast } from '../components/common/Toast';
 import { Wallet, StatsUpSquare, User, MultiBubble } from 'iconoir-react';
 
 const apiList = [
-  { name: "Health Check", method: "GET", url: "/v1/health", description: "Kiểm tra trạng thái hệ thống", params: [] },
+  { name: "Kiểm tra hệ thống", method: "GET", url: "/v1/health", description: "Kiểm tra trạng thái hệ thống", params: [] },
   { name: "Đăng nhập", method: "POST", url: "/v1/auth/login", description: "Đăng nhập hệ thống", params: ["email", "password"] },
   { name: "Danh sách dự án", method: "GET", url: "/v1/projects", description: "Lấy danh sách dự án", params: [] },
 ];
@@ -93,14 +93,13 @@ function ApiTest() {
 
   return (
     <MainLayout user={currentUser}>
-      {/* Top Section */}
       <div className="flex justify-between items-center mb-4">
         <div className="flex flex-col gap-1">
-          <H2 className="!mb-0 text-3xl">API Laboratory</H2>
+          <H2 className="!mb-0 text-3xl">Phòng thí nghiệm API</H2>
           <Text className="text-sm">Môi trường thử nghiệm dịch vụ Thuê Tôi</Text>
         </div>
         <div className="flex gap-3">
-          <Button variant="outline" onClick={() => setIsModalOpen(true)}>Xem Guide</Button>
+          <Button variant="outline" onClick={() => setIsModalOpen(true)}>Xem hướng dẫn</Button>
           <Button onClick={() => window.location.reload()}>Làm mới</Button>
         </div>
       </div>
@@ -140,34 +139,33 @@ function ApiTest() {
       )}
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 items-start">
-        {/* Left Column - Auth & Config */}
         <div className="lg:col-span-1 flex flex-col gap-8">
           <Card className="bg-slate-900 text-white border-none shadow-xl relative overflow-hidden">
             <div className="absolute top-0 right-0 p-4 opacity-10">
               <H2 className="text-6xl !text-white select-none">AUTH</H2>
             </div>
-            <H2 className="text-lg mb-6 uppercase tracking-widest text-primary-500">Authentication</H2>
+            <H2 className="text-lg mb-6 uppercase tracking-widest text-primary-500">Xác thực</H2>
             <form onSubmit={handleLogin} className="flex flex-col gap-5 relative z-10">
               <Input
-                label={<span className="text-slate-300">Email Address</span>}
+                label={<span className="text-slate-300">Địa chỉ Email</span>}
                 value={loginEmail}
                 onChange={e => setLoginEmail(e.target.value)}
                 className="!bg-slate-800 border-slate-700 !text-white"
               />
               <Input
-                label={<span className="text-slate-300">Key Phrase</span>}
+                label={<span className="text-slate-300">Mật khẩu</span>}
                 type="password"
                 value={loginPassword}
                 onChange={e => setLoginPassword(e.target.value)}
                 className="!bg-slate-800 border-slate-700 !text-white"
               />
-              <Button type="submit" className="w-full mt-2">Access Portal</Button>
+              <Button type="submit" className="w-full mt-2">Đăng nhập</Button>
             </form>
             {loginStatus && <Text className="mt-4 text-xs italic text-primary-400">{loginStatus}</Text>}
           </Card>
 
           <Card>
-            <H2 className="text-lg mb-4 uppercase tracking-widest">Select Endpoint</H2>
+            <H2 className="text-lg mb-4 uppercase tracking-widest">Chọn Endpoint</H2>
             <select
               className="w-full p-2.5 border border-slate-300 bg-white font-sans outline-none focus:border-primary-500 transition-colors"
               value={selectedApi.name}
@@ -178,22 +176,21 @@ function ApiTest() {
           </Card>
         </div>
 
-        {/* Right Column - Execution & Results */}
         <div className="lg:col-span-2 flex flex-col gap-8">
           <Card>
             <div className="flex justify-between items-center mb-6">
-              <H2 className="text-lg !mb-0 uppercase tracking-widest">Request Payload</H2>
+              <H2 className="text-lg !mb-0 uppercase tracking-widest">Tham số yêu cầu</H2>
               <Badge color="info">{selectedApi.method}</Badge>
             </div>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-6">
               {selectedApi.params.map(p => (
-                <Input key={p} label={p} placeholder={`Value for ${p}`} onChange={e => setParams(prev => ({ ...prev, [p]: e.target.value }))} />
+                <Input key={p} label={p} placeholder={`Giá trị cho ${p}`} onChange={e => setParams(prev => ({ ...prev, [p]: e.target.value }))} />
               ))}
             </div>
 
             <Button className="w-full py-4 text-lg tracking-widest" onClick={handleSend} disabled={loading}>
-              Execute {selectedApi.url}
+              Thực thi {selectedApi.url}
             </Button>
           </Card>
 
@@ -205,7 +202,7 @@ function ApiTest() {
                   <div className="w-3 h-3 bg-amber-500 rounded-none" />
                   <div className="w-3 h-3 bg-green-500 rounded-none" />
                 </div>
-                <Caption className="text-slate-400 font-mono text-[10px]">Response Inspector v1.0</Caption>
+                <Caption className="text-slate-400 font-mono text-[10px]">Trình kiểm tra phản hồi v1.0</Caption>
               </div>
               <pre className="p-6 text-slate-400 font-mono text-sm overflow-x-auto">
                 {JSON.stringify(response, null, 2)}
@@ -218,11 +215,11 @@ function ApiTest() {
       <Modal
         isOpen={isModalOpen}
         onClose={() => setIsModalOpen(false)}
-        title="Developer Guide"
+        title="Hướng dẫn nhà phát triển"
       >
         <div className="flex flex-col gap-6">
           <div>
-            <Caption className="mb-2 block uppercase tracking-widest text-primary-600">Workflow Progress</Caption>
+            <Caption className="mb-2 block uppercase tracking-widest text-primary-600">Tiến trình workflow</Caption>
             <Stepper 
               steps={["Yêu cầu", "Báo giá", "Triển khai", "Hoàn tất"]} 
               currentStep={1} 
@@ -233,10 +230,10 @@ function ApiTest() {
           <div className="pt-4 border-t border-slate-100">
             <Text>Ví dụ về <strong>Table</strong> đồng bộ với thiết kế Sharpness:</Text>
             <Table
-              headers={["Project", "Client", "Budget"]}
+              headers={["Dự án", "Khách hàng", "Ngân sách"]}
               data={[
-                { name: "Thiết kế Landing Page", client: "Mr. Anh", budget: "$500" },
-                { name: "Backend API Spring", client: "Ms. Linh", budget: "$1.200" },
+                { name: "Thiết kế Landing Page", client: "Anh Minh", budget: "$500" },
+                { name: "Backend API Spring", client: "Chị Linh", budget: "$1.200" },
               ]}
             />
           </div>

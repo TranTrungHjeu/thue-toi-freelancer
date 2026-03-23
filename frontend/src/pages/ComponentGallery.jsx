@@ -85,7 +85,6 @@ const ComponentGallery = () => {
     );
   };
   
-  // ... rest of demo user ...
   const demoUser = {
     name: "Trần Trung Hiếu",
     email: "hieu.tran@example.com",
@@ -109,10 +108,10 @@ const ComponentGallery = () => {
         {/* Header */}
         <section>
           <div className="flex items-center justify-between mb-2">
-            <H1 className="text-5xl !mb-0">UI Component Gallery</H1>
+            <H1 className="text-5xl !mb-0">Thư viện thành phần UI</H1>
             <Button variant="outline" onClick={() => setIsPaletteOpen(true)} className="flex items-center gap-2">
               <Flash className="w-4 h-4 text-amber-500" />
-              Quick Search (Ctrl+K)
+              Tìm kiếm nhanh (Ctrl+K)
             </Button>
           </div>
           <Text className="text-slate-500">Hệ thống thành phần chuẩn "Strict Sharpness" dành cho doanh nghiệp.</Text>
@@ -121,7 +120,7 @@ const ComponentGallery = () => {
         {/* 01. Advanced Input & Data Presentation */}
         <section>
           <div className="border-b border-slate-200 mb-8 pb-2">
-            <H2 className="text-xl uppercase tracking-widest text-primary-600">01. Advanced Input & Data</H2>
+            <H2 className="text-xl uppercase tracking-widest text-primary-600">01. Nhập liệu & Hiển thị dữ liệu nâng cao</H2>
           </div>
           
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-12">
@@ -163,12 +162,12 @@ const ComponentGallery = () => {
         {/* 02. Enterprise Polish */}
         <section>
           <div className="border-b border-slate-200 mb-8 pb-2">
-            <H2 className="text-xl uppercase tracking-widest text-primary-600">02. Enterprise Polish</H2>
+            <H2 className="text-xl uppercase tracking-widest text-primary-600">02. Chuẩn doanh nghiệp</H2>
           </div>
           
           <div className="flex flex-col gap-10">
             <div className="flex flex-col gap-4">
-              <Caption className="font-bold">Project Kanban Board</Caption>
+              <Caption className="font-bold">Bảng Kanban dự án</Caption>
               <KanbanBoard 
                 columns={[
                   { 
@@ -196,7 +195,7 @@ const ComponentGallery = () => {
 
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
               <div className="flex flex-col gap-6">
-                <Caption className="font-bold">Enterprise Callouts</Caption>
+                <Caption className="font-bold">Callout doanh nghiệp</Caption>
                 <div className="flex flex-col gap-4">
                   <Callout type="warning" title="Cập nhật hệ thống">
                     Hệ thống sẽ bảo trì vào lúc 02:00 sáng ngày mai. Vui lòng lưu lại công việc của bạn.
@@ -208,10 +207,10 @@ const ComponentGallery = () => {
               </div>
               
               <div className="flex flex-col gap-6">
-                <Caption className="font-bold">Data Visualization & Teams</Caption>
+                <Caption className="font-bold">Trực quan hoá dữ liệu & Nhóm</Caption>
                 <ActivityCharts />
                 <div className="flex items-center gap-4 mt-2">
-                  <Caption className="font-bold">Active Team:</Caption>
+                  <Caption className="font-bold">Nhóm đang hoạt động:</Caption>
                   <AvatarGroup users={[
                     { name: 'User 1', avatar: 'https://i.pravatar.cc/150?u=1' },
                     { name: 'User 2', avatar: 'https://i.pravatar.cc/150?u=2' },
@@ -228,12 +227,12 @@ const ComponentGallery = () => {
         {/* 03. Dashboard Dynamics */}
         <section>
           <div className="border-b border-slate-200 mb-8 pb-2">
-            <H2 className="text-xl uppercase tracking-widest text-primary-600">03. Dashboard Dynamics</H2>
+            <H2 className="text-xl uppercase tracking-widest text-primary-600">03. Động lực Dashboard</H2>
           </div>
           
           <div className="flex flex-col gap-10">
             <div>
-              <Caption className="mb-4 block">Breadcrumbs</Caption>
+              <Caption className="mb-4 block">Đường dẫn điều hướng</Caption>
               <Breadcrumbs items={[
                 { label: 'Dự án', path: '#projects' },
                 { label: 'Chi tiết dự án', path: '#' },
@@ -242,7 +241,7 @@ const ComponentGallery = () => {
 
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-12">
               <div className="flex flex-col gap-6">
-                <Caption className="font-bold">Activity Timeline</Caption>
+                <Caption className="font-bold">Dòng thời gian hoạt động</Caption>
                 <ActivityTimeline activities={[
                   { title: "Báo giá được gửi", time: "10:30 AM", status: "success", description: "Bạn đã gửi báo giá cho dự án Food Delivery App." },
                   { title: "Phỏng vấn mời", time: "Hôm qua", status: "info", description: "Client Phúc Long mời bạn tham gia phỏng vấn trực tuyến." },
@@ -257,7 +256,7 @@ const ComponentGallery = () => {
                 </div>
                 
                 <div>
-                  <Caption className="mb-4 block">Interactive Tooltips (Hover Me)</Caption>
+                  <Caption className="mb-4 block">Tooltip tương tác (Di chuột vào)</Caption>
                   <div className="flex gap-4">
                     <Tooltip text="Thông tin chi tiết tài khoản">
                       <div className="p-2 border border-slate-200 bg-white">
@@ -273,7 +272,7 @@ const ComponentGallery = () => {
             </div>
 
             <div>
-              <Caption className="mb-4 block">Advanced Table (Sorting & Pagination)</Caption>
+              <Caption className="mb-4 block">Bảng nâng cao (Sắp xếp & Phân trang)</Caption>
               <AdvancedTable 
                 headers={[
                   { key: 'id', label: 'ID', sortable: true },
@@ -298,18 +297,18 @@ const ComponentGallery = () => {
         {/* 04. Interaction & Communication */}
         <section>
           <div className="border-b border-slate-200 mb-8 pb-2">
-            <H2 className="text-xl uppercase tracking-widest text-primary-600">04. Interaction & Communication</H2>
+            <H2 className="text-xl uppercase tracking-widest text-primary-600">04. Tương tác & Giao tiếp</H2>
           </div>
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-12">
             <div className="flex flex-col gap-8">
-              <Caption className="font-bold">Search & Filtering</Caption>
+              <Caption className="font-bold">Tìm kiếm & Lọc</Caption>
               <SearchInput 
                 value={searchValue} 
                 onChange={(e) => setSearchValue(e.target.value)} 
                 placeholder="Thử tìm kiếm freelancer..."
               />
               
-              <Caption className="font-bold">Chat System</Caption>
+              <Caption className="font-bold">Hệ thống Chat</Caption>
               <div className="bg-slate-50 p-6 border border-slate-200 flex flex-col gap-4">
                 <ChatBubble 
                   message="Chào bạn, mình đã xem qua yêu cầu thiết kế của bạn. Rất mong được hợp tác!" 
@@ -336,11 +335,11 @@ const ComponentGallery = () => {
         {/* 05. Advanced Content */}
         <section>
           <div className="border-b border-slate-200 mb-8 pb-2">
-            <H2 className="text-xl uppercase tracking-widest text-primary-600">05. Advanced Content</H2>
+            <H2 className="text-xl uppercase tracking-widest text-primary-600">05. Nội dung nâng cao</H2>
           </div>
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
             <div className="flex flex-col gap-4">
-              <Caption className="font-bold">Freelancer Profiles</Caption>
+              <Caption className="font-bold">Hồ sơ Freelancer</Caption>
               <FreelancerCard 
                 name="Trần Trung Hiếu"
                 title="Senior UI/UX Designer"
@@ -353,7 +352,7 @@ const ComponentGallery = () => {
               />
             </div>
             <div className="flex flex-col gap-4">
-              <Caption className="font-bold">Project Cards</Caption>
+              <Caption className="font-bold">Thẻ dự án</Caption>
               <ProjectCard 
                 title="Thiết kế UI/UX App Mobile (Food Delivery)"
                 client="Phúc Long Coffee"
@@ -378,7 +377,7 @@ const ComponentGallery = () => {
               />
             </div>
             <div className="lg:col-span-2">
-              <Caption className="mb-4 block">No Result State</Caption>
+              <Caption className="mb-4 block">Trạng thái không có kết quả</Caption>
               <EmptyState 
                 title="Không tìm thấy freelancer nào" 
                 description="Hãy thử bỏ bớt các tiêu chí lọc để thấy nhiều kết quả hơn."
@@ -389,22 +388,21 @@ const ComponentGallery = () => {
           </div>
         </section>
 
-        {/* 03. Business Elements (moved and merged) */}
         {/* 06. Foundations */}
         <section>
           <div className="border-b border-slate-200 mb-8 pb-2">
-            <H2 className="text-xl uppercase tracking-widest text-primary-600">06. Foundations</H2>
+            <H2 className="text-xl uppercase tracking-widest text-primary-600">06. Nền tảng thiết kế</H2>
           </div>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
             <div className="flex flex-col gap-4">
-              <Caption className="font-bold">Typography Hierarchy</Caption>
-              <H1>Heading 1 (Lora)</H1>
-              <H2>Heading 2 (Lora)</H2>
-              <Text>Body Text (Manrope) - Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.</Text>
-              <Caption>Caption Text - Small, subtle details.</Caption>
+              <Caption className="font-bold">Phân cấp kiểu chữ</Caption>
+              <H1>Tiêu đề 1 (Lora)</H1>
+              <H2>Tiêu đề 2 (Lora)</H2>
+              <Text>Nội dung (Manrope) - Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.</Text>
+              <Caption>Chú thích - Chi tiết nhỏ, tinh tế.</Caption>
             </div>
             <div className="flex flex-col gap-4">
-              <Caption className="font-bold">Color Tokens</Caption>
+              <Caption className="font-bold">Bảng màu</Caption>
               <div className="flex gap-4">
                 <div className="w-16 h-16 bg-primary-500 border border-primary-600" title="Primary" />
                 <div className="w-16 h-16 bg-secondary-900 border border-slate-900" title="Secondary" />
@@ -420,26 +418,26 @@ const ComponentGallery = () => {
         {/* 07. Buttons & Form Elements */}
         <section>
           <div className="border-b border-slate-200 mb-8 pb-2">
-            <H2 className="text-xl uppercase tracking-widest text-primary-600">07. Buttons & Form Elements</H2>
+            <H2 className="text-xl uppercase tracking-widest text-primary-600">07. Nút bấm & Biểu mẫu</H2>
           </div>
           <Card className="flex flex-col gap-8">
             <div className="flex flex-wrap gap-4">
-              <Button>Primary Action</Button>
-              <Button variant="outline">Outline Action</Button>
-              <Button variant="ghost">Ghost Action</Button>
-              <Button disabled>Disabled Action</Button>
+              <Button>Hành động chính</Button>
+              <Button variant="outline">Hành động viền</Button>
+              <Button variant="ghost">Hành động mờ</Button>
+              <Button disabled>Đã vô hiệu hoá</Button>
             </div>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <Input label="Standard Input" placeholder="Type something..." />
-              <Input label="Password Input" type="password" placeholder="••••••••" />
-              <Input label="Disabled Input" disabled placeholder="Read only" />
+              <Input label="Ô nhập chuẩn" placeholder="Nhập nội dung..." />
+              <Input label="Ô nhập mật khẩu" type="password" placeholder="••••••••" />
+              <Input label="Ô nhập vô hiệu" disabled placeholder="Chỉ đọc" />
               <div className="flex flex-col gap-2">
-                <Caption className="mb-1">Badges</Caption>
+                <Caption className="mb-1">Badge</Caption>
                 <div className="flex gap-2">
-                  <Badge color="primary">Active</Badge>
-                  <Badge color="secondary">Pending</Badge>
-                  <Badge color="info">Processing</Badge>
-                  <Badge color="error">Rejected</Badge>
+                  <Badge color="primary">Hoạt động</Badge>
+                  <Badge color="secondary">Chờ duyệt</Badge>
+                  <Badge color="info">Đang xử lý</Badge>
+                  <Badge color="error">Từ chối</Badge>
                 </div>
               </div>
             </div>
@@ -449,7 +447,7 @@ const ComponentGallery = () => {
         {/* 08. Advanced Data Display */}
         <section>
           <div className="border-b border-slate-200 mb-8 pb-2">
-            <H2 className="text-xl uppercase tracking-widest text-primary-600">08. Advanced Data Display</H2>
+            <H2 className="text-xl uppercase tracking-widest text-primary-600">08. Hiển thị dữ liệu nâng cao</H2>
           </div>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
             <StatCard label="Dự án đang làm" value="12" icon={Suitcase} trend="up" trendValue="+2" />
@@ -458,7 +456,7 @@ const ComponentGallery = () => {
           </div>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
             <Card>
-              <Caption className="mb-4 block">Avatar Variants (Square Only)</Caption>
+              <Caption className="mb-4 block">Biến thể Avatar (Chỉ vuông)</Caption>
               <div className="flex gap-4 items-end">
                 <Avatar size="sm" src="https://i.pravatar.cc/150?u=1" />
                 <Avatar size="md" src="https://i.pravatar.cc/150?u=2" />
@@ -467,8 +465,8 @@ const ComponentGallery = () => {
               </div>
             </Card>
             <Card>
-              <Caption className="mb-4 block">Stepper Workflow</Caption>
-              <Stepper steps={["Brief", "Design", "Dev", "Launch"]} currentStep={2} />
+              <Caption className="mb-4 block">Quy trình từng bước</Caption>
+              <Stepper steps={["Tóm tắt", "Thiết kế", "Lập trình", "Ra mắt"]} currentStep={2} />
             </Card>
           </div>
         </section>
@@ -476,11 +474,11 @@ const ComponentGallery = () => {
         {/* 09. Feedback & Interactivity */}
         <section>
           <div className="border-b border-slate-200 mb-8 pb-2">
-            <H2 className="text-xl uppercase tracking-widest text-primary-600">09. Feedback & Interactivity</H2>
+            <H2 className="text-xl uppercase tracking-widest text-primary-600">09. Phản hồi & Tương tác</H2>
           </div>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
             <Card>
-              <Caption className="mb-4 block">Loading Indicators</Caption>
+              <Caption className="mb-4 block">Chỉ báo tải</Caption>
               <div className="flex flex-col gap-6">
                 <Spinner />
                 <div className="flex flex-col gap-2">
@@ -494,27 +492,27 @@ const ComponentGallery = () => {
             </Card>
             <Card className="flex flex-col gap-6 justify-center">
               <div className="flex flex-col gap-3">
-                <Button onClick={() => addToast("Thông báo thành công!", "success")}>Trigger Success Toast</Button>
-                <Button variant="outline" onClick={() => addToast("Có lỗi xảy ra", "error")}>Trigger Error Toast</Button>
+                <Button onClick={() => addToast("Thông báo thành công!", "success")}>Kích hoạt Toast thành công</Button>
+                <Button variant="outline" onClick={() => addToast("Có lỗi xảy ra", "error")}>Kích hoạt Toast lỗi</Button>
               </div>
-              <Button variant="ghost" onClick={() => setIsModalOpen(true)}>Open Sharp Modal</Button>
+              <Button variant="ghost" onClick={() => setIsModalOpen(true)}>Mở Modal Sharp</Button>
             </Card>
           </div>
         </section>
       </div>
 
-      <Modal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} title="Sharp Components Modal">
+      <Modal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} title="Modal các thành phần Sharp">
         <Text className="mb-6">Đây là ví dụ về Modal tuân thủ triết lý Strict Sharpness. Mọi chi tiết đều vuông vức và sắc nét.</Text>
         <Table 
-          headers={["ID", "Component", "Status"]}
+          headers={["ID", "Thành phần", "Trạng thái"]}
           data={[
-            { id: "01", name: "Button", status: "Verified" },
-            { id: "02", name: "Input", status: "Verified" },
-            { id: "03", name: "StatCard", status: "In Test" },
+            { id: "01", name: "Button", status: "Đã xác thực" },
+            { id: "02", name: "Input", status: "Đã xác thực" },
+            { id: "03", name: "StatCard", status: "Đang kiểm tra" },
           ]}
         />
         <div className="mt-8 flex justify-end">
-          <Button onClick={() => setIsModalOpen(false)}>Close Modal</Button>
+          <Button onClick={() => setIsModalOpen(false)}>Đóng Modal</Button>
         </div>
       </Modal>
     </MainLayout>
