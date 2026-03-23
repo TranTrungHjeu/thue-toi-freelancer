@@ -120,8 +120,16 @@ Tất cả thành viên cần tuân thủ quy chuẩn để đảm bảo code đ
 ### 2. Quy trình làm việc nhóm (Git Workflow)
 
 - **Tuyệt đối không code trực tiếp trên `main`!**
-- Luôn tạo branch mới từ `develop`:
-  - Tên branch: `<loại_task>/<tên_task>`, ví dụ: `feature/login`, `bugfix/cart-error`, `db/add-order-table`.
+- Luôn tạo branch mới từ `develop`.
+- Nếu repo chưa có `develop` trên remote, cần tạo `develop` từ `main` trước khi team bắt đầu tách nhánh.
+- Tên branch bắt buộc theo cú pháp: `dev/<mang>/<owner>-<loai>/<ten-task>`
+  - `<mang>`: `fe`, `be`, `db`, `fullstack`
+  - `<owner>`: slug tên người thực hiện, ví dụ `hieult`, `hieutt`
+  - `<loai>`: `feature`, `bugfix`, `hotfix`, `docs`, `refactor`
+  - Ví dụ hợp lệ:
+    - `dev/be/hieult-feature/auth-api`
+    - `dev/fe/hieutt-feature/login-page`
+    - `dev/be/hieutt-bugfix/jwt-ownership-contract-flow`
 - Commit message: `[Tên_Module] Mô tả ngắn gọn`, ví dụ: `[Auth] Thêm chức năng đăng nhập`.
 - Khi hoàn thành, tạo Pull Request về `develop` để review.
 

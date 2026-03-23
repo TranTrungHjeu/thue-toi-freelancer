@@ -2,7 +2,9 @@ package com.thuetoi.entity;
 
 import jakarta.persistence.*;
 import lombok.Data;
-import java.util.Date;
+import org.hibernate.annotations.CreationTimestamp;
+
+import java.time.LocalDateTime;
 
 /**
  * Entity Bid: Báo giá/đề xuất của freelancer cho dự án
@@ -10,7 +12,11 @@ import java.util.Date;
 @Entity
 @Table(name = "bids")
 @Data
-public class Bid extends BaseEntity {
+public class Bid {
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long id;
+
     @ManyToOne
     @JoinColumn(name = "project_id", nullable = false)
     private Project project;
@@ -29,5 +35,7 @@ public class Bid extends BaseEntity {
     @Column(nullable = false)
     private String status; // pending, accepted, rejected, withdrawn
 
-    // Getter, Setter, Constructor
+    @CreationTimestamp
+    @Column(name = "created_at", updatable = false)
+    private LocalDateTime createdAt;
 }

@@ -21,17 +21,34 @@ Tuyệt đối **KHÔNG code trực tiếp và push thẳng lên branch `main` h
 1. `main`: Nhánh chứa code ổn định nhất, chỉ dùng để nộp bài/deploy. (Cấm push trực tiếp).
 2. `develop`: Nhánh chứa code mới nhất đang phát triển. Mọi người sẽ tạo branch mới từ nhánh này.
 
+**Quy tắc bắt buộc về tên nhánh làm việc:**
+- Mọi nhánh mới phải theo cú pháp: `dev/<mang>/<owner>-<loai>/<ten-task>`
+- Trong đó:
+  - `<mang>`: `fe`, `be`, `db`, `fullstack`
+  - `<owner>`: slug tên người thực hiện, ví dụ `hieult`, `hieutt`
+  - `<loai>`: `feature`, `bugfix`, `hotfix`, `docs`, `refactor`
+  - `<ten-task>`: tên ngắn gọn bằng kebab-case, mô tả đúng công việc
+- Ví dụ hợp lệ:
+  - `dev/be/hieult-feature/auth-api`
+  - `dev/fe/hieutt-feature/login-page`
+  - `dev/be/hieutt-bugfix/jwt-ownership-contract-flow`
+  - `dev/db/hieutt-feature/create-database`
+- Không tạo nhánh mới theo kiểu cũ như `feature/login`, `bugfix/cart-error`, `ui/rules`, `db/create-database`.
+
 ### Quy Trình Làm Việc Hàng Ngày:
 1. **Đồng bộ code mới nhất:**
    ```bash
    git checkout develop
    git pull origin develop
    ```
+   Nếu repo chưa có `develop` trên remote, nhóm trưởng phải tạo `develop` từ `main` trước rồi cả team mới tách nhánh tiếp.
 2. **Tạo nhánh làm việc riêng mang tên chức năng:**
    ```bash
-   # Cú pháp: <loại_task>/<tên_task>
-   # Ví dụ: feature/login, bugfix/cart-error, db/add-order-table
-   git checkout -b feature/login
+   # Cú pháp: dev/<mang>/<owner>-<loai>/<ten-task>
+   # Ví dụ:
+   git checkout -b dev/be/hieult-feature/auth-api
+   git checkout -b dev/fe/hieutt-feature/login-page
+   git checkout -b dev/be/hieutt-bugfix/jwt-ownership-contract-flow
    ```
 3. **Commit code thường xuyên khi xong 1 khối lượng nhỏ:**
    ```bash
@@ -43,10 +60,10 @@ Tuyệt đối **KHÔNG code trực tiếp và push thẳng lên branch `main` h
    ```
 4. **Đẩy code lên Github:**
    ```bash
-   git push origin feature/login
+   git push origin dev/be/hieult-feature/auth-api
    ```
 5. **Tạo Pull Request (PR):**
-   - Lên Github, tạo Pull Request báo cáo là "Tôi muốn gộp nhánh `feature/login` vào nhánh `develop`".
+   - Lên Github, tạo Pull Request báo cáo là "Tôi muốn gộp nhánh `dev/be/hieult-feature/auth-api` vào nhánh `develop`".
    - Phải có ít nhất 1 thành viên khác (hoặc nhóm trưởng) review code (Đọc lướt qua xem có lỗi ngớ ngẩn không) rồi mới bấm `Merge`.
 
 ---

@@ -1,10 +1,13 @@
 package com.thuetoi.entity;
 
-import jakarta.persistence.*;
-import java.time.LocalDateTime;
+import jakarta.persistence.Column;
+import jakarta.persistence.Entity;
+import jakarta.persistence.Table;
+import lombok.Data;
 
 @Entity
-@Table(name = "review")
+@Table(name = "reviews")
+@Data
 public class Review extends BaseEntity {
     @Column(name = "contract_id", nullable = false)
     private Long contractId;
@@ -18,8 +21,6 @@ public class Review extends BaseEntity {
     @Column(name = "comment")
     private String comment;
 
-    @Column(name = "created_at")
-    private LocalDateTime createdAt;
-
-    // ...getter, setter...
+    @Column(name = "reply")
+    private String reply;
 }
