@@ -13,4 +13,6 @@ import java.util.List;
 public interface ProjectRepository extends JpaRepository<Project, Long> {
     List<Project> findByStatus(String status);
     List<Project> findByUserId(Long userId);
+    List<Project> findByStatusOrderByCreatedAtDesc(String status);
+    List<Project> findByUserIdOrderByCreatedAtDesc(Long userId);
 }

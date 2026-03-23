@@ -1,11 +1,15 @@
 package com.thuetoi.controller;
 
-import com.thuetoi.entity.Notification;
-import com.thuetoi.service.NotificationService;
 import com.thuetoi.dto.response.ApiResponse;
+import com.thuetoi.entity.Notification;
+import com.thuetoi.exception.BusinessException;
+import com.thuetoi.security.CurrentUserProvider;
+import com.thuetoi.service.NotificationService;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.*;
 
+import java.security.Principal;
 import java.util.List;
 
 @RestController
@@ -14,23 +18,33 @@ public class NotificationController {
     @Autowired
     private NotificationService notificationService;
 
+    @Autowired
+    private CurrentUserProvider currentUserProvider;
+
     /**
-     * Lấy tất cả notification
+     * Lấy tất cả notification của user hiện tại
      */
     @GetMapping
-    public ApiResponse<List<Notification>> getAllNotifications() {
-        List<Notification> notifications = notificationService.getAllNotifications();
-        return ApiResponse.success("Lấy tất cả notification", notifications);
+    public ApiResponse<List<Notification>> getAllNotifications(Principal principal) {
+        Long currentUserId = currentUserProvider.requireCurrentUserId(principal);
+        List<Notification> notifications = notificationService.getAllNotifications(currentUserId);
+        return ApiResponse.success("Lấy notification của user hiện tại", notifications);
     }
 
     @PostMapping
-    public ApiResponse createNotification(@RequestBody Notification notification) {
+    public ApiResponse<Notification> createNotification(@RequestBody Notification notification, Principal principal) {
+        Long currentUserId = currentUserProvider.requireCurrentUserId(principal);
+        notification.setUserId(currentUserId);
         Notification created = notificationService.createNotification(notification);
         return ApiResponse.success(created);
     }
 
     @GetMapping("/user/{userId}")
-    public ApiResponse<List<Notification>> getNotificationsByUser(@PathVariable Long userId) {
+    public ApiResponse<List<Notification>> getNotificationsByUser(@PathVariable Long userId, Principal principal) {
+        Long currentUserId = currentUserProvider.requireCurrentUserId(principal);
+        if (!userId.equals(currentUserId)) {
+            throw new BusinessException("ERR_AUTH_04", "Bạn không có quyền xem thông báo của người dùng khác", HttpStatus.FORBIDDEN);
+        }
         List<Notification> notifications = notificationService.getNotificationsByUser(userId);
         return ApiResponse.success("Lấy notification theo userId", notifications);
     }
@@ -39,23 +53,16 @@ public class NotificationController {
      * Lấy notification của user đang đăng nhập
      */
     @GetMapping("/user/me")
-    public ApiResponse<List<Notification>> getNotificationsByCurrentUser(java.security.Principal principal) {
-        if (principal == null) {
-            return ApiResponse.error("ERR_AUTH_01", "Người dùng chưa đăng nhập");
-        }
-        Long id;
-        try {
-            id = Long.parseLong(principal.getName());
-        } catch (Exception e) {
-            return ApiResponse.error("ERR_AUTH_12", "Access token không hợp lệ");
-        }
+    public ApiResponse<List<Notification>> getNotificationsByCurrentUser(Principal principal) {
+        Long id = currentUserProvider.requireCurrentUserId(principal);
         List<Notification> notifications = notificationService.getNotificationsByUser(id);
         return ApiResponse.success("Lấy notification của user đang đăng nhập", notifications);
     }
 
     @PutMapping("/{notificationId}/read")
-    public ApiResponse markAsRead(@PathVariable Long notificationId) {
-        Notification updated = notificationService.markAsRead(notificationId);
+    public ApiResponse<Notification> markAsRead(@PathVariable Long notificationId, Principal principal) {
+        Long currentUserId = currentUserProvider.requireCurrentUserId(principal);
+        Notification updated = notificationService.markAsRead(notificationId, currentUserId);
         return ApiResponse.success(updated);
     }
 }

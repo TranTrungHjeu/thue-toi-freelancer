@@ -72,7 +72,20 @@ Nếu là lỗi validation, backend trả thêm trường `errors`:
 | --- | --- | --- | --- |
 | `ERR_BID_01` | Không tìm thấy báo giá | `400` hoặc `404` tùy ngữ cảnh | Khóa thao tác accept/update bid |
 
-### 2.5. Lỗi Hệ thống (`ERR_SYS_***`)
+### 2.5. Lỗi Hợp đồng (`ERR_CONTRACT_***`)
+
+| Code | Ý nghĩa | HTTP Status | Gợi ý cho Frontend |
+| --- | --- | --- | --- |
+| `ERR_CONTRACT_01` | Không tìm thấy hợp đồng | `404` | Hiển thị empty state hoặc điều hướng về danh sách hợp đồng |
+| `ERR_CONTRACT_02` | Project đã có hợp đồng | `409` | Chặn thao tác tạo hoặc accept bid lần nữa |
+
+### 2.6. Lỗi Thông báo (`ERR_NOTIFICATION_***`)
+
+| Code | Ý nghĩa | HTTP Status | Gợi ý cho Frontend |
+| --- | --- | --- | --- |
+| `ERR_NOTIFICATION_01` | Không tìm thấy thông báo | `404` | Xóa item lỗi thời khỏi UI hoặc tải lại danh sách |
+
+### 2.7. Lỗi Hệ thống (`ERR_SYS_***`)
 
 | Code | Ý nghĩa | HTTP Status | Gợi ý cho Frontend |
 | --- | --- | --- | --- |

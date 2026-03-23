@@ -11,12 +11,6 @@ import { useToast } from '../components/common/Toast';
 import marketplaceApi from '../api/marketplaceApi';
 import { buildBudgetRange, formatCurrency, formatDate, formatDateTime, formatRole } from '../utils/formatters';
 
-const filterContractsByOwner = (contracts, userId) => {
-  return (contracts || []).filter(
-    (contract) => contract.clientId === userId || contract.freelancerId === userId,
-  );
-};
-
 const WorkspaceDashboardPage = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
@@ -40,14 +34,14 @@ const WorkspaceDashboardPage = () => {
       try {
         const [notificationsResponse, contractsResponse] = await Promise.all([
           marketplaceApi.getNotificationsMe(),
-          marketplaceApi.getContractsByUser(user.id),
+          marketplaceApi.getMyContracts(),
         ]);
 
         const notifications = notificationsResponse.data || [];
-        const contracts = filterContractsByOwner(contractsResponse.data || [], user.id);
+        const contracts = contractsResponse.data || [];
 
         if (user.role === 'customer') {
-          const projectsResponse = await marketplaceApi.getProjectsByUser(user.id);
+          const projectsResponse = await marketplaceApi.getMyProjects();
           setDashboardData({
             customerProjects: projectsResponse.data || [],
             marketplaceProjects: [],
@@ -58,12 +52,12 @@ const WorkspaceDashboardPage = () => {
         } else {
           const [projectsResponse, bidsResponse] = await Promise.all([
             marketplaceApi.getAllProjects(),
-            marketplaceApi.getBidsByFreelancer(user.id),
+            marketplaceApi.getMyBids(),
           ]);
 
           setDashboardData({
             customerProjects: [],
-            marketplaceProjects: (projectsResponse.data || []).filter((project) => project.status === 'open'),
+            marketplaceProjects: projectsResponse.data || [],
             myBids: bidsResponse.data || [],
             contracts,
             notifications,
