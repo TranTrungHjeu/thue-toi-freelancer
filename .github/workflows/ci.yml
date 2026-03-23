@@ -14,6 +14,18 @@ permissions:
   contents: read
 
 jobs:
+  main-release-gate:
+    name: main-release-gate
+    runs-on: ubuntu-latest
+    if: github.event_name == 'pull_request' && github.base_ref == 'main'
+    steps:
+      - name: Validate pull request source branch for main
+        run: |
+          if [ "${{ github.head_ref }}" != "develop" ]; then
+            echo "Chỉ được phép mở PR vào main từ nhánh develop."
+            exit 1
+          fi
+
   frontend-lint:
     name: frontend-lint
     runs-on: ubuntu-latest

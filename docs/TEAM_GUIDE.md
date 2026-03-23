@@ -77,7 +77,7 @@ Tuyệt đối **KHÔNG code trực tiếp và push thẳng lên branch `main` h
 - `main`:
   - Cấm push trực tiếp.
   - Chỉ nhận Pull Request từ `develop` khi chốt bản ổn định để demo, nộp bài hoặc deploy.
-  - Bắt buộc pass các check: `frontend-lint`, `frontend-build`, `backend-test`.
+  - Bắt buộc pass các check: `main-release-gate`, `frontend-lint`, `frontend-build`, `backend-test`.
   - Bắt buộc có ít nhất 1 approval trước khi merge.
 
 ### Luồng Merge Chuẩn
