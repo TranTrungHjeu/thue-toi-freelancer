@@ -41,6 +41,7 @@ docker compose up -d --build
 - Những lần sau, bạn chỉ cần chạy `docker compose up -d`.
 - Tham số `-d` giúp hệ thống chạy ngầm để bạn có thể tiếp tục sử dụng Terminal.
 - Luồng OTP hiện chỉ chạy qua email thật bằng Resend. Không còn endpoint debug đọc OTP local trong runtime chuẩn.
+- Khi volume MySQL còn trống, Docker sẽ tự import schema và dữ liệu mẫu từ `docs/database/schema.sql` và `docs/database/seed.sql`.
 
 ### Bước 3: Kiểm tra hệ thống (Verification)
 
@@ -96,6 +97,8 @@ Các giá trị mặc định local hiện được đặt trong [backend/src/ma
    ```bash
    docker compose down -v
    ```
+
+   Sau lần reset này, lần `docker compose up -d --build` kế tiếp sẽ nạp lại schema và seed từ thư mục `docs/database`.
 
 ---
 
