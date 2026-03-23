@@ -2,7 +2,9 @@
 
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { Search, Flash, Suitcase, User, Settings, Xmark } from 'iconoir-react';
+import { Search, Flash } from 'iconoir-react';
+
+const MotionDiv = motion.div;
 
 /**
  * Enterprise Command Palette (Ctrl+K) for quick navigation.
@@ -31,7 +33,7 @@ const CommandPalette = ({ isOpen, onClose, actions = [] }) => {
     <AnimatePresence>
       {isOpen && (
         <div className="fixed inset-0 z-[100] flex items-start justify-center pt-[15vh] px-4">
-          <motion.div 
+          <MotionDiv 
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
@@ -39,7 +41,7 @@ const CommandPalette = ({ isOpen, onClose, actions = [] }) => {
             className="absolute inset-0 bg-slate-900/40 backdrop-blur-sm"
           />
           
-          <motion.div
+          <MotionDiv
             initial={{ opacity: 0, scale: 0.95, y: -20 }}
             animate={{ opacity: 1, scale: 1, y: 0 }}
             exit={{ opacity: 0, scale: 0.95, y: -20 }}
@@ -98,7 +100,7 @@ const CommandPalette = ({ isOpen, onClose, actions = [] }) => {
                 <span className="bg-white border p-1">ENTER</span> Chọn
               </div>
             </div>
-          </motion.div>
+          </MotionDiv>
         </div>
       )}
     </AnimatePresence>

@@ -7,7 +7,7 @@ import Badge from '../components/common/Badge';
 import Callout from '../components/common/Callout';
 import { H1, H2, Text, Caption } from '../components/common/Typography';
 import { useAuth } from '../hooks/useAuth';
-import { useToast } from '../components/common/Toast';
+import { useToast } from '../hooks/useToast';
 import marketplaceApi from '../api/marketplaceApi';
 import { buildBudgetRange, formatCurrency, formatDate, formatDateTime, formatRole } from '../utils/formatters';
 

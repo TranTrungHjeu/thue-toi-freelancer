@@ -5,6 +5,8 @@ import { AnimatePresence, motion } from 'motion/react';
 import { Caption } from '../common/Typography';
 import Spinner from './Spinner';
 
+const MotionDiv = motion.div;
+
 /**
  * Full container or screen loading overlay.
  * Backdrop blur, strictly sharp.
@@ -17,7 +19,7 @@ const LoadingOverlay = ({
   return (
     <AnimatePresence>
       {isActive && (
-        <motion.div
+        <MotionDiv
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
@@ -27,7 +29,7 @@ const LoadingOverlay = ({
             <Spinner />
             <Caption className="font-bold text-secondary-900 uppercase tracking-widest">{message}</Caption>
           </div>
-        </motion.div>
+        </MotionDiv>
       )}
     </AnimatePresence>
   );

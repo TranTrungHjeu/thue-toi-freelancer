@@ -15,6 +15,10 @@ const FloatingActionButton = ({
   onClick, 
   className = "" 
 }) => {
+  const iconElement = React.createElement(Icon, {
+    className: "w-8 h-8 stroke-2",
+  });
+
   return (
     <MotionButton
       whileHover={{ scale: 1.05 }}
@@ -27,7 +31,7 @@ const FloatingActionButton = ({
       `}
       style={{ borderRadius: '0px' }}
     >
-      <Icon className="w-8 h-8 stroke-2" />
+      {iconElement}
     </MotionButton>
   );
 };

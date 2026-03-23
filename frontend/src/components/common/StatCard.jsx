@@ -6,6 +6,8 @@ import { H2, Text } from './Typography';
 import AnimatedIcon from './AnimatedIcon';
 import { motion } from "motion/react";
 
+const MotionDiv = motion.div;
+
 /**
  * StatCard component for dashboard metrics.
  * Follows "Strict Sharpness" with interactive icon.
@@ -38,7 +40,7 @@ const StatCard = ({
 
       <div>
         <Text className="text-xs uppercase tracking-widest text-slate-500 font-bold mb-1">{label}</Text>
-        <motion.div
+        <MotionDiv
           initial={{ opacity: 0, x: -10 }}
           animate={{ opacity: 1, x: 0 }}
           transition={{ duration: 0.4 }}
@@ -46,7 +48,7 @@ const StatCard = ({
           <H2 className="!mb-0 text-3xl font-bold tracking-tighter text-secondary-900">
             {value}
           </H2>
-        </motion.div>
+        </MotionDiv>
       </div>
 
       {/* Subtle background accent */}

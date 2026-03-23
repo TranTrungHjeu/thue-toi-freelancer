@@ -3,7 +3,7 @@
 import React, { useState } from 'react';
 import { Upload, Xmark, Notes } from 'iconoir-react';
 import { Text, Caption } from '../common/Typography';
-import { useToast } from '../common/Toast';
+import { useToast } from '../../hooks/useToast';
 
 /**
  * Professional File Upload area with drag & drop support.

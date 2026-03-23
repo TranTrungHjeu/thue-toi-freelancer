@@ -7,7 +7,7 @@ import Button from '../components/common/Button';
 import Callout from '../components/common/Callout';
 import { Caption } from '../components/common/Typography';
 import authApi from '../api/authApi';
-import { useToast } from '../components/common/Toast';
+import { useToast } from '../hooks/useToast';
 
 const VerifyEmailPage = () => {
   const [searchParams] = useSearchParams();

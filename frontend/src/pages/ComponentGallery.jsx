@@ -48,7 +48,7 @@ import PullToRefresh from '../components/common/PullToRefresh';
 import ResponsiveTable from '../components/common/ResponsiveTable';
 import SegmentedControl from '../components/common/SegmentedControl';
 import { H1, H2, Text, Caption } from '../components/common/Typography';
-import { useToast } from '../components/common/Toast';
+import { useToast } from '../hooks/useToast';
 import { 
   Wallet, 
   StatsUpSquare, 
