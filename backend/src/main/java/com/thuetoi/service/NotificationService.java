@@ -1,37 +1,64 @@
 package com.thuetoi.service;
 
 import com.thuetoi.entity.Notification;
+import com.thuetoi.exception.BusinessException;
 import com.thuetoi.repository.NotificationRepository;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
+import java.util.Locale;
 
 @Service
 public class NotificationService {
     @Autowired
     private NotificationRepository notificationRepository;
+
     /**
      * Lấy tất cả notification
      */
-    public List<Notification> getAllNotifications() {
-        return notificationRepository.findAll();
+    public List<Notification> getAllNotifications(Long userId) {
+        return getNotificationsByUser(userId);
     }
 
     public Notification createNotification(Notification notification) {
+        if (notification.getType() == null || notification.getType().trim().isEmpty()) {
+            notification.setType("system");
+        } else {
+            notification.setType(notification.getType().trim().toLowerCase(Locale.ROOT));
+        }
+        if (notification.getIsRead() == null) {
+            notification.setIsRead(false);
+        }
         return notificationRepository.save(notification);
+    }
+
+    @Transactional
+    public Notification createNotificationForUser(Long userId, String type, String title, String content, String link) {
+        Notification notification = new Notification();
+        notification.setUserId(userId);
+        notification.setType(type);
+        notification.setTitle(title);
+        notification.setContent(content);
+        notification.setLink(link);
+        notification.setIsRead(false);
+        return createNotification(notification);
     }
 
     public List<Notification> getNotificationsByUser(Long userId) {
         return notificationRepository.findByUserIdOrderByCreatedAtDesc(userId);
     }
 
-    public Notification markAsRead(Long notificationId) {
-        Notification notification = notificationRepository.findById(notificationId).orElse(null);
-        if (notification != null) {
-            notification.setIsRead(true);
-            return notificationRepository.save(notification);
+    @Transactional
+    public Notification markAsRead(Long notificationId, Long currentUserId) {
+        Notification notification = notificationRepository.findById(notificationId)
+            .orElseThrow(() -> new BusinessException("ERR_NOTIFICATION_01", "Không tìm thấy thông báo", HttpStatus.NOT_FOUND));
+        if (!notification.getUserId().equals(currentUserId)) {
+            throw new BusinessException("ERR_AUTH_04", "Bạn không có quyền cập nhật thông báo này", HttpStatus.FORBIDDEN);
         }
-        return null;
+        notification.setIsRead(true);
+        return notificationRepository.save(notification);
     }
 }

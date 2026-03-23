@@ -3,10 +3,14 @@ package com.thuetoi.controller;
 import com.thuetoi.dto.request.ProjectRequest;
 import com.thuetoi.dto.response.ApiResponse;
 import com.thuetoi.entity.Project;
+import com.thuetoi.exception.BusinessException;
+import com.thuetoi.security.CurrentUserProvider;
 import com.thuetoi.service.ProjectService;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.*;
 
+import java.security.Principal;
 import java.util.List;
 
 /**
@@ -18,8 +22,11 @@ public class ProjectController {
     @Autowired
     private ProjectService projectService;
 
+    @Autowired
+    private CurrentUserProvider currentUserProvider;
+
     /**
-     * Lấy tất cả dự án
+     * Lấy tất cả dự án đang mở trên marketplace
      */
     @GetMapping
     public ApiResponse<List<Project>> getAllProjects() {
@@ -31,8 +38,16 @@ public class ProjectController {
      * Tạo dự án mới
      */
     @PostMapping
-    public ApiResponse<Project> createProject(@RequestBody ProjectRequest request) {
-        Project project = projectService.createProject(request.getUserId(), request.getTitle(), request.getDescription(), request.getBudgetMin(), request.getBudgetMax(), request.getDeadline());
+    public ApiResponse<Project> createProject(@RequestBody ProjectRequest request, Principal principal) {
+        Long currentUserId = currentUserProvider.requireCurrentUserId(principal);
+        Project project = projectService.createProject(
+            currentUserId,
+            request.getTitle(),
+            request.getDescription(),
+            request.getBudgetMin(),
+            request.getBudgetMax(),
+            request.getDeadline()
+        );
         return ApiResponse.success("Tạo dự án thành công", project);
     }
 
@@ -46,10 +61,24 @@ public class ProjectController {
     }
 
     /**
+     * Lấy danh sách dự án của user hiện tại
+     */
+    @GetMapping("/my")
+    public ApiResponse<List<Project>> getMyProjects(Principal principal) {
+        Long currentUserId = currentUserProvider.requireCurrentUserId(principal);
+        List<Project> projects = projectService.getProjectsByUser(currentUserId);
+        return ApiResponse.success("Lấy danh sách dự án của user hiện tại", projects);
+    }
+
+    /**
      * Lấy danh sách dự án của user
      */
     @GetMapping("/user/{userId}")
-    public ApiResponse<List<Project>> getProjectsByUser(@PathVariable Long userId) {
+    public ApiResponse<List<Project>> getProjectsByUser(@PathVariable Long userId, Principal principal) {
+        Long currentUserId = currentUserProvider.requireCurrentUserId(principal);
+        if (!userId.equals(currentUserId)) {
+            throw new BusinessException("ERR_AUTH_04", "Bạn không có quyền xem dự án của người dùng khác", HttpStatus.FORBIDDEN);
+        }
         List<Project> projects = projectService.getProjectsByUser(userId);
         return ApiResponse.success("Lấy danh sách dự án của user", projects);
     }
@@ -60,16 +89,26 @@ public class ProjectController {
     @GetMapping("/{id}")
     public ApiResponse<Project> getProject(@PathVariable Long id) {
         return projectService.getProject(id)
-                .map(project -> ApiResponse.success("Lấy chi tiết dự án thành công", project))
-                .orElseGet(() -> ApiResponse.error("ERR_PROJECT_01", "Không tìm thấy dự án"));
+            .map(project -> ApiResponse.success("Lấy chi tiết dự án thành công", project))
+            .orElseGet(() -> ApiResponse.error("ERR_PROJECT_01", "Không tìm thấy dự án"));
     }
 
     /**
      * Cập nhật dự án
      */
     @PutMapping("/{id}")
-    public ApiResponse<Project> updateProject(@PathVariable Long id, @RequestBody ProjectRequest request) {
-        Project project = projectService.updateProject(id, request.getTitle(), request.getDescription(), request.getBudgetMin(), request.getBudgetMax(), request.getDeadline(), request.getStatus());
+    public ApiResponse<Project> updateProject(@PathVariable Long id, @RequestBody ProjectRequest request, Principal principal) {
+        Long currentUserId = currentUserProvider.requireCurrentUserId(principal);
+        Project project = projectService.updateProject(
+            id,
+            currentUserId,
+            request.getTitle(),
+            request.getDescription(),
+            request.getBudgetMin(),
+            request.getBudgetMax(),
+            request.getDeadline(),
+            request.getStatus()
+        );
         return ApiResponse.success("Cập nhật dự án thành công", project);
     }
 
@@ -77,8 +116,9 @@ public class ProjectController {
      * Xóa dự án
      */
     @DeleteMapping("/{id}")
-    public ApiResponse<Void> deleteProject(@PathVariable Long id) {
-        projectService.deleteProject(id);
+    public ApiResponse<Void> deleteProject(@PathVariable Long id, Principal principal) {
+        Long currentUserId = currentUserProvider.requireCurrentUserId(principal);
+        projectService.deleteProject(id, currentUserId);
         return ApiResponse.success("Xóa dự án thành công", null);
     }
 }

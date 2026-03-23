@@ -13,4 +13,7 @@ import java.util.List;
 public interface BidRepository extends JpaRepository<Bid, Long> {
     List<Bid> findByProjectId(Long projectId);
     List<Bid> findByFreelancerId(Long freelancerId);
+    List<Bid> findByProjectIdOrderByCreatedAtDesc(Long projectId);
+    List<Bid> findByFreelancerIdOrderByCreatedAtDesc(Long freelancerId);
+    List<Bid> findByProjectUserIdOrderByCreatedAtDesc(Long userId);
 }
