@@ -1,11 +1,15 @@
 package com.thuetoi.controller;
 
-import com.thuetoi.entity.Review;
-import com.thuetoi.service.ReviewService;
+import com.thuetoi.dto.request.ReviewRequest;
 import com.thuetoi.dto.response.ApiResponse;
+import com.thuetoi.entity.Review;
+import com.thuetoi.security.CurrentUserProvider;
+import com.thuetoi.service.ReviewService;
+import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 
+import java.security.Principal;
 import java.util.List;
 
 @RestController
@@ -14,15 +18,20 @@ public class ReviewController {
     @Autowired
     private ReviewService reviewService;
 
+    @Autowired
+    private CurrentUserProvider currentUserProvider;
+
     @PostMapping
-    public ApiResponse createReview(@RequestBody Review review) {
-        Review created = reviewService.createReview(review);
-        return ApiResponse.success(created);
+    public ApiResponse<Review> createReview(@Valid @RequestBody ReviewRequest request, Principal principal) {
+        Long currentUserId = currentUserProvider.requireCurrentUserId(principal);
+        Review created = reviewService.createReview(currentUserId, request);
+        return ApiResponse.success("Tạo đánh giá thành công", created);
     }
 
     @GetMapping("/contract/{contractId}")
-    public ApiResponse getReviewsByContract(@PathVariable Long contractId) {
-        List<Review> reviews = reviewService.getReviewsByContract(contractId);
-        return ApiResponse.success(reviews);
+    public ApiResponse<List<Review>> getReviewsByContract(@PathVariable Long contractId, Principal principal) {
+        Long currentUserId = currentUserProvider.requireCurrentUserId(principal);
+        List<Review> reviews = reviewService.getReviewsByContract(contractId, currentUserId);
+        return ApiResponse.success("Lấy danh sách đánh giá thành công", reviews);
     }
 }

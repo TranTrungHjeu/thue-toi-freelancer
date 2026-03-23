@@ -1,10 +1,12 @@
 package com.thuetoi.service;
 
+import com.thuetoi.entity.Bid;
 import com.thuetoi.entity.Contract;
 import com.thuetoi.entity.Milestone;
 import com.thuetoi.entity.Project;
 import com.thuetoi.entity.User;
 import com.thuetoi.exception.BusinessException;
+import com.thuetoi.repository.BidRepository;
 import com.thuetoi.repository.ContractRepository;
 import com.thuetoi.repository.MilestoneRepository;
 import com.thuetoi.repository.ProjectRepository;
@@ -17,9 +19,13 @@ import org.springframework.transaction.annotation.Transactional;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Locale;
+import java.util.Set;
 
 @Service
 public class ContractService {
+    private static final Set<String> ALLOWED_CONTRACT_STATUSES = Set.of("in_progress", "completed", "cancelled");
+    private static final Set<String> ALLOWED_MILESTONE_STATUSES = Set.of("pending", "completed", "cancelled");
+
     @Autowired
     private ContractRepository contractRepository;
 
@@ -33,51 +39,79 @@ public class ContractService {
     private UserRepository userRepository;
 
     @Autowired
+    private BidRepository bidRepository;
+
+    @Autowired
     private NotificationService notificationService;
 
+    @Autowired
+    private ContractAccessService contractAccessService;
+
     /**
-     * Lấy tất cả hợp đồng
+     * Lấy tất cả hợp đồng mà user hiện tại được phép xem.
      */
     public List<Contract> getAllContracts(Long userId) {
         return getContractsByUser(userId);
     }
 
+    /**
+     * Tạo hợp đồng từ bid đã được customer chọn.
+     */
     @Transactional
-    public Contract createContract(Long currentUserId, Contract contract) {
+    public Contract createContractFromBid(Long currentUserId, Long bidId) {
         User customer = getRequiredUser(currentUserId);
         ensureCustomer(customer);
-        validateContractPayload(contract);
-        if (!currentUserId.equals(contract.getClientId())) {
-            throw new BusinessException("ERR_AUTH_04", "Bạn không có quyền tạo hợp đồng cho người dùng khác", HttpStatus.FORBIDDEN);
-        }
 
-        Project project = projectRepository.findById(contract.getProjectId())
-            .orElseThrow(() -> new BusinessException("ERR_PROJECT_01", "Không tìm thấy dự án", HttpStatus.NOT_FOUND));
+        Bid selectedBid = bidRepository.findById(bidId)
+            .orElseThrow(() -> new BusinessException("ERR_BID_01", "Không tìm thấy báo giá", HttpStatus.NOT_FOUND));
+
+        Project project = selectedBid.getProject();
         if (!project.getUser().getId().equals(currentUserId)) {
             throw new BusinessException("ERR_AUTH_04", "Bạn không có quyền tạo hợp đồng cho project này", HttpStatus.FORBIDDEN);
         }
-        if (contractRepository.findByProjectId(contract.getProjectId()).isPresent()) {
+        if (!"open".equalsIgnoreCase(project.getStatus())) {
+            throw new BusinessException("ERR_SYS_02", "Project này không còn ở trạng thái mở để tạo hợp đồng", HttpStatus.BAD_REQUEST);
+        }
+        if (contractRepository.findByProjectId(project.getId()).isPresent()) {
             throw new BusinessException("ERR_CONTRACT_02", "Project này đã có hợp đồng", HttpStatus.CONFLICT);
         }
 
-        User freelancer = getRequiredUser(contract.getFreelancerId());
+        User freelancer = selectedBid.getFreelancer();
         ensureFreelancer(freelancer);
-
-        contract.setStatus(normalizeContractStatus(contract.getStatus()));
-        contract.setProgress(contract.getProgress() == null ? 0 : contract.getProgress());
-        if (contract.getStartDate() == null) {
-            contract.setStartDate(LocalDateTime.now());
+        if (!"pending".equalsIgnoreCase(selectedBid.getStatus()) && !"accepted".equalsIgnoreCase(selectedBid.getStatus())) {
+            throw new BusinessException("ERR_SYS_02", "Chỉ có thể tạo hợp đồng từ bid đang chờ hoặc đã được chọn", HttpStatus.BAD_REQUEST);
         }
+
+        List<Bid> projectBids = bidRepository.findByProjectId(project.getId());
+        for (Bid currentBid : projectBids) {
+            if (currentBid.getId().equals(bidId)) {
+                currentBid.setStatus("accepted");
+                continue;
+            }
+            if (!"withdrawn".equalsIgnoreCase(currentBid.getStatus())) {
+                currentBid.setStatus("rejected");
+            }
+        }
+        bidRepository.saveAll(projectBids);
 
         project.setStatus("in_progress");
         projectRepository.save(project);
+
+        Contract contract = new Contract();
+        contract.setProjectId(project.getId());
+        contract.setFreelancerId(freelancer.getId());
+        contract.setClientId(project.getUser().getId());
+        contract.setTotalAmount(selectedBid.getPrice());
+        contract.setProgress(0);
+        contract.setStatus("in_progress");
+        contract.setStartDate(LocalDateTime.now());
 
         Contract createdContract = contractRepository.save(contract);
         notificationService.createNotificationForUser(
             freelancer.getId(),
             "contract",
             "Bạn có hợp đồng mới",
-            "Một hợp đồng mới đã được tạo cho project \"" + project.getTitle() + "\".",
+            "Khách hàng đã chấp nhận bid của bạn cho project \"" + project.getTitle() + "\".",
             "/workspace/contracts"
         );
         return createdContract;
@@ -89,61 +123,72 @@ public class ContractService {
     }
 
     @Transactional
-    public Milestone addMilestone(Milestone milestone, Long currentUserId) {
-        Contract contract = getAccessibleContract(milestone.getContractId(), currentUserId);
-        if (!contract.getClientId().equals(currentUserId)) {
-            throw new BusinessException("ERR_AUTH_04", "Chỉ customer của hợp đồng mới có thể tạo milestone", HttpStatus.FORBIDDEN);
-        }
-        if (milestone.getTitle() == null || milestone.getTitle().trim().isEmpty()) {
+    public Milestone addMilestone(
+        Long contractId,
+        Long currentUserId,
+        String title,
+        Double amount,
+        LocalDateTime dueDate,
+        String status
+    ) {
+        Contract contract = contractAccessService.requireCustomerContract(contractId, currentUserId);
+        ensureContractInProgress(contract, "Chỉ có thể tạo milestone cho hợp đồng đang thực hiện");
+
+        if (title == null || title.trim().isEmpty()) {
             throw new BusinessException("ERR_SYS_02", "Tiêu đề milestone không được để trống", HttpStatus.BAD_REQUEST);
         }
-        if (milestone.getAmount() == null || milestone.getAmount() <= 0) {
+        if (amount == null || amount <= 0) {
             throw new BusinessException("ERR_SYS_02", "Giá trị milestone phải lớn hơn 0", HttpStatus.BAD_REQUEST);
         }
-        milestone.setTitle(milestone.getTitle().trim());
-        milestone.setStatus(normalizeMilestoneStatus(milestone.getStatus()));
+
+        Milestone milestone = new Milestone();
+        milestone.setContractId(contractId);
+        milestone.setTitle(title.trim());
+        milestone.setAmount(amount);
+        milestone.setDueDate(dueDate);
+        milestone.setStatus(normalizeMilestoneStatus(status));
         return milestoneRepository.save(milestone);
     }
 
     public List<Milestone> getMilestonesByContract(Long contractId, Long currentUserId) {
-        getAccessibleContract(contractId, currentUserId);
-        return milestoneRepository.findByContractId(contractId);
+        contractAccessService.requireAccessibleContract(contractId, currentUserId);
+        return milestoneRepository.findByContractIdOrderByDueDateAsc(contractId);
+    }
+
+    public List<Milestone> getMilestonesByUser(Long currentUserId) {
+        List<Contract> contracts = getContractsByUser(currentUserId);
+        if (contracts.isEmpty()) {
+            return List.of();
+        }
+        List<Long> contractIds = contracts.stream().map(Contract::getId).toList();
+        return milestoneRepository.findByContractIdInOrderByDueDateAsc(contractIds);
     }
 
     @Transactional
     public Contract updateContractStatus(Long contractId, Long currentUserId, String status) {
-        Contract contract = getAccessibleContract(contractId, currentUserId);
-        if (status == null || status.trim().isEmpty()) {
-            throw new BusinessException("ERR_SYS_02", "Trạng thái hợp đồng không được để trống", HttpStatus.BAD_REQUEST);
-        }
-        contract.setStatus(status.trim().toLowerCase(Locale.ROOT));
-        if ("completed".equalsIgnoreCase(contract.getStatus()) || "cancelled".equalsIgnoreCase(contract.getStatus())) {
-            contract.setEndDate(LocalDateTime.now());
-        }
-        return contractRepository.save(contract);
-    }
+        Contract contract = contractAccessService.requireAccessibleContract(contractId, currentUserId);
+        String currentStatus = normalizeStoredContractStatus(contract.getStatus());
+        String normalizedStatus = normalizeContractStatus(status, false);
 
-    private Contract getAccessibleContract(Long contractId, Long currentUserId) {
-        Contract contract = contractRepository.findById(contractId)
-            .orElseThrow(() -> new BusinessException("ERR_CONTRACT_01", "Không tìm thấy hợp đồng", HttpStatus.NOT_FOUND));
-        if (!contract.getClientId().equals(currentUserId) && !contract.getFreelancerId().equals(currentUserId)) {
-            throw new BusinessException("ERR_AUTH_04", "Bạn không có quyền truy cập hợp đồng này", HttpStatus.FORBIDDEN);
+        if (currentStatus.equals(normalizedStatus)) {
+            return contract;
         }
-        return contract;
+        if (!"in_progress".equals(currentStatus)) {
+            throw new BusinessException("ERR_SYS_02", "Không thể thay đổi hợp đồng đã ở trạng thái kết thúc", HttpStatus.BAD_REQUEST);
+        }
+        if ("in_progress".equals(normalizedStatus)) {
+            throw new BusinessException("ERR_SYS_02", "Hợp đồng đang thực hiện không cần cập nhật lại cùng trạng thái", HttpStatus.BAD_REQUEST);
+        }
+
+        contract.setStatus(normalizedStatus);
+        contract.setEndDate(LocalDateTime.now());
+        syncProjectStatus(contract.getProjectId(), normalizedStatus);
+        return contractRepository.save(contract);
     }
 
     private User getRequiredUser(Long userId) {
         return userRepository.findById(userId)
             .orElseThrow(() -> new BusinessException("ERR_AUTH_01", "Người dùng chưa đăng nhập", HttpStatus.UNAUTHORIZED));
-    }
-
-    private void validateContractPayload(Contract contract) {
-        if (contract.getProjectId() == null || contract.getFreelancerId() == null || contract.getClientId() == null) {
-            throw new BusinessException("ERR_SYS_02", "Thiếu thông tin bắt buộc để tạo hợp đồng", HttpStatus.BAD_REQUEST);
-        }
-        if (contract.getTotalAmount() == null || contract.getTotalAmount() <= 0) {
-            throw new BusinessException("ERR_SYS_02", "Giá trị hợp đồng phải lớn hơn 0", HttpStatus.BAD_REQUEST);
-        }
     }
 
     private void ensureCustomer(User user) {
@@ -160,17 +205,47 @@ public class ContractService {
         }
     }
 
-    private String normalizeContractStatus(String status) {
-        if (status == null || status.trim().isEmpty()) {
-            return "in_progress";
+    private void ensureContractInProgress(Contract contract, String message) {
+        if (!"in_progress".equalsIgnoreCase(contract.getStatus())) {
+            throw new BusinessException("ERR_SYS_02", message, HttpStatus.BAD_REQUEST);
         }
-        return status.trim().toLowerCase(Locale.ROOT);
+    }
+
+    private String normalizeContractStatus(String status, boolean allowDefaultValue) {
+        if (status == null || status.trim().isEmpty()) {
+            if (allowDefaultValue) {
+                return "in_progress";
+            }
+            throw new BusinessException("ERR_SYS_02", "Trạng thái hợp đồng không được để trống", HttpStatus.BAD_REQUEST);
+        }
+
+        String normalizedStatus = status.trim().toLowerCase(Locale.ROOT);
+        if (!ALLOWED_CONTRACT_STATUSES.contains(normalizedStatus)) {
+            throw new BusinessException("ERR_SYS_02", "Trạng thái hợp đồng không hợp lệ", HttpStatus.BAD_REQUEST);
+        }
+        return normalizedStatus;
+    }
+
+    private String normalizeStoredContractStatus(String status) {
+        return status == null ? "in_progress" : status.trim().toLowerCase(Locale.ROOT);
     }
 
     private String normalizeMilestoneStatus(String status) {
         if (status == null || status.trim().isEmpty()) {
             return "pending";
         }
-        return status.trim().toLowerCase(Locale.ROOT);
+
+        String normalizedStatus = status.trim().toLowerCase(Locale.ROOT);
+        if (!ALLOWED_MILESTONE_STATUSES.contains(normalizedStatus)) {
+            throw new BusinessException("ERR_SYS_02", "Trạng thái milestone không hợp lệ", HttpStatus.BAD_REQUEST);
+        }
+        return normalizedStatus;
+    }
+
+    private void syncProjectStatus(Long projectId, String contractStatus) {
+        projectRepository.findById(projectId).ifPresent(project -> {
+            project.setStatus(contractStatus);
+            projectRepository.save(project);
+        });
     }
 }

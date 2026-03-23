@@ -1,11 +1,15 @@
 package com.thuetoi.controller;
 
-import com.thuetoi.entity.Message;
-import com.thuetoi.service.MessageService;
+import com.thuetoi.dto.request.MessageRequest;
 import com.thuetoi.dto.response.ApiResponse;
+import com.thuetoi.entity.Message;
+import com.thuetoi.security.CurrentUserProvider;
+import com.thuetoi.service.MessageService;
+import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 
+import java.security.Principal;
 import java.util.List;
 
 @RestController
@@ -14,15 +18,20 @@ public class MessageController {
     @Autowired
     private MessageService messageService;
 
+    @Autowired
+    private CurrentUserProvider currentUserProvider;
+
     @PostMapping
-    public ApiResponse sendMessage(@RequestBody Message message) {
-        Message sent = messageService.sendMessage(message);
-        return ApiResponse.success(sent);
+    public ApiResponse<Message> sendMessage(@Valid @RequestBody MessageRequest request, Principal principal) {
+        Long currentUserId = currentUserProvider.requireCurrentUserId(principal);
+        Message sent = messageService.sendMessage(currentUserId, request);
+        return ApiResponse.success("Gửi tin nhắn thành công", sent);
     }
 
     @GetMapping("/contract/{contractId}")
-    public ApiResponse getMessagesByContract(@PathVariable Long contractId) {
-        List<Message> messages = messageService.getMessagesByContract(contractId);
-        return ApiResponse.success(messages);
+    public ApiResponse<List<Message>> getMessagesByContract(@PathVariable Long contractId, Principal principal) {
+        Long currentUserId = currentUserProvider.requireCurrentUserId(principal);
+        List<Message> messages = messageService.getMessagesByContract(contractId, currentUserId);
+        return ApiResponse.success("Lấy danh sách tin nhắn thành công", messages);
     }
 }
