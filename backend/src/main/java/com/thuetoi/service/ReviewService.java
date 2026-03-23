@@ -17,6 +17,6 @@ public class ReviewService {
     }
 
     public List<Review> getReviewsByContract(Long contractId) {
-        return reviewRepository.findAll(); // TODO: filter by contract
+        return reviewRepository.findByContractId(contractId);
     }
 }

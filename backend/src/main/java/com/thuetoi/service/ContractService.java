@@ -28,7 +28,7 @@ public class ContractService {
     }
 
     public List<Contract> getContractsByUser(Long userId) {
-        return contractRepository.findAll(); // TODO: filter by user
+        return contractRepository.findByClientIdOrFreelancerId(userId, userId);
     }
 
     public Milestone addMilestone(Milestone milestone) {
@@ -36,7 +36,7 @@ public class ContractService {
     }
 
     public List<Milestone> getMilestonesByContract(Long contractId) {
-        return milestoneRepository.findAll(); // TODO: filter by contract
+        return milestoneRepository.findByContractId(contractId);
     }
 
     public Contract updateContractStatus(Long contractId, String status) {

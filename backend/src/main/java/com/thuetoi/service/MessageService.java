@@ -17,6 +17,6 @@ public class MessageService {
     }
 
     public List<Message> getMessagesByContract(Long contractId) {
-        return messageRepository.findAll(); // TODO: filter by contract
+        return messageRepository.findByContractIdOrderBySentAtAsc(contractId);
     }
 }
