@@ -7,41 +7,8 @@ import Callout from '../components/common/Callout';
 import { Caption } from '../components/common/Typography';
 import { useToast } from '../components/common/Toast';
 import { useAuth } from '../hooks/useAuth';
+import bgImage from '../assets/pexels-luna-lovegood-4087177.webp';
 
-/* Geometric hexagon background — inspired by Figma crypto-wallet kit */
-/* viewBox 1440x900 covers standard desktop viewport; coords are absolute pixels */
-const HexPattern = () => (
-  <svg
-    className="absolute inset-0 h-full w-full"
-    xmlns="http://www.w3.org/2000/svg"
-    viewBox="0 0 1440 900"
-    preserveAspectRatio="xMidYMid slice"
-  >
-    {/* Top-left cluster */}
-    <polygon points="100,10 160,44 160,112 100,146 40,112 40,44"   stroke="#cbd5e1" strokeWidth="1" fill="none" opacity="0.5" />
-    <polygon points="210,10 270,44 270,112 210,146 150,112 150,44"  stroke="#e2e8f0" strokeWidth="1" fill="none" opacity="0.4" />
-    <polygon points="40,115 100,149 100,217 40,251 -20,217 -20,149" stroke="#cbd5e1" strokeWidth="1" fill="none" opacity="0.3" />
-    <polygon points="160,120 220,154 220,222 160,256 100,222 100,154" stroke="#e2e8f0" strokeWidth="1" fill="none" opacity="0.4" />
-    <polygon points="270,55 330,89 330,157 270,191 210,157 210,89"  stroke="#cbd5e1" strokeWidth="1" fill="none" opacity="0.3" />
-    <polygon points="320,10 380,44 380,112 320,146 260,112 260,44"  stroke="#f1f5f9" strokeWidth="1" fill="none" opacity="0.5" />
-
-    {/* Top-right cluster — converted from % to px (viewBox 1440×900) */}
-    <polygon points="1123,18 1210,49 1210,112 1123,144 1037,112 1037,49" stroke="#cbd5e1" strokeWidth="1" fill="none" opacity="0.4" />
-    <polygon points="1238,72 1325,103 1325,167 1238,198 1152,167 1152,103" stroke="#e2e8f0" strokeWidth="1" fill="none" opacity="0.3" />
-    <polygon points="1325,18 1411,49 1411,112 1325,144 1238,112 1238,49" stroke="#f1f5f9" strokeWidth="1" fill="none" opacity="0.5" />
-
-    {/* Bottom-right cluster — teal tones match Figma gradient */}
-    <polygon points="1066,648 1181,688 1181,770 1066,810 950,770 950,688"  stroke="#a7f3d0" strokeWidth="1" fill="none" opacity="0.45" />
-    <polygon points="1181,720 1296,760 1296,842 1181,882 1066,842 1066,760" stroke="#6ee7b7" strokeWidth="1" fill="none" opacity="0.35" />
-    <polygon points="1296,666 1411,706 1411,788 1296,828 1181,788 1181,706" stroke="#a7f3d0" strokeWidth="1" fill="none" opacity="0.4" />
-    <polygon points="950,738 1066,778 1066,860 950,900 835,860 835,778"    stroke="#d1fae5" strokeWidth="1" fill="none" opacity="0.3" />
-    <polygon points="1181,810 1296,850 1296,927 1181,963 1066,927 1066,850" stroke="#6ee7b7" strokeWidth="1" fill="none" opacity="0.3" />
-
-    {/* Center faint hexes */}
-    <polygon points="662,342 749,374 749,436 662,468 576,436 576,374" stroke="#e2e8f0" strokeWidth="1" fill="none" opacity="0.3" />
-    <polygon points="806,495 893,526 893,590 806,621 720,590 720,526"  stroke="#e2e8f0" strokeWidth="1" fill="none" opacity="0.25" />
-  </svg>
-);
 
 const LoginPage = () => {
   const [searchParams] = useSearchParams();
@@ -82,37 +49,31 @@ const LoginPage = () => {
   };
 
   return (
-    <div className="relative flex h-screen flex-col overflow-hidden bg-slate-50">
+    <div className="relative flex h-screen flex-col overflow-hidden">
 
-      {/* ── Geometric background (Figma: polygon honeycomb) ── */}
-      <div className="pointer-events-none absolute inset-0 overflow-hidden">
-        <HexPattern />
-      </div>
-
-      {/* ── Bottom-right teal gradient glow (Figma: radial teal wash) ── */}
-      <div
-        className="pointer-events-none absolute inset-0"
-        style={{
-          background:
-            'radial-gradient(ellipse 55% 55% at 90% 95%, rgba(16,185,129,0.14) 0%, transparent 65%)',
-        }}
+      {/* ── Background image ── */}
+      <img
+        src={bgImage}
+        alt=""
+        className="pointer-events-none absolute inset-0 h-full w-full object-cover"
       />
 
-      {/* ══ TOP NAV (Figma: logo left · Sign up right) ══ */}
+      {/* ── Dark overlay để card/text dễ đọc ── */}
+      <div className="pointer-events-none absolute inset-0 bg-slate-900/60" />
+
+      {/* ══ TOP NAV ══ */}
       <header className="relative z-10 flex items-center justify-between px-8 py-4">
         <Link to="/" className="flex items-center gap-2.5">
-          <div className="border-2 border-secondary-900 bg-secondary-900 px-2.5 py-1 text-xs font-black uppercase tracking-[0.22em] text-white">
+          <div className="border-2 border-white bg-white/10 px-2.5 py-1 text-xs font-black uppercase tracking-[0.22em] text-white backdrop-blur-sm">
             TT
           </div>
-          <span className="text-sm font-black uppercase tracking-[0.18em] text-secondary-900">
+          <span className="text-sm font-black uppercase tracking-[0.18em] text-white">
             Thuê Tôi
           </span>
         </Link>
-
-        {/* Figma: "Sign up" outline pill → project: sharp outline button */}
         <Link
           to="/auth/register"
-          className="border border-primary-600 px-6 py-2 text-sm font-semibold text-primary-700 transition-colors hover:bg-primary-50"
+          className="border border-white/60 px-6 py-2 text-sm font-semibold text-white transition-colors hover:bg-white/10"
         >
           Đăng ký
         </Link>
@@ -217,7 +178,7 @@ const LoginPage = () => {
 
       {/* ── Footer ── */}
       <footer className="relative z-10 pb-3 text-center">
-        <Caption className="text-[11px] uppercase tracking-[0.18em] text-slate-300">
+        <Caption className="text-[11px] uppercase tracking-[0.18em] text-white/40">
           © 2025 Thuê Tôi Platform
         </Caption>
       </footer>
