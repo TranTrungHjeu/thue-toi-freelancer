@@ -1,6 +1,5 @@
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import bgImage from '../assets/pexels-luna-lovegood-4087177.webp';
 import Input from '../components/common/Input';
 import Select from '../components/common/Select';
 import Textarea from '../components/common/Textarea';
@@ -56,17 +55,7 @@ const RegisterPage = () => {
   };
 
   return (
-    <div className="relative flex h-screen flex-col overflow-hidden">
-
-      {/* ── Background image ── */}
-      <img
-        src={bgImage}
-        alt=""
-        className="pointer-events-none absolute inset-0 h-full w-full object-cover"
-      />
-
-      {/* ── Dark overlay ── */}
-      <div className="pointer-events-none absolute inset-0 bg-slate-900/60" />
+    <div className="relative flex min-h-screen flex-col">
 
       {/* ══ TOP NAV ══ */}
       <header className="relative z-10 flex items-center justify-between px-8 py-4">

@@ -7,8 +7,6 @@ import Callout from '../components/common/Callout';
 import { Caption } from '../components/common/Typography';
 import { useToast } from '../components/common/Toast';
 import { useAuth } from '../hooks/useAuth';
-import bgImage from '../assets/pexels-luna-lovegood-4087177.webp';
-
 
 const LoginPage = () => {
   const [searchParams] = useSearchParams();
@@ -49,17 +47,7 @@ const LoginPage = () => {
   };
 
   return (
-    <div className="relative flex h-screen flex-col overflow-hidden">
-
-      {/* ── Background image ── */}
-      <img
-        src={bgImage}
-        alt=""
-        className="pointer-events-none absolute inset-0 h-full w-full object-cover"
-      />
-
-      {/* ── Dark overlay để card/text dễ đọc ── */}
-      <div className="pointer-events-none absolute inset-0 bg-slate-900/60" />
+    <div className="relative flex min-h-screen flex-col">
 
       {/* ══ TOP NAV ══ */}
       <header className="relative z-10 flex items-center justify-between px-8 py-4">
