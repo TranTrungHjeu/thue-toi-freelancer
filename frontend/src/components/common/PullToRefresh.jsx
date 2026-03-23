@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from 'react';
+import React from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { Refresh } from 'iconoir-react';
 
@@ -10,7 +10,7 @@ const MotionDiv = motion.div;
  * Simple Pull To Refresh visual indicator.
  * Displays when a certain scroll threshold is met.
  */
-const PullToRefresh = ({ isRefreshing, onRefresh }) => {
+const PullToRefresh = ({ isRefreshing }) => {
   return (
     <AnimatePresence>
       {isRefreshing && (

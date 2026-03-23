@@ -5,7 +5,7 @@ import Input from '../components/common/Input';
 import Button from '../components/common/Button';
 import Callout from '../components/common/Callout';
 import { Caption } from '../components/common/Typography';
-import { useToast } from '../components/common/Toast';
+import { useToast } from '../hooks/useToast';
 import { useAuth } from '../hooks/useAuth';
 
 const FEATURE_CARDS = [

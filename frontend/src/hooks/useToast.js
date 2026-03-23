@@ -11,20 +11,13 @@ import { ToastContext } from '../contexts/ToastContext';
  * toast.error('Payment failed');
  */
 export const useToast = () => {
-    const context = useContext(ToastContext);
+  const context = useContext(ToastContext);
 
-    if (!context) {
-        throw new Error('useToast must be used within a ToastProvider');
-    }
+  if (!context) {
+    throw new Error('useToast must be used within a ToastProvider');
+  }
 
-    const { addToast } = context;
-
-    return {
-        success: (msg) => addToast(msg, 'success'),
-        error: (msg) => addToast(msg, 'error'),
-        info: (msg) => addToast(msg, 'info'),
-        warn: (msg) => addToast(msg, 'warn')
-    };
+  return context;
 };
 
 export default useToast;

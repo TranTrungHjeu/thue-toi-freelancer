@@ -57,6 +57,9 @@ axiosClient.interceptors.response.use(
         if (response.config?.url?.includes('/v1/auth/logout')) {
             clearAccessToken();
         }
+        if (response.data?.success === false) {
+            return Promise.reject(response.data);
+        }
         if (response.data && response.data.success !== undefined) {
             return response.data;
         }

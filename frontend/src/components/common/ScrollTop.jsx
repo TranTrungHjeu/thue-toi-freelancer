@@ -4,6 +4,8 @@ import React, { useState, useEffect } from 'react';
 import { AnimatePresence, motion } from 'motion/react';
 import { NavArrowUp } from 'iconoir-react';
 
+const MotionButton = motion.button;
+
 /**
  * Scroll to Top button.
  * Strictly sharp, glass effect, subtle floating animation.
@@ -33,7 +35,7 @@ const ScrollTop = ({ className = "" }) => {
   return (
     <AnimatePresence>
       {isVisible && (
-        <motion.button
+        <MotionButton
           initial={{ opacity: 0, scale: 0.8, y: 20 }}
           animate={{ opacity: 1, scale: 1, y: 0 }}
           exit={{ opacity: 0, scale: 0.8, y: 20 }}
@@ -47,7 +49,7 @@ const ScrollTop = ({ className = "" }) => {
           style={{ borderRadius: '0px' }}
         >
           <NavArrowUp className="w-6 h-6" />
-        </motion.button>
+        </MotionButton>
       )}
     </AnimatePresence>
   );

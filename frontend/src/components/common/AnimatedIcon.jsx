@@ -3,6 +3,8 @@
 import React from 'react';
 import { motion, useAnimation } from "motion/react";
 
+const MotionDiv = motion.div;
+
 /**
  * A wrapper to add "itshover" style animations to any icon.
  * @param {React.ElementType} icon - The Icon component to animate.
@@ -10,6 +12,11 @@ import { motion, useAnimation } from "motion/react";
  */
 const AnimatedIcon = ({ icon: Icon, animation = 'float', size = 20, className = "" }) => {
   const controls = useAnimation();
+  const iconElement = React.createElement(Icon, {
+    width: size,
+    height: size,
+    strokeWidth: 1.5,
+  });
 
   const handleMouseEnter = () => {
     switch (animation) {
@@ -31,13 +38,13 @@ const AnimatedIcon = ({ icon: Icon, animation = 'float', size = 20, className = 
   };
 
   return (
-    <motion.div 
+    <MotionDiv 
       onMouseEnter={handleMouseEnter}
       animate={controls}
       className={`inline-flex items-center justify-center ${className}`}
     >
-      <Icon width={size} height={size} strokeWidth={1.5} />
-    </motion.div>
+      {iconElement}
+    </MotionDiv>
   );
 };
 
