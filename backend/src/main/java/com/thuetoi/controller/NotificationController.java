@@ -1,10 +1,12 @@
 package com.thuetoi.controller;
 
+import com.thuetoi.dto.request.NotificationRequest;
 import com.thuetoi.dto.response.ApiResponse;
 import com.thuetoi.entity.Notification;
 import com.thuetoi.exception.BusinessException;
 import com.thuetoi.security.CurrentUserProvider;
 import com.thuetoi.service.NotificationService;
+import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.*;
@@ -32,11 +34,16 @@ public class NotificationController {
     }
 
     @PostMapping
-    public ApiResponse<Notification> createNotification(@RequestBody Notification notification, Principal principal) {
+    public ApiResponse<Notification> createNotification(@Valid @RequestBody NotificationRequest request, Principal principal) {
         Long currentUserId = currentUserProvider.requireCurrentUserId(principal);
-        notification.setUserId(currentUserId);
-        Notification created = notificationService.createNotification(notification);
-        return ApiResponse.success(created);
+        Notification created = notificationService.createNotification(
+            currentUserId,
+            request.getType(),
+            request.getTitle(),
+            request.getContent(),
+            request.getLink()
+        );
+        return ApiResponse.success("Tạo thông báo thành công", created);
     }
 
     @GetMapping("/user/{userId}")
@@ -63,6 +70,6 @@ public class NotificationController {
     public ApiResponse<Notification> markAsRead(@PathVariable Long notificationId, Principal principal) {
         Long currentUserId = currentUserProvider.requireCurrentUserId(principal);
         Notification updated = notificationService.markAsRead(notificationId, currentUserId);
-        return ApiResponse.success(updated);
+        return ApiResponse.success("Đánh dấu thông báo đã đọc thành công", updated);
     }
 }

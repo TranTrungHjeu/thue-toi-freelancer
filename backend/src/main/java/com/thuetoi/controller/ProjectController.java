@@ -6,6 +6,7 @@ import com.thuetoi.entity.Project;
 import com.thuetoi.exception.BusinessException;
 import com.thuetoi.security.CurrentUserProvider;
 import com.thuetoi.service.ProjectService;
+import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.*;
@@ -38,7 +39,7 @@ public class ProjectController {
      * Tạo dự án mới
      */
     @PostMapping
-    public ApiResponse<Project> createProject(@RequestBody ProjectRequest request, Principal principal) {
+    public ApiResponse<Project> createProject(@Valid @RequestBody ProjectRequest request, Principal principal) {
         Long currentUserId = currentUserProvider.requireCurrentUserId(principal);
         Project project = projectService.createProject(
             currentUserId,
@@ -88,16 +89,16 @@ public class ProjectController {
      */
     @GetMapping("/{id}")
     public ApiResponse<Project> getProject(@PathVariable Long id) {
-        return projectService.getProject(id)
-            .map(project -> ApiResponse.success("Lấy chi tiết dự án thành công", project))
-            .orElseGet(() -> ApiResponse.error("ERR_PROJECT_01", "Không tìm thấy dự án"));
+        Project project = projectService.getProject(id)
+            .orElseThrow(() -> new BusinessException("ERR_PROJECT_01", "Không tìm thấy dự án", HttpStatus.NOT_FOUND));
+        return ApiResponse.success("Lấy chi tiết dự án thành công", project);
     }
 
     /**
      * Cập nhật dự án
      */
     @PutMapping("/{id}")
-    public ApiResponse<Project> updateProject(@PathVariable Long id, @RequestBody ProjectRequest request, Principal principal) {
+    public ApiResponse<Project> updateProject(@PathVariable Long id, @Valid @RequestBody ProjectRequest request, Principal principal) {
         Long currentUserId = currentUserProvider.requireCurrentUserId(principal);
         Project project = projectService.updateProject(
             id,
