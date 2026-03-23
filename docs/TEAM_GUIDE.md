@@ -66,6 +66,26 @@ Tuyệt đối **KHÔNG code trực tiếp và push thẳng lên branch `main` h
    - Lên Github, tạo Pull Request báo cáo là "Tôi muốn gộp nhánh `dev/be/hieult-feature/auth-api` vào nhánh `develop`".
    - Phải có ít nhất 1 thành viên khác (hoặc nhóm trưởng) review code (Đọc lướt qua xem có lỗi ngớ ngẩn không) rồi mới bấm `Merge`.
 
+### Quy Tắc Bảo Vệ Nhánh (Branch Protection)
+Để tránh tình trạng merge nhầm thẳng vào `main` hoặc bỏ qua bước review, repo phải bật branch protection cho cả `develop` và `main`.
+
+- `develop`:
+  - Cấm push trực tiếp.
+  - Chỉ được merge qua Pull Request.
+  - Bắt buộc pass các check: `frontend-lint`, `frontend-build`, `backend-test`.
+  - Bắt buộc có ít nhất 1 approval trước khi merge.
+- `main`:
+  - Cấm push trực tiếp.
+  - Chỉ nhận Pull Request từ `develop` khi chốt bản ổn định để demo, nộp bài hoặc deploy.
+  - Bắt buộc pass các check: `frontend-lint`, `frontend-build`, `backend-test`.
+  - Bắt buộc có ít nhất 1 approval trước khi merge.
+
+### Luồng Merge Chuẩn
+1. Mọi nhánh cá nhân/tính năng đều tách từ `develop`.
+2. Mọi Pull Request nghiệp vụ, UI, docs hoặc refactor đều target về `develop`.
+3. Sau khi `develop` ổn định và đủ check xanh, nhóm trưởng mới mở Pull Request `develop -> main`.
+4. Không merge trực tiếp feature branch, bugfix branch hoặc docs branch vào `main`.
+
 ---
 
 ## 3. Cách Phân Chia Công Việc
