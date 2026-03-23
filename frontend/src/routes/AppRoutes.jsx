@@ -1,5 +1,6 @@
 import { Routes, Route } from 'react-router-dom';
 import MainLayout from '../components/layout/MainLayout';
+import AuthImageLayout from '../components/layout/AuthImageLayout';
 import ComponentGallery from '../pages/ComponentGallery';
 import ApiTest from '../pages/ApiTest';
 import LandingPage from '../pages/LandingPage';
@@ -22,9 +23,11 @@ const AppRoutes = () => (
     <Route path="/api-lab" element={<ApiTest />} />
 
     <Route element={<GuestRoute />}>
-      <Route path="/auth/login" element={<LoginPage />} />
-      <Route path="/auth/register" element={<RegisterPage />} />
-      <Route path="/auth/verify-email" element={<VerifyEmailPage />} />
+      <Route element={<AuthImageLayout />}>
+        <Route path="/auth/login" element={<LoginPage />} />
+        <Route path="/auth/register" element={<RegisterPage />} />
+        <Route path="/auth/verify-email" element={<VerifyEmailPage />} />
+      </Route>
     </Route>
 
     <Route element={<ProtectedRoute />}>
