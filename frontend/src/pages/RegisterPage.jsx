@@ -1,7 +1,6 @@
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import AuthShell from '../components/layout/AuthShell';
-import Card from '../components/common/Card';
+import bgImage from '../assets/pexels-luna-lovegood-4087177.webp';
 import Input from '../components/common/Input';
 import Select from '../components/common/Select';
 import Textarea from '../components/common/Textarea';
@@ -24,6 +23,7 @@ const roleOptions = [
   { value: 'freelancer', label: 'Freelancer' },
 ];
 
+
 const RegisterPage = () => {
   const navigate = useNavigate();
   const { addToast } = useToast();
@@ -33,10 +33,7 @@ const RegisterPage = () => {
   const [submitting, setSubmitting] = useState(false);
 
   const handleChange = (field) => (event) => {
-    setForm((previous) => ({
-      ...previous,
-      [field]: event.target.value,
-    }));
+    setForm((prev) => ({ ...prev, [field]: event.target.value }));
   };
 
   const handleSubmit = async (event) => {
@@ -59,102 +56,141 @@ const RegisterPage = () => {
   };
 
   return (
-    <AuthShell
-      eyebrow="Đăng ký"
-      title="Tạo tài khoản đúng vai trò để vào đúng workflow freelancer."
-      description="Frontend này buộc role ngay từ lúc tạo tài khoản, gửi OTP email, và chỉ mở login sau khi verify thành công."
-      tips={[
-        {
-          eyebrow: 'Kỷ luật vai trò',
-          title: 'Khách hàng hoặc freelancer',
-          description: 'Role admin không được đăng ký công khai từ frontend, đúng với business rule của backend.',
-        },
-        {
-          eyebrow: 'Hồ sơ trước',
-          title: 'Mô tả bản thân ngay khi onboarding',
-          description: 'Profile description giúp freelancer điền năng lực, khách hàng điền mô tả doanh nghiệp để bên còn lại có thêm context.',
-        },
-      ]}
-    >
-      <Card className="border-2 border-slate-200 bg-white p-6 md:p-8">
-        <form className="flex flex-col gap-4" onSubmit={handleSubmit}>
-          <div className="flex flex-col gap-1">
-            <span className="text-[11px] font-bold uppercase tracking-[0.18em] text-primary-700">
-              Đăng ký
-            </span>
-            <h2 className="text-2xl font-serif font-semibold text-secondary-900">
-              Khởi tạo tài khoản
-            </h2>
-            <Caption className="text-sm text-slate-500">
-              Sau bước này hệ thống sẽ gửi OTP xác thực email để bạn kích hoạt tài khoản.
-            </Caption>
+    <div className="relative flex h-screen flex-col overflow-hidden">
+
+      {/* ── Background image ── */}
+      <img
+        src={bgImage}
+        alt=""
+        className="pointer-events-none absolute inset-0 h-full w-full object-cover"
+      />
+
+      {/* ── Dark overlay ── */}
+      <div className="pointer-events-none absolute inset-0 bg-slate-900/60" />
+
+      {/* ══ TOP NAV ══ */}
+      <header className="relative z-10 flex items-center justify-between px-8 py-4">
+        <Link to="/" className="flex items-center gap-2.5">
+          <div className="border-2 border-white bg-white/10 px-2.5 py-1 text-xs font-black uppercase tracking-[0.22em] text-white backdrop-blur-sm">
+            TT
+          </div>
+          <span className="text-sm font-black uppercase tracking-[0.18em] text-white">
+            Thuê Tôi
+          </span>
+        </Link>
+        <Link
+          to="/auth/login"
+          className="border border-white/60 px-6 py-2 text-sm font-semibold text-white transition-colors hover:bg-white/10"
+        >
+          Đăng nhập
+        </Link>
+      </header>
+
+      {/* ══ CENTER CARD ══ */}
+      <main className="relative z-10 flex flex-1 items-center justify-center px-4 py-2">
+        <div className="w-full max-w-[520px] border border-slate-100 bg-white px-8 py-6 shadow-lg">
+
+          {/* Heading */}
+          <div className="mb-4 text-center">
+            <h1 className="font-serif text-2xl font-bold leading-tight text-secondary-900">
+              Tạo tài khoản mới
+            </h1>
+            <p className="mt-1.5 text-sm text-slate-500">
+              Chọn vai trò phù hợp — hệ thống gửi OTP xác thực email để kích hoạt.
+            </p>
           </div>
 
-          {formError && (
-            <Callout type="danger" title="Không thể tiếp tục">
-              {formError}
-            </Callout>
-          )}
+          {/* ── Form ── */}
+          <form className="flex flex-col gap-3" onSubmit={handleSubmit}>
+            {formError && (
+              <Callout type="danger" title="Không thể tiếp tục">
+                {formError}
+              </Callout>
+            )}
 
-          <Input
-            label="Họ và tên"
-            placeholder="Nguyễn Văn A"
-            value={form.fullName}
-            onChange={handleChange('fullName')}
-            error={fieldErrors.fullName}
-            autoComplete="name"
-          />
-
-          <div className="grid gap-4 md:grid-cols-2">
             <Input
-              label="Email"
-              type="email"
-              placeholder="ban@thuetoi.vn"
-              value={form.email}
-              onChange={handleChange('email')}
-              error={fieldErrors.email}
-              autoComplete="email"
+              label="Họ và tên"
+              placeholder="Nguyễn Văn A"
+              value={form.fullName}
+              onChange={handleChange('fullName')}
+              error={fieldErrors.fullName}
+              autoComplete="name"
             />
-            <Select
-              label="Vai trò"
-              value={form.role}
-              onChange={handleChange('role')}
-              error={fieldErrors.role}
-              options={roleOptions}
+
+            {/* Email + Role side by side */}
+            <div className="grid grid-cols-2 gap-3">
+              <Input
+                label="Email"
+                type="email"
+                placeholder="ban@thuetoi.vn"
+                value={form.email}
+                onChange={handleChange('email')}
+                error={fieldErrors.email}
+                autoComplete="email"
+              />
+              <Select
+                label="Vai trò"
+                value={form.role}
+                onChange={handleChange('role')}
+                error={fieldErrors.role}
+                options={roleOptions}
+              />
+            </div>
+
+            <Input
+              label="Mật khẩu"
+              type="password"
+              placeholder="Tối thiểu 8 ký tự"
+              value={form.password}
+              onChange={handleChange('password')}
+              error={fieldErrors.password}
+              autoComplete="new-password"
             />
-          </div>
 
-          <Input
-            label="Mật khẩu"
-            type="password"
-            placeholder="Nhập mật khẩu tối thiểu 8 ký tự"
-            value={form.password}
-            onChange={handleChange('password')}
-            error={fieldErrors.password}
-            autoComplete="new-password"
-          />
+            {/* Override min-h-32 hardcoded in Textarea component */}
+            <Textarea
+              label="Mô tả ngắn"
+              placeholder="Giới thiệu ngắn về nhu cầu dự án hoặc năng lực chuyên môn."
+              value={form.profileDescription}
+              onChange={handleChange('profileDescription')}
+              error={fieldErrors.profileDescription}
+              rows={2}
+              className="[&_textarea]:min-h-0 [&_textarea]:h-[68px]"
+            />
 
-          <Textarea
-            label="Mô tả ngắn"
-            placeholder="Giới thiệu ngắn về nhu cầu dự án hoặc năng lực chuyên môn."
-            value={form.profileDescription}
-            onChange={handleChange('profileDescription')}
-            error={fieldErrors.profileDescription}
-          />
+            <Button type="submit" disabled={submitting} className="mt-1 w-full py-3.5 text-[15px]">
+              {submitting ? 'Đang tạo tài khoản...' : 'Đăng ký và gửi OTP'}
+            </Button>
 
-          <Button type="submit" disabled={submitting} className="mt-2 w-full">
-            {submitting ? 'Đang tạo tài khoản...' : 'Đăng ký và gửi OTP'}
-          </Button>
+            {/* Divider */}
+            <div className="flex items-center gap-4">
+              <div className="h-px flex-1 bg-slate-200" />
+              <Caption className="text-[11px] font-medium uppercase tracking-[0.18em] text-slate-400">
+                Hoặc
+              </Caption>
+              <div className="h-px flex-1 bg-slate-200" />
+            </div>
 
-          <div className="flex items-center justify-between gap-3 border-t border-slate-100 pt-4 text-sm">
-            <Caption>Đã có tài khoản?</Caption>
-            <Link to="/auth/login" className="font-semibold text-primary-700 hover:text-primary-800">
-              Đăng nhập ngay
-            </Link>
-          </div>
-        </form>
-      </Card>
-    </AuthShell>
+            <p className="text-center text-sm text-slate-400">
+              Đã có tài khoản?{' '}
+              <Link
+                to="/auth/login"
+                className="font-semibold text-primary-700 hover:text-primary-800"
+              >
+                Đăng nhập ngay
+              </Link>
+            </p>
+          </form>
+        </div>
+      </main>
+
+      {/* ── Footer ── */}
+      <footer className="relative z-10 pb-3 text-center">
+        <Caption className="text-[11px] uppercase tracking-[0.18em] text-white/40">
+          © 2025 Thuê Tôi Platform
+        </Caption>
+      </footer>
+    </div>
   );
 };
 

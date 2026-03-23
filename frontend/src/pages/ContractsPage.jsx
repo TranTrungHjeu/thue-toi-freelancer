@@ -9,12 +9,6 @@ import { useToast } from '../components/common/Toast';
 import marketplaceApi from '../api/marketplaceApi';
 import { formatCurrency, formatDateTime, getContractStatusMeta } from '../utils/formatters';
 
-const filterContractsByOwner = (contracts, userId) => {
-  return (contracts || []).filter(
-    (contract) => contract.clientId === userId || contract.freelancerId === userId,
-  );
-};
-
 const ContractsPage = () => {
   const { user } = useAuth();
   const { addToast } = useToast();
@@ -32,9 +26,8 @@ const ContractsPage = () => {
 
       setLoading(true);
       try {
-        const response = await marketplaceApi.getContractsByUser(user.id);
-        const filteredContracts = filterContractsByOwner(response.data || [], user.id);
-        setContracts(filteredContracts);
+        const response = await marketplaceApi.getMyContracts();
+        setContracts(response.data || []);
       } catch (error) {
         addToast(error?.message || 'Không thể tải danh sách hợp đồng.', 'error');
       } finally {
@@ -160,9 +153,6 @@ const ContractsPage = () => {
                       {milestone.status || 'pending'}
                     </Badge>
                   </div>
-                  <Text className="mt-3 text-sm text-slate-600">
-                    {milestone.description || 'Milestone này chưa có mô tả chi tiết.'}
-                  </Text>
                   <div className="mt-3 text-sm font-semibold text-slate-700">
                     Giá trị: {formatCurrency(milestone.amount)}
                   </div>

@@ -49,15 +49,15 @@ const ProjectsPage = () => {
     setLoading(true);
     try {
       if (isCustomer) {
-        const projectsResponse = await marketplaceApi.getProjectsByUser(user.id);
+        const projectsResponse = await marketplaceApi.getMyProjects();
         setProjects(projectsResponse.data || []);
         setSelectedProjectBids([]);
       } else {
         const [projectsResponse, bidsResponse] = await Promise.all([
           marketplaceApi.getAllProjects(),
-          marketplaceApi.getBidsByFreelancer(user.id),
+          marketplaceApi.getMyBids(),
         ]);
-        setProjects((projectsResponse.data || []).filter((project) => project.status === 'open'));
+        setProjects(projectsResponse.data || []);
         setMyBids(bidsResponse.data || []);
       }
     } catch (error) {
@@ -101,7 +101,6 @@ const ProjectsPage = () => {
 
     try {
       await marketplaceApi.createProject({
-        userId: user.id,
         title: projectForm.title,
         description: projectForm.description,
         budgetMin: Number(projectForm.budgetMin),
@@ -135,9 +134,13 @@ const ProjectsPage = () => {
   const handleAcceptBid = async (bidId) => {
     try {
       await marketplaceApi.acceptBid(bidId);
-      addToast('Đã cập nhật trạng thái bid thành công.', 'success');
+      addToast('Da chap nhan bid va tao hop dong thanh cong.', 'success');
+      await loadPageData();
       if (selectedProject) {
-        await handleLoadProjectBids(selectedProject);
+        await handleLoadProjectBids({
+          ...selectedProject,
+          status: 'in_progress',
+        });
       }
     } catch (error) {
       addToast(error?.message || 'Không thể chấp nhận bid.', 'error');
@@ -155,7 +158,6 @@ const ProjectsPage = () => {
     try {
       await marketplaceApi.createBid({
         projectId: selectedProject.id,
-        freelancerId: user.id,
         price: Number(bidForm.price),
         estimatedTime: bidForm.estimatedTime,
         message: bidForm.message,
@@ -340,7 +342,7 @@ const ProjectsPage = () => {
                       <Text className="mt-2 text-sm text-slate-500">
                         Thời gian dự kiến: {bid.estimatedTime || 'Đang cập nhật'}
                       </Text>
-                      {bid.status !== 'accepted' && (
+                      {selectedProject.status === 'open' && bid.status === 'pending' && (
                         <div className="mt-4">
                           <Button onClick={() => handleAcceptBid(bid.id)}>
                             Chấp nhận bid
