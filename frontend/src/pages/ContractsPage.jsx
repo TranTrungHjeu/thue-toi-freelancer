@@ -29,7 +29,7 @@ const ContractsPage = () => {
         const response = await marketplaceApi.getMyContracts();
         setContracts(response.data || []);
       } catch (error) {
-        addToast(error?.message || 'Khong the tai danh sach hop dong.', 'error');
+        addToast(error?.message || 'Không thể tải danh sách hợp đồng.', 'error');
       } finally {
         setLoading(false);
       }
@@ -46,7 +46,7 @@ const ContractsPage = () => {
       const response = await marketplaceApi.getMilestonesByContract(contract.id);
       setMilestones((response.data || []).filter((milestone) => milestone.contractId === contract.id));
     } catch (error) {
-      addToast(error?.message || 'Khong the tai milestone.', 'error');
+      addToast(error?.message || 'Không thể tải milestone.', 'error');
     } finally {
       setLoadingMilestones(false);
     }
@@ -57,28 +57,28 @@ const ContractsPage = () => {
       <section className="grid gap-5 lg:grid-cols-[1.05fr_0.95fr]">
         <Card className="border-2 border-slate-200 bg-white p-6 md:p-8">
           <Caption className="text-[11px] uppercase tracking-[0.18em] text-primary-700">
-            Contracts
+            Hợp đồng
           </Caption>
           <H1 className="mt-3 text-4xl">
-            Theo doi hop dong va cac milestone lien quan.
+            Theo dõi hợp đồng và các milestone liên quan.
           </H1>
           <Text className="mt-4 text-slate-600">
-            Trang nay hien thi cac hop dong backend tra ve cho user hien tai va cho phep mo milestone cua tung hop dong.
+            Trang này hiển thị các hợp đồng backend trả về cho user hiện tại và cho phép mở milestone của từng hợp đồng.
           </Text>
         </Card>
 
-        <Callout type="info" title="Trang thai hien tai">
-          Backend contract hien dang o muc CRUD co ban, vi vay frontend hien uu tien hien thi danh sach hop dong va milestone lien quan cho workflow quan sat.
+        <Callout type="info" title="Trạng thái hiện tại">
+          Backend contract hiện đang ở mức CRUD cơ bản, vì vậy frontend hiện ưu tiên hiển thị danh sách hợp đồng và milestone liên quan cho workflow quan sát.
         </Callout>
       </section>
 
       <section className="grid gap-6 lg:grid-cols-[0.9fr_1.1fr]">
         <Card className="border-2 border-slate-200 bg-white p-6">
           <Caption className="text-[11px] uppercase tracking-[0.18em] text-primary-700">
-            Contract list
+            Danh sách hợp đồng
           </Caption>
           <H2 className="mt-2 text-2xl">
-            Hop dong cua ban
+            Hợp đồng của bạn
           </H2>
           <div className="mt-5 flex flex-col gap-3">
             {contracts.map((contract) => {
@@ -88,10 +88,10 @@ const ContractsPage = () => {
                   <div className="flex items-start justify-between gap-3">
                     <div>
                       <div className="text-sm font-bold text-secondary-900">
-                        Contract #{contract.id}
+                        Hợp đồng #{contract.id}
                       </div>
                       <Caption className="text-xs text-slate-500">
-                        Project #{contract.projectId}
+                        Dự án #{contract.projectId}
                       </Caption>
                     </div>
                     <Badge color={statusMeta.color}>
@@ -99,10 +99,10 @@ const ContractsPage = () => {
                     </Badge>
                   </div>
                   <div className="mt-3 text-sm text-slate-600">
-                    Gia tri: {formatCurrency(contract.totalAmount)}
+                    Giá trị: {formatCurrency(contract.totalAmount)}
                   </div>
                   <div className="mt-1 text-sm text-slate-500">
-                    Bat dau: {formatDateTime(contract.startDate)}
+                    Bắt đầu: {formatDateTime(contract.startDate)}
                   </div>
                   <div className="mt-4">
                     <Button variant="outline" onClick={() => handleSelectContract(contract)}>
@@ -114,8 +114,8 @@ const ContractsPage = () => {
             })}
 
             {!loading && contracts.length === 0 && (
-              <Callout type="info" title="Chua co hop dong">
-                Khi co hop dong duoc tao tren backend, danh sach se xuat hien tai day.
+              <Callout type="info" title="Chưa có hợp đồng">
+                Khi có hợp đồng được tạo trên backend, danh sách sẽ xuất hiện tại đây.
               </Callout>
             )}
           </div>
@@ -123,20 +123,20 @@ const ContractsPage = () => {
 
         <Card className="border-2 border-slate-200 bg-white p-6">
           <Caption className="text-[11px] uppercase tracking-[0.18em] text-primary-700">
-            Milestones
+            Các mốc tiến độ
           </Caption>
           <H2 className="mt-2 text-2xl">
-            {selectedContract ? `Tien do cho contract #${selectedContract.id}` : 'Chon mot hop dong de xem milestone'}
+            {selectedContract ? `Tiến độ cho hợp đồng #${selectedContract.id}` : 'Chọn một hợp đồng để xem milestone'}
           </H2>
           {!selectedContract ? (
-            <Callout type="info" title="Chua chon hop dong">
-              Chon mot hop dong ben trai de hien milestone lien quan.
+            <Callout type="info" title="Chưa chọn hợp đồng">
+              Chọn một hợp đồng bên trái để hiển thị milestone liên quan.
             </Callout>
           ) : (
             <div className="mt-5 flex flex-col gap-3">
               {loadingMilestones && (
                 <Text className="text-sm text-slate-500">
-                  Dang tai milestone...
+                  Đang tải milestone...
                 </Text>
               )}
 
@@ -146,7 +146,7 @@ const ContractsPage = () => {
                     <div>
                       <div className="text-sm font-bold text-secondary-900">{milestone.title}</div>
                       <Caption className="text-xs text-slate-500">
-                        Due: {formatDateTime(milestone.dueDate)}
+                        Hạn: {formatDateTime(milestone.dueDate)}
                       </Caption>
                     </div>
                     <Badge color={milestone.status === 'completed' ? 'success' : 'warning'}>
@@ -154,14 +154,14 @@ const ContractsPage = () => {
                     </Badge>
                   </div>
                   <div className="mt-3 text-sm font-semibold text-slate-700">
-                    Gia tri: {formatCurrency(milestone.amount)}
+                    Giá trị: {formatCurrency(milestone.amount)}
                   </div>
                 </div>
               ))}
 
               {!loadingMilestones && milestones.length === 0 && (
-                <Callout type="info" title="Chua co milestone">
-                  Hop dong nay chua co milestone duoc tao.
+                <Callout type="info" title="Chưa có milestone">
+                  Hợp đồng này chưa có milestone được tạo.
                 </Callout>
               )}
             </div>

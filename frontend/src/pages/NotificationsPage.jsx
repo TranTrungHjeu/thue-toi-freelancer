@@ -19,7 +19,7 @@ const NotificationsPage = () => {
       const response = await marketplaceApi.getNotificationsMe();
       setNotifications(response.data || []);
     } catch (error) {
-      addToast(error?.message || 'Khong the tai thong bao.', 'error');
+      addToast(error?.message || 'Không thể tải thông báo.', 'error');
     } finally {
       setLoading(false);
     }
@@ -32,7 +32,7 @@ const NotificationsPage = () => {
   const handleMarkAsRead = async (notificationId) => {
     try {
       await marketplaceApi.markNotificationAsRead(notificationId);
-      addToast('Da danh dau thong bao la da doc.', 'success');
+      addToast('Đã đánh dấu thông báo là đã đọc.', 'success');
       setNotifications((previous) =>
         previous.map((notification) =>
           notification.id === notificationId
@@ -41,7 +41,7 @@ const NotificationsPage = () => {
         ),
       );
     } catch (error) {
-      addToast(error?.message || 'Khong the cap nhat thong bao.', 'error');
+      addToast(error?.message || 'Không thể cập nhật thông báo.', 'error');
     }
   };
 
@@ -50,18 +50,18 @@ const NotificationsPage = () => {
       <section className="grid gap-5 lg:grid-cols-[1.05fr_0.95fr]">
         <Card className="border-2 border-slate-200 bg-white p-6 md:p-8">
           <Caption className="text-[11px] uppercase tracking-[0.18em] text-primary-700">
-            Notifications
+            Thông báo
           </Caption>
           <H1 className="mt-3 text-4xl">
-            Quan ly thong bao va cap nhat nghiep vu moi nhat.
+            Quản lý thông báo và cập nhật nghiệp vụ mới nhất.
           </H1>
           <Text className="mt-4 text-slate-600">
-            Frontend dang dung endpoint `/notifications/user/me` de lay thong bao dung theo current principal thay vi truyen userId thu cong.
+            Frontend đang dùng endpoint <code>/notifications/user/me</code> để lấy thông báo đúng theo current principal thay vì truyền userId thủ công.
           </Text>
         </Card>
 
-        <Callout type="success" title="Principal-based endpoint">
-          Day la mot trong nhung luong da duoc chuan hoa theo auth moi: thong bao cua toi duoc lay truc tiep tu token hien tai.
+        <Callout type="success" title="Endpoint theo principal">
+          Đây là một trong những luồng đã được chuẩn hoá theo auth mới: thông báo của tôi được lấy trực tiếp từ token hiện tại.
         </Callout>
       </section>
 
@@ -69,14 +69,14 @@ const NotificationsPage = () => {
         <div className="flex items-center justify-between gap-3">
           <div>
             <Caption className="text-[11px] uppercase tracking-[0.18em] text-primary-700">
-              Inbox
+              Hộp thư
             </Caption>
             <H2 className="mt-2 text-2xl">
-              Tat ca thong bao
+              Tất cả thông báo
             </H2>
           </div>
           <Button variant="outline" onClick={loadNotifications}>
-            Tai lai
+            Tải lại
           </Button>
         </div>
 
@@ -91,7 +91,7 @@ const NotificationsPage = () => {
                   </Caption>
                 </div>
                 <Badge color={notification.isRead ? 'info' : 'warning'}>
-                  {notification.isRead ? 'Da doc' : 'Moi'}
+                  {notification.isRead ? 'Đã đọc' : 'Mới'}
                 </Badge>
               </div>
               <Text className="mt-3 text-sm text-slate-600">
@@ -100,7 +100,7 @@ const NotificationsPage = () => {
               {!notification.isRead && (
                 <div className="mt-4">
                   <Button variant="ghost" onClick={() => handleMarkAsRead(notification.id)}>
-                    Danh dau da doc
+                    Đánh dấu đã đọc
                   </Button>
                 </div>
               )}
@@ -108,8 +108,8 @@ const NotificationsPage = () => {
           ))}
 
           {!loading && notifications.length === 0 && (
-            <Callout type="info" title="Khong co thong bao">
-              He thong hien chua co ban ghi thong bao nao cho tai khoan hien tai.
+            <Callout type="info" title="Không có thông báo">
+              Hệ thống hiện chưa có bản ghi thông báo nào cho tài khoản hiện tại.
             </Callout>
           )}
         </div>

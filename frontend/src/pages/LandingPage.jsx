@@ -12,32 +12,32 @@ const LandingPage = () => {
 
   const steps = [
     {
-      title: 'Dang ky dung vai tro',
-      description: 'Khach hang dang du an, freelancer gui bao gia. Backend da khoa public register voi role admin.',
+      title: 'Đăng ký đúng vai trò',
+      description: 'Khách hàng đăng dự án, freelancer gửi báo giá. Backend đã khoá đăng ký công khai với role admin.',
       icon: UserBag,
     },
     {
-      title: 'Xac thuc OTP email',
-      description: 'Tai khoan chi duoc phep login sau khi verify email thanh cong theo dung workflow JWT + OTP.',
+      title: 'Xác thực OTP email',
+      description: 'Tài khoản chỉ được phép đăng nhập sau khi verify email thành công theo đúng workflow JWT + OTP.',
       icon: ShieldCheck,
     },
     {
-      title: 'Dang nhap + refresh an toan',
-      description: 'Access token di qua bearer header, refresh token duoc giu bang HttpOnly cookie.',
+      title: 'Đăng nhập + refresh an toàn',
+      description: 'Access token đi qua bearer header, refresh token được giữ bằng HttpOnly cookie.',
       icon: Lock,
     },
   ];
 
   const roleCards = [
     {
-      eyebrow: 'Customer',
-      title: 'Dang du an va xu ly bao gia',
-      bullets: ['Tao project', 'Xem freelancer bid', 'Theo doi hop dong va milestone'],
+      eyebrow: 'Khách hàng',
+      title: 'Đăng dự án và xử lý báo giá',
+      bullets: ['Tạo project', 'Xem báo giá từ freelancer', 'Theo dõi hợp đồng và milestone'],
     },
     {
       eyebrow: 'Freelancer',
-      title: 'Tiep can du an phu hop',
-      bullets: ['Duyet project dang mo', 'Gui bid co gia va thoi gian', 'Lam viec trong workspace da duoc giao'],
+      title: 'Tiếp cận dự án phù hợp',
+      bullets: ['Duyệt project đang mở', 'Gửi bid có giá và thời gian', 'Làm việc trong workspace đã được giao'],
     },
   ];
 
@@ -50,22 +50,22 @@ const LandingPage = () => {
               TT
             </div>
             <div className="flex flex-col">
-              <span className="text-sm font-black uppercase tracking-[0.18em] text-secondary-900">Thue Toi</span>
+              <span className="text-sm font-black uppercase tracking-[0.18em] text-secondary-900">Thuê Tôi</span>
               <Caption className="text-[11px] uppercase tracking-[0.18em] text-slate-500">
-                Freelancer Platform
+                Nền tảng Freelancer
               </Caption>
             </div>
           </div>
 
           <div className="flex items-center gap-3">
             <Button variant="ghost" onClick={() => navigate('/gallery')}>
-              Gallery
+              Thư viện
             </Button>
             <Button variant="outline" onClick={() => navigate('/auth/login')}>
-              Dang nhap
+              Đăng nhập
             </Button>
             <Button onClick={() => navigate('/auth/register')}>
-              Bat dau
+              Bắt đầu
             </Button>
           </div>
         </div>
@@ -75,22 +75,22 @@ const LandingPage = () => {
         <section className="grid gap-8 lg:grid-cols-[1.15fr_0.85fr] lg:items-center">
           <div className="flex flex-col gap-6">
             <Badge color="success" className="w-fit px-3 py-1 text-[11px] uppercase tracking-[0.18em]">
-              Frontend aligned with JWT + OTP backend
+              Frontend đồng bộ với backend JWT + OTP
             </Badge>
             <H1 className="max-w-3xl text-5xl leading-tight">
-              Workspace sach, ro luong nghiep vu, va bam sat backend hien tai.
+              Workspace sạch, rõ luồng nghiệp vụ, và bám sát backend hiện tại.
             </H1>
             <Text className="max-w-2xl text-lg text-slate-600">
-              Frontend nay da duoc chot lai theo workflow dang ky, verify OTP, dang nhap, quan ly du an,
-              bao gia, hop dong va thong bao cho ca customer lan freelancer.
+              Frontend này đã được chốt lại theo workflow đăng ký, verify OTP, đăng nhập, quản lý dự án,
+              báo giá, hợp đồng và thông báo cho cả khách hàng lẫn freelancer.
             </Text>
 
             <div className="flex flex-wrap gap-3">
               <Button onClick={() => navigate('/auth/register')}>
-                Tao tai khoan moi
+                Tạo tài khoản mới
               </Button>
               <Button variant="outline" onClick={() => navigate('/auth/login')}>
-                Dang nhap workspace
+                Đăng nhập workspace
               </Button>
               <Button variant="ghost" onClick={() => navigate('/api-lab')}>
                 API Lab
@@ -100,7 +100,7 @@ const LandingPage = () => {
 
           <Card className="border-2 border-secondary-900 bg-secondary-900 p-6 text-white">
             <Caption className="text-[11px] uppercase tracking-[0.18em] text-primary-100">
-              Workflow
+              Quy trình
             </Caption>
             <div className="mt-4 flex flex-col gap-4">
               {steps.map((step, index) => (
@@ -110,7 +110,7 @@ const LandingPage = () => {
                       <step.icon className="h-5 w-5 text-primary-300" />
                     </div>
                     <div className="text-xs font-black uppercase tracking-[0.18em] text-primary-200">
-                      Buoc {index + 1}
+                      Bước {index + 1}
                     </div>
                   </div>
                   <H2 className="mt-4 text-xl text-white">
@@ -125,9 +125,9 @@ const LandingPage = () => {
           </Card>
         </section>
 
-        <Callout type="info" title="Email verification la bat buoc">
-          He thong chi cho phep dang nhap sau khi tai khoan da nhan OTP qua email va xac thuc thanh cong.
-          Frontend va backend deu bam sat mot luong nghiep vu duy nhat, khong co debug OTP endpoint trong runtime thong thuong.
+        <Callout type="info" title="Xác thực email là bắt buộc">
+          Hệ thống chỉ cho phép đăng nhập sau khi tài khoản đã nhận OTP qua email và xác thực thành công.
+          Frontend và backend đều bám sát một luồng nghiệp vụ duy nhất, không có debug OTP endpoint trong runtime thông thường.
         </Callout>
 
         <section className="grid gap-4 lg:grid-cols-2">
@@ -154,18 +154,18 @@ const LandingPage = () => {
         <section className="grid gap-4 lg:grid-cols-3">
           <Card className="border-2 border-slate-200 bg-white p-6">
             <Page className="h-7 w-7 text-primary-700" />
-            <H2 className="mt-4 text-xl">Project board</H2>
-            <Text className="mt-3 text-sm">Customer tao project, freelancer xem project dang mo va gui bid tu cung mot workspace.</Text>
+            <H2 className="mt-4 text-xl">Bảng dự án</H2>
+            <Text className="mt-3 text-sm">Khách hàng tạo project, freelancer xem project đang mở và gửi bid từ cùng một workspace.</Text>
           </Card>
           <Card className="border-2 border-slate-200 bg-white p-6">
             <ProfileCircle className="h-7 w-7 text-primary-700" />
-            <H2 className="mt-4 text-xl">Profile & ownership</H2>
-            <Text className="mt-3 text-sm">Frontend lay profile truc tiep tu access token, khong dung local auth gia lap lam source of truth.</Text>
+            <H2 className="mt-4 text-xl">Hồ sơ & quyền sở hữu</H2>
+            <Text className="mt-3 text-sm">Frontend lấy profile trực tiếp từ access token, không dùng local auth giả lập làm source of truth.</Text>
           </Card>
           <Card className="border-2 border-slate-200 bg-white p-6">
             <Lock className="h-7 w-7 text-primary-700" />
-            <H2 className="mt-4 text-xl">Secure auth transport</H2>
-            <Text className="mt-3 text-sm">Access token tu dong duoc gan vao request, 401 duoc refresh thong qua HttpOnly cookie.</Text>
+            <H2 className="mt-4 text-xl">Truyền tải auth an toàn</H2>
+            <Text className="mt-3 text-sm">Access token tự động được gắn vào request, 401 được refresh thông qua HttpOnly cookie.</Text>
           </Card>
         </section>
       </main>
