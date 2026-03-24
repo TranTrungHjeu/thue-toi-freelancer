@@ -14,7 +14,6 @@ import StatCard from '../components/common/StatCard';
 import Skeleton from '../components/common/Skeleton';
 import Stepper from '../components/common/Stepper';
 import SearchInput from '../components/common/SearchInput';
-import Tag from '../components/common/Tag';
 import ProjectCard from '../components/features/ProjectCard';
 import FreelancerCard from '../components/features/FreelancerCard';
 import ChatBubble from '../components/features/ChatBubble';
@@ -31,45 +30,42 @@ import CommandPalette from '../components/common/CommandPalette';
 import ActivityCharts from '../components/features/ActivityCharts';
 import AvatarGroup from '../components/common/AvatarGroup';
 import Callout from '../components/common/Callout';
-import MilestoneTracker from '../components/features/MilestoneTracker';
-import SkillRadar from '../components/features/SkillRadar';
-import ContractPreview from '../components/features/ContractPreview';
-import SuccessAnimation from '../components/common/SuccessAnimation';
-import ScrollTop from '../components/common/ScrollTop';
-import LoadingOverlay from '../components/common/LoadingOverlay';
 import TagInput from '../components/common/TagInput';
 import DateRangePicker from '../components/common/DateRangePicker';
 import ToggleGroup from '../components/common/ToggleGroup';
 import InteractiveRating from '../components/common/InteractiveRating';
 import DataList from '../components/common/DataList';
-import ActionSheet from '../components/common/ActionSheet';
-import FloatingActionButton from '../components/common/FloatingActionButton';
-import PullToRefresh from '../components/common/PullToRefresh';
-import ResponsiveTable from '../components/common/ResponsiveTable';
-import SegmentedControl from '../components/common/SegmentedControl';
 import { H1, H2, Text, Caption } from '../components/common/Typography';
+import { useI18n } from '../hooks/useI18n';
 import { useToast } from '../hooks/useToast';
-import { 
-  Wallet, 
-  StatsUpSquare, 
+import {
+  Wallet,
+  StatsUpSquare,
   Suitcase,
-  User, 
-  MultiBubble, 
-  Settings, 
-  Bell, 
-  Cloud, 
-  Database,
+  MultiBubble,
+  Settings,
+  Bell,
   InfoCircle,
   Flash,
   Calendar,
-  MoreHoriz,
-  MoreVert,
-  CheckCircle,
-  WarningTriangle,
-  LogOut,
-  EditPencil,
-  Trash
 } from 'iconoir-react';
+
+const commandActionIcons = {
+  jobs: Suitcase,
+  account: Settings,
+  reports: StatsUpSquare,
+  support: InfoCircle,
+};
+
+const sharedIcons = {
+  wallet: Wallet,
+  calendar: Calendar,
+  flash: Flash,
+  jobs: Suitcase,
+  bell: Bell,
+  reviews: MultiBubble,
+  reports: StatsUpSquare,
+};
 
 const ComponentGallery = () => {
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -77,194 +73,179 @@ const ComponentGallery = () => {
   const [viewMode, setViewMode] = useState("grid");
   const [searchValue, setSearchValue] = useState("");
   const [selectedFilters, setSelectedFilters] = useState(["design"]);
+
   const { addToast } = useToast();
+  const { t } = useI18n();
+  const copy = t('componentGallery');
+  const sections = copy.sections;
 
   const toggleFilter = (val) => {
-    setSelectedFilters(prev => 
-      prev.includes(val) ? prev.filter(v => v !== val) : [...prev, val]
+    setSelectedFilters((prev) =>
+      prev.includes(val) ? prev.filter((item) => item !== val) : [...prev, val],
     );
   };
-  
+
+  const commandActions = copy.commandPalette.actions.map((action) => {
+    const Icon = commandActionIcons[action.iconKey] || InfoCircle;
+
+    return {
+      label: action.label,
+      description: action.description,
+      icon: <Icon className="w-5 h-5" />,
+    };
+  });
+
+  const summaryItems = sections.advancedInput.summaryItems.map((item) => ({
+    ...item,
+    icon: sharedIcons[item.iconKey],
+  }));
+
+  const statCards = sections.dataDisplay.statCards.map((item) => ({
+    ...item,
+    icon: sharedIcons[item.iconKey],
+  }));
+
+  const advancedTableHeaders = [
+    { key: 'id', label: sections.dashboard.tableHeaders.id, sortable: true },
+    { key: 'name', label: sections.dashboard.tableHeaders.name, sortable: true },
+    { key: 'budget', label: sections.dashboard.tableHeaders.budget, sortable: true },
+    {
+      key: 'status',
+      label: sections.dashboard.tableHeaders.status,
+      render: (value) => (
+        <Badge color={value === 'completed' ? 'primary' : 'info'}>
+          {sections.dashboard.statusLabels[value]}
+        </Badge>
+      ),
+    },
+  ];
+
   const demoUser = {
     name: "Trần Trung Hiếu",
     email: "hieu.tran@example.com",
-    avatar: "https://i.pravatar.cc/150?u=hieu"
+    avatar: "https://i.pravatar.cc/150?u=hieu",
   };
 
   return (
     <MainLayout user={demoUser}>
-      <CommandPalette 
-        isOpen={isPaletteOpen} 
+      <CommandPalette
+        isOpen={isPaletteOpen}
         onClose={() => setIsPaletteOpen(false)}
-        actions={[
-          { label: "Tìm việc làm", description: "Khám phá danh sách các dự án mới nhất", icon: <Suitcase className="w-5 h-5" /> },
-          { label: "Cài đặt tài khoản", description: "Quản lý thông tin cá nhân và mật khẩu", icon: <Settings className="w-5 h-5" /> },
-          { label: "Xem báo cáo", description: "Thống kê doanh thu và hoạt động", icon: <StatsUpSquare className="w-5 h-5" /> },
-          { label: "Trợ giúp & hỗ trợ", description: "Liên hệ với đội ngũ CSKH", icon: <InfoCircle className="w-5 h-5" /> },
-        ]}
+        actions={commandActions}
       />
 
       <div className="flex flex-col gap-12 pb-20">
-        {/* Header */}
         <section>
           <div className="flex items-center justify-between mb-2">
-            <H1 className="text-5xl !mb-0">Thư viện thành phần UI</H1>
+            <H1 className="text-5xl !mb-0">{copy.hero.title}</H1>
             <Button variant="outline" onClick={() => setIsPaletteOpen(true)} className="flex items-center gap-2">
               <Flash className="w-4 h-4 text-amber-500" />
-              Tìm kiếm nhanh (Ctrl+K)
+              {copy.hero.quickSearch}
             </Button>
           </div>
-          <Text className="text-slate-500">Hệ thống thành phần chuẩn "Strict Sharpness" dành cho doanh nghiệp.</Text>
+          <Text className="text-slate-500">{copy.hero.description}</Text>
         </section>
 
-        {/* 01. Advanced Input & Data Presentation */}
         <section>
           <div className="border-b border-slate-200 mb-8 pb-2">
-            <H2 className="text-xl uppercase tracking-widest text-primary-600">01. Nhập liệu & Hiển thị dữ liệu nâng cao</H2>
+            <H2 className="text-xl uppercase tracking-widest text-primary-600">{sections.advancedInput.title}</H2>
           </div>
-          
+
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-12">
             <div className="flex flex-col gap-8">
-              <TagInput 
-                label="Kỹ năng yêu cầu" 
-                initialTags={["React", "Node.jsJS", "Tailwind"]} 
+              <TagInput
+                label={sections.advancedInput.tagInputLabel}
+                initialTags={sections.advancedInput.tagInputTags}
               />
-              <DateRangePicker label="Thời gian thực hiện dự kiến" />
+              <DateRangePicker label={sections.advancedInput.dateRangeLabel} />
               <div className="flex flex-col gap-3">
-                <Caption className="font-bold">Chế độ hiển thị</Caption>
-                <ToggleGroup 
-                  options={[
-                    { label: "Lưới", value: "grid" },
-                    { label: "Bảng", value: "table" },
-                    { label: "Lịch", value: "calendar" }
-                  ]}
+                <Caption className="font-bold">{sections.advancedInput.viewModeCaption}</Caption>
+                <ToggleGroup
+                  options={sections.advancedInput.viewModeOptions}
                   value={viewMode}
                   onChange={setViewMode}
                 />
               </div>
             </div>
             <div className="bg-slate-50 p-8 border border-slate-200">
-              <InteractiveRating label="Đánh giá nhanh freelancer" initialRating={4} />
+              <InteractiveRating label={sections.advancedInput.ratingLabel} initialRating={4} />
               <div className="mt-8">
-                <Caption className="mb-4 block">Thông tin tóm tắt</Caption>
-                <DataList 
-                  items={[
-                    { label: "Ngân sách", value: "$3,500", icon: Wallet },
-                    { label: "Deadline", value: "15/05/2024", icon: Calendar },
-                    { label: "Loại hình", value: "Cố định", icon: Flash },
-                  ]}
-                />
+                <Caption className="mb-4 block">{sections.advancedInput.summaryCaption}</Caption>
+                <DataList items={summaryItems} />
               </div>
             </div>
           </div>
         </section>
 
-        {/* 02. Enterprise Polish */}
         <section>
           <div className="border-b border-slate-200 mb-8 pb-2">
-            <H2 className="text-xl uppercase tracking-widest text-primary-600">02. Chuẩn doanh nghiệp</H2>
+            <H2 className="text-xl uppercase tracking-widest text-primary-600">{sections.enterprise.title}</H2>
           </div>
-          
+
           <div className="flex flex-col gap-10">
             <div className="flex flex-col gap-4">
-              <Caption className="font-bold">Bảng Kanban dự án</Caption>
-              <KanbanBoard 
-                columns={[
-                  { 
-                    title: "Sắp tới (Todo)", 
-                    tasks: [
-                      { id: "T-102", title: "Thiết kế Landing Page", date: "20/03", priority: "High", assignee: "H" },
-                      { id: "T-105", title: "Nghiên cứu thị trường", date: "22/03", priority: "Low", assignee: "T" }
-                    ] 
-                  },
-                  { 
-                    title: "Đang làm (Doing)", 
-                    tasks: [
-                      { id: "T-101", title: "Phát triển API Mockup", date: "18/03", priority: "Medium", assignee: "A" }
-                    ] 
-                  },
-                  { 
-                    title: "Hoàn thiện (Done)", 
-                    tasks: [
-                      { id: "T-99", title: "Thiết lập môi trường Dev", date: "15/03", priority: "Low", assignee: "K" }
-                    ] 
-                  }
-                ]} 
-              />
+              <Caption className="font-bold">{sections.enterprise.kanbanCaption}</Caption>
+              <KanbanBoard columns={sections.enterprise.kanbanColumns} />
             </div>
 
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
               <div className="flex flex-col gap-6">
-                <Caption className="font-bold">Callout doanh nghiệp</Caption>
+                <Caption className="font-bold">{sections.enterprise.calloutCaption}</Caption>
                 <div className="flex flex-col gap-4">
-                  <Callout type="warning" title="Cập nhật hệ thống">
-                    Hệ thống sẽ bảo trì vào lúc 02:00 sáng ngày mai. Vui lòng lưu lại công việc của bạn.
+                  <Callout type="warning" title={sections.enterprise.callouts.warning.title}>
+                    {sections.enterprise.callouts.warning.description}
                   </Callout>
-                  <Callout type="success" title="Xác minh thành công">
-                    Tài khoản của bạn đã được xác minh chính chủ.
+                  <Callout type="success" title={sections.enterprise.callouts.success.title}>
+                    {sections.enterprise.callouts.success.description}
                   </Callout>
                 </div>
               </div>
-              
+
               <div className="flex flex-col gap-6">
-                <Caption className="font-bold">Trực quan hoá dữ liệu & Nhóm</Caption>
+                <Caption className="font-bold">{sections.enterprise.analyticsCaption}</Caption>
                 <ActivityCharts />
                 <div className="flex items-center gap-4 mt-2">
-                  <Caption className="font-bold">Nhóm đang hoạt động:</Caption>
-                  <AvatarGroup users={[
-                    { name: 'User 1', avatar: 'https://i.pravatar.cc/150?u=1' },
-                    { name: 'User 2', avatar: 'https://i.pravatar.cc/150?u=2' },
-                    { name: 'User 3', avatar: 'https://i.pravatar.cc/150?u=3' },
-                    { name: 'User 4', avatar: 'https://i.pravatar.cc/150?u=4' },
-                    { name: 'User 5', avatar: 'https://i.pravatar.cc/150?u=5' },
-                  ]} />
+                  <Caption className="font-bold">{sections.enterprise.activeTeamCaption}</Caption>
+                  <AvatarGroup users={sections.enterprise.activeUsers} />
                 </div>
               </div>
             </div>
           </div>
         </section>
 
-        {/* 03. Dashboard Dynamics */}
         <section>
           <div className="border-b border-slate-200 mb-8 pb-2">
-            <H2 className="text-xl uppercase tracking-widest text-primary-600">03. Động lực Dashboard</H2>
+            <H2 className="text-xl uppercase tracking-widest text-primary-600">{sections.dashboard.title}</H2>
           </div>
-          
+
           <div className="flex flex-col gap-10">
             <div>
-              <Caption className="mb-4 block">Đường dẫn điều hướng</Caption>
-              <Breadcrumbs items={[
-                { label: 'Dự án', path: '#projects' },
-                { label: 'Chi tiết dự án', path: '#' },
-              ]} />
+              <Caption className="mb-4 block">{sections.dashboard.breadcrumbsCaption}</Caption>
+              <Breadcrumbs items={sections.dashboard.breadcrumbs} />
             </div>
 
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-12">
               <div className="flex flex-col gap-6">
-                <Caption className="font-bold">Dòng thời gian hoạt động</Caption>
-                <ActivityTimeline activities={[
-                  { title: "Báo giá được gửi", time: "10:30 AM", status: "success", description: "Bạn đã gửi báo giá cho dự án Food Delivery App." },
-                  { title: "Phỏng vấn mời", time: "Hôm qua", status: "info", description: "Client Phúc Long mời bạn tham gia phỏng vấn trực tuyến." },
-                  { title: "Thanh toán thất bại", time: "2 ngày trước", status: "warning", description: "Giao dịch rút tiền $500 không thành công. Hãy kiểm tra lại ngân hàng." },
-                ]} />
+                <Caption className="font-bold">{sections.dashboard.timelineCaption}</Caption>
+                <ActivityTimeline activities={sections.dashboard.activities} />
               </div>
-              
+
               <div className="flex flex-col gap-10">
                 <div className="flex gap-12">
-                  <ProgressCircle value={85} label="Hồ sơ hoàn tất" />
-                  <ProgressCircle value={42} label="Dự án hiện tại" size={80} strokeWidth={8} />
+                  <ProgressCircle value={85} label={sections.dashboard.profileCompletion} />
+                  <ProgressCircle value={42} label={sections.dashboard.currentProjects} size={80} strokeWidth={8} />
                 </div>
-                
+
                 <div>
-                  <Caption className="mb-4 block">Tooltip tương tác (Di chuột vào)</Caption>
+                  <Caption className="mb-4 block">{sections.dashboard.tooltipCaption}</Caption>
                   <div className="flex gap-4">
-                    <Tooltip text="Thông tin chi tiết tài khoản">
+                    <Tooltip text={sections.dashboard.accountTooltip}>
                       <div className="p-2 border border-slate-200 bg-white">
                         <InfoCircle className="w-5 h-5 text-slate-400" />
                       </div>
                     </Tooltip>
-                    <Tooltip text="Báo cáo doanh thu tháng" position="bottom">
-                      <Button variant="outline">Xem báo cáo</Button>
+                    <Tooltip text={sections.dashboard.revenueTooltip} position="bottom">
+                      <Button variant="outline">{sections.dashboard.revenueButton}</Button>
                     </Tooltip>
                   </div>
                 </div>
@@ -272,191 +253,158 @@ const ComponentGallery = () => {
             </div>
 
             <div>
-              <Caption className="mb-4 block">Bảng nâng cao (Sắp xếp & Phân trang)</Caption>
-              <AdvancedTable 
-                headers={[
-                  { key: 'id', label: 'ID', sortable: true },
-                  { key: 'name', label: 'Tên dự án', sortable: true },
-                  { key: 'budget', label: 'Ngân sách', sortable: true },
-                  { key: 'status', label: 'Trạng thái', render: (val) => <Badge color={val === 'Done' ? 'primary' : 'info'}>{val}</Badge> }
-                ]}
-                data={[
-                  { id: 'PJ001', name: 'Website Landing Page', budget: 1200, status: 'Done' },
-                  { id: 'PJ002', name: 'Mobile App Design', budget: 2500, status: 'Pending' },
-                  { id: 'PJ003', name: 'API Development', budget: 1800, status: 'Done' },
-                  { id: 'PJ004', name: 'Email Template', budget: 400, status: 'Done' },
-                  { id: 'PJ005', name: 'SEO Optimization', budget: 900, status: 'Pending' },
-                  { id: 'PJ006', name: 'Banner Ads', budget: 300, status: 'Done' },
-                ]}
+              <Caption className="mb-4 block">{sections.dashboard.tableCaption}</Caption>
+              <AdvancedTable
+                headers={advancedTableHeaders}
+                data={sections.dashboard.tableRows}
                 pageSize={4}
               />
             </div>
           </div>
         </section>
 
-        {/* 04. Interaction & Communication */}
         <section>
           <div className="border-b border-slate-200 mb-8 pb-2">
-            <H2 className="text-xl uppercase tracking-widest text-primary-600">04. Tương tác & Giao tiếp</H2>
+            <H2 className="text-xl uppercase tracking-widest text-primary-600">{sections.interaction.title}</H2>
           </div>
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-12">
             <div className="flex flex-col gap-8">
-              <Caption className="font-bold">Tìm kiếm & Lọc</Caption>
-              <SearchInput 
-                value={searchValue} 
-                onChange={(e) => setSearchValue(e.target.value)} 
-                placeholder="Thử tìm kiếm freelancer..."
+              <Caption className="font-bold">{sections.interaction.searchCaption}</Caption>
+              <SearchInput
+                value={searchValue}
+                onChange={(event) => setSearchValue(event.target.value)}
+                placeholder={sections.interaction.searchPlaceholder}
               />
-              
-              <Caption className="font-bold">Hệ thống Chat</Caption>
+
+              <Caption className="font-bold">{sections.interaction.chatCaption}</Caption>
               <div className="bg-slate-50 p-6 border border-slate-200 flex flex-col gap-4">
-                <ChatBubble 
-                  message="Chào bạn, mình đã xem qua yêu cầu thiết kế của bạn. Rất mong được hợp tác!" 
-                  time="09:15 AM" 
-                />
-                <ChatBubble 
-                  message="Chào Hiếu! Cảm ơn bạn đã quan tâm. Bạn có thể gửi giúp mình Portfolio link không?" 
-                  time="09:20 AM" 
-                  isSender 
-                />
-                <ChatBubble 
-                  message="Tất nhiên rồi, mình gửi đính kèm phía dưới nhé." 
-                  time="09:22 AM" 
-                />
+                {sections.interaction.chatMessages.map((message) => (
+                  <ChatBubble
+                    key={`${message.time}-${message.message}`}
+                    message={message.message}
+                    time={message.time}
+                    isSender={message.isSender}
+                  />
+                ))}
               </div>
             </div>
-            
+
             <div className="flex flex-col gap-8">
-              <FileUpload label="Tải lên tài liệu dự án (Tối đa 5 tệp)" />
+              <FileUpload label={sections.interaction.uploadLabel} />
             </div>
           </div>
         </section>
 
-        {/* 05. Advanced Content */}
         <section>
           <div className="border-b border-slate-200 mb-8 pb-2">
-            <H2 className="text-xl uppercase tracking-widest text-primary-600">05. Nội dung nâng cao</H2>
+            <H2 className="text-xl uppercase tracking-widest text-primary-600">{sections.content.title}</H2>
           </div>
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
             <div className="flex flex-col gap-4">
-              <Caption className="font-bold">Hồ sơ Freelancer</Caption>
-              <FreelancerCard 
-                name="Trần Trung Hiếu"
-                title="Senior UI/UX Designer"
-                rating={4.9}
-                reviews={128}
-                rate="$35/hr"
-                skills={["Figma", "UI/UX", "ReactJS", "Motion"]}
-                avatar="https://i.pravatar.cc/150?u=hieu"
-                isVerified
-              />
+              <Caption className="font-bold">{sections.content.freelancerCaption}</Caption>
+              <FreelancerCard {...sections.content.freelancerCard} />
             </div>
             <div className="flex flex-col gap-4">
-              <Caption className="font-bold">Thẻ dự án</Caption>
-              <ProjectCard 
-                title="Thiết kế UI/UX App Mobile (Food Delivery)"
-                client="Phúc Long Coffee"
-                budget="$1,200"
-                tags={["Figma", "UI/UX", "Mobile"]}
-                postedAt="2 giờ trước"
-              />
+              <Caption className="font-bold">{sections.content.projectCaption}</Caption>
+              <ProjectCard {...sections.content.projectCard} />
             </div>
           </div>
 
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
             <div className="flex flex-col gap-6">
-              <FilterGroup 
-                title="Lĩnh vực chuyên môn"
-                options={[
-                  { label: "Thiết kế đồ họa", value: "design", count: 42 },
-                  { label: "Lập trình Web", value: "web", count: 156 },
-                  { label: "Viết lách & Dịch thuật", value: "content", count: 89 },
-                ]}
+              <FilterGroup
+                title={sections.content.filterTitle}
+                options={sections.content.filterOptions}
                 selectedValues={selectedFilters}
                 onChange={toggleFilter}
               />
             </div>
             <div className="lg:col-span-2">
-              <Caption className="mb-4 block">Trạng thái không có kết quả</Caption>
-              <EmptyState 
-                title="Không tìm thấy freelancer nào" 
-                description="Hãy thử bỏ bớt các tiêu chí lọc để thấy nhiều kết quả hơn."
-                actionLabel="Xóa toàn bộ bộ lọc"
+              <Caption className="mb-4 block">{sections.content.emptyCaption}</Caption>
+              <EmptyState
+                title={sections.content.emptyState.title}
+                description={sections.content.emptyState.description}
+                actionLabel={sections.content.emptyState.actionLabel}
                 onAction={() => setSelectedFilters([])}
               />
             </div>
           </div>
         </section>
 
-        {/* 06. Foundations */}
         <section>
           <div className="border-b border-slate-200 mb-8 pb-2">
-            <H2 className="text-xl uppercase tracking-widest text-primary-600">06. Nền tảng thiết kế</H2>
+            <H2 className="text-xl uppercase tracking-widest text-primary-600">{sections.foundations.title}</H2>
           </div>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
             <div className="flex flex-col gap-4">
-              <Caption className="font-bold">Phân cấp kiểu chữ</Caption>
-              <H1>Tiêu đề 1 (Lora)</H1>
-              <H2>Tiêu đề 2 (Lora)</H2>
-              <Text>Nội dung (Manrope) - Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.</Text>
-              <Caption>Chú thích - Chi tiết nhỏ, tinh tế.</Caption>
+              <Caption className="font-bold">{sections.foundations.typographyCaption}</Caption>
+              <H1>{sections.foundations.heading1}</H1>
+              <H2>{sections.foundations.heading2}</H2>
+              <Text>{sections.foundations.bodyText}</Text>
+              <Caption>{sections.foundations.captionText}</Caption>
             </div>
             <div className="flex flex-col gap-4">
-              <Caption className="font-bold">Bảng màu</Caption>
+              <Caption className="font-bold">{sections.foundations.paletteCaption}</Caption>
               <div className="flex gap-4">
-                <div className="w-16 h-16 bg-primary-500 border border-primary-600" title="Primary" />
-                <div className="w-16 h-16 bg-secondary-900 border border-slate-900" title="Secondary" />
-                <div className="w-16 h-16 bg-blue-500 border border-blue-600" title="Accent" />
-                <div className="w-16 h-16 bg-red-500 border border-red-600" title="Error" />
-                <div className="w-16 h-16 bg-amber-500 border border-amber-600" title="Warning" />
-                <div className="w-16 h-16 bg-green-500 border border-green-600" title="Success" />
+                <div className="w-16 h-16 bg-primary-500 border border-primary-600" title={sections.foundations.colorTitles.primary} />
+                <div className="w-16 h-16 bg-secondary-900 border border-slate-900" title={sections.foundations.colorTitles.secondary} />
+                <div className="w-16 h-16 bg-blue-500 border border-blue-600" title={sections.foundations.colorTitles.accent} />
+                <div className="w-16 h-16 bg-red-500 border border-red-600" title={sections.foundations.colorTitles.error} />
+                <div className="w-16 h-16 bg-amber-500 border border-amber-600" title={sections.foundations.colorTitles.warning} />
+                <div className="w-16 h-16 bg-green-500 border border-green-600" title={sections.foundations.colorTitles.success} />
               </div>
             </div>
           </div>
         </section>
 
-        {/* 07. Buttons & Form Elements */}
         <section>
           <div className="border-b border-slate-200 mb-8 pb-2">
-            <H2 className="text-xl uppercase tracking-widest text-primary-600">07. Nút bấm & Biểu mẫu</H2>
+            <H2 className="text-xl uppercase tracking-widest text-primary-600">{sections.forms.title}</H2>
           </div>
           <Card className="flex flex-col gap-8">
             <div className="flex flex-wrap gap-4">
-              <Button>Hành động chính</Button>
-              <Button variant="outline">Hành động viền</Button>
-              <Button variant="ghost">Hành động mờ</Button>
-              <Button disabled>Đã vô hiệu hoá</Button>
+              <Button>{sections.forms.primaryAction}</Button>
+              <Button variant="outline">{sections.forms.outlineAction}</Button>
+              <Button variant="ghost">{sections.forms.ghostAction}</Button>
+              <Button disabled>{sections.forms.disabledAction}</Button>
             </div>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <Input label="Ô nhập chuẩn" placeholder="Nhập nội dung..." />
-              <Input label="Ô nhập mật khẩu" type="password" placeholder="••••••••" />
-              <Input label="Ô nhập vô hiệu" disabled placeholder="Chỉ đọc" />
+              <Input label={sections.forms.standardInputLabel} placeholder={sections.forms.standardInputPlaceholder} />
+              <Input label={sections.forms.passwordInputLabel} type="password" placeholder="••••••••" />
+              <Input label={sections.forms.disabledInputLabel} disabled placeholder={sections.forms.disabledInputPlaceholder} />
               <div className="flex flex-col gap-2">
-                <Caption className="mb-1">Badge</Caption>
+                <Caption className="mb-1">{sections.forms.statusCaption}</Caption>
                 <div className="flex gap-2">
-                  <Badge color="primary">Hoạt động</Badge>
-                  <Badge color="secondary">Chờ duyệt</Badge>
-                  <Badge color="info">Đang xử lý</Badge>
-                  <Badge color="error">Từ chối</Badge>
+                  <Badge color="primary">{sections.forms.badges.active}</Badge>
+                  <Badge color="secondary">{sections.forms.badges.pending}</Badge>
+                  <Badge color="info">{sections.forms.badges.processing}</Badge>
+                  <Badge color="error">{sections.forms.badges.rejected}</Badge>
                 </div>
               </div>
             </div>
           </Card>
         </section>
 
-        {/* 08. Advanced Data Display */}
         <section>
           <div className="border-b border-slate-200 mb-8 pb-2">
-            <H2 className="text-xl uppercase tracking-widest text-primary-600">08. Hiển thị dữ liệu nâng cao</H2>
+            <H2 className="text-xl uppercase tracking-widest text-primary-600">{sections.dataDisplay.title}</H2>
           </div>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-            <StatCard label="Dự án đang làm" value="12" icon={Suitcase} trend="up" trendValue="+2" />
-            <StatCard label="Thu nhập tháng" value="$3,500" icon={Wallet} trend="up" trendValue="+15%" />
-            <StatCard label="Yêu cầu mới" value="5" icon={Bell} animation="swing" />
+            {statCards.map((item) => (
+              <StatCard
+                key={item.label}
+                label={item.label}
+                value={item.value}
+                icon={item.icon}
+                trend={item.trend}
+                trendValue={item.trendValue}
+                animation={item.animation}
+              />
+            ))}
           </div>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
             <Card>
-              <Caption className="mb-4 block">Biến thể Avatar (Chỉ vuông)</Caption>
+              <Caption className="mb-4 block">{sections.dataDisplay.avatarCaption}</Caption>
               <div className="flex gap-4 items-end">
                 <Avatar size="sm" src="https://i.pravatar.cc/150?u=1" />
                 <Avatar size="md" src="https://i.pravatar.cc/150?u=2" />
@@ -465,20 +413,19 @@ const ComponentGallery = () => {
               </div>
             </Card>
             <Card>
-              <Caption className="mb-4 block">Quy trình từng bước</Caption>
-              <Stepper steps={["Tóm tắt", "Thiết kế", "Lập trình", "Ra mắt"]} currentStep={2} />
+              <Caption className="mb-4 block">{sections.dataDisplay.processCaption}</Caption>
+              <Stepper steps={sections.dataDisplay.processSteps} currentStep={2} />
             </Card>
           </div>
         </section>
 
-        {/* 09. Feedback & Interactivity */}
         <section>
           <div className="border-b border-slate-200 mb-8 pb-2">
-            <H2 className="text-xl uppercase tracking-widest text-primary-600">09. Phản hồi & Tương tác</H2>
+            <H2 className="text-xl uppercase tracking-widest text-primary-600">{sections.feedback.title}</H2>
           </div>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
             <Card>
-              <Caption className="mb-4 block">Chỉ báo tải</Caption>
+              <Caption className="mb-4 block">{sections.feedback.loadingCaption}</Caption>
               <div className="flex flex-col gap-6">
                 <Spinner />
                 <div className="flex flex-col gap-2">
@@ -492,27 +439,23 @@ const ComponentGallery = () => {
             </Card>
             <Card className="flex flex-col gap-6 justify-center">
               <div className="flex flex-col gap-3">
-                <Button onClick={() => addToast("Thông báo thành công!", "success")}>Kích hoạt Toast thành công</Button>
-                <Button variant="outline" onClick={() => addToast("Có lỗi xảy ra", "error")}>Kích hoạt Toast lỗi</Button>
+                <Button onClick={() => addToast(sections.feedback.successToast, "success")}>{sections.feedback.successButton}</Button>
+                <Button variant="outline" onClick={() => addToast(sections.feedback.errorToast, "error")}>{sections.feedback.errorButton}</Button>
               </div>
-              <Button variant="ghost" onClick={() => setIsModalOpen(true)}>Mở Modal Sharp</Button>
+              <Button variant="ghost" onClick={() => setIsModalOpen(true)}>{sections.feedback.modalButton}</Button>
             </Card>
           </div>
         </section>
       </div>
 
-      <Modal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} title="Modal các thành phần Sharp">
-        <Text className="mb-6">Đây là ví dụ về Modal tuân thủ triết lý Strict Sharpness. Mọi chi tiết đều vuông vức và sắc nét.</Text>
-        <Table 
-          headers={["ID", "Thành phần", "Trạng thái"]}
-          data={[
-            { id: "01", name: "Button", status: "Đã xác thực" },
-            { id: "02", name: "Input", status: "Đã xác thực" },
-            { id: "03", name: "StatCard", status: "Đang kiểm tra" },
-          ]}
+      <Modal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} title={copy.modal.title}>
+        <Text className="mb-6">{copy.modal.description}</Text>
+        <Table
+          headers={copy.modal.tableHeaders}
+          data={copy.modal.tableRows}
         />
         <div className="mt-8 flex justify-end">
-          <Button onClick={() => setIsModalOpen(false)}>Đóng Modal</Button>
+          <Button onClick={() => setIsModalOpen(false)}>{copy.modal.close}</Button>
         </div>
       </Modal>
     </MainLayout>

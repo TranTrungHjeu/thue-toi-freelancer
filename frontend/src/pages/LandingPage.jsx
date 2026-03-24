@@ -5,41 +5,25 @@ import Button from '../components/common/Button';
 import Card from '../components/common/Card';
 import Callout from '../components/common/Callout';
 import Badge from '../components/common/Badge';
+import LanguageSwitcher from '../components/common/LanguageSwitcher';
 import { H1, H2, Text, Caption } from '../components/common/Typography';
+import { useI18n } from '../hooks/useI18n';
 
 const LandingPage = () => {
   const navigate = useNavigate();
+  const { t } = useI18n();
 
-  const steps = [
-    {
-      title: 'Đăng ký đúng vai trò',
-      description: 'Khách hàng đăng dự án, freelancer gửi báo giá. Backend đã khoá đăng ký công khai với role admin.',
-      icon: UserBag,
-    },
-    {
-      title: 'Xác thực OTP email',
-      description: 'Tài khoản chỉ được phép đăng nhập sau khi verify email thành công theo đúng workflow JWT + OTP.',
-      icon: ShieldCheck,
-    },
-    {
-      title: 'Đăng nhập + refresh an toàn',
-      description: 'Access token đi qua bearer header, refresh token được giữ bằng HttpOnly cookie.',
-      icon: Lock,
-    },
-  ];
+  const iconMap = {
+    lock: Lock,
+    page: Page,
+    profileCircle: ProfileCircle,
+    shieldCheck: ShieldCheck,
+    userBag: UserBag,
+  };
 
-  const roleCards = [
-    {
-      eyebrow: 'Khách hàng',
-      title: 'Đăng dự án và xử lý báo giá',
-      bullets: ['Tạo project', 'Xem báo giá từ freelancer', 'Theo dõi hợp đồng và milestone'],
-    },
-    {
-      eyebrow: 'Freelancer',
-      title: 'Tiếp cận dự án phù hợp',
-      bullets: ['Duyệt project đang mở', 'Gửi bid có giá và thời gian', 'Làm việc trong workspace đã được giao'],
-    },
-  ];
+  const steps = t('landing.steps');
+  const roleCards = t('landing.roleCards');
+  const featureCards = t('landing.featureCards');
 
   return (
     <div className="min-h-screen bg-[linear-gradient(180deg,#ffffff_0%,#f8fafc_45%,#ecfccb_100%)]">
@@ -50,22 +34,23 @@ const LandingPage = () => {
               TT
             </div>
             <div className="flex flex-col">
-              <span className="text-sm font-black uppercase tracking-[0.18em] text-secondary-900">Thuê Tôi</span>
+              <span className="text-sm font-black uppercase tracking-[0.18em] text-secondary-900">{t('app.brand')}</span>
               <Caption className="text-[11px] uppercase tracking-[0.18em] text-slate-500">
-                Nền tảng Freelancer
+                {t('landing.tagline')}
               </Caption>
             </div>
           </div>
 
           <div className="flex items-center gap-3">
+            <LanguageSwitcher className="hidden md:inline-flex" />
             <Button variant="ghost" onClick={() => navigate('/gallery')}>
-              Thư viện
+              {t('landing.gallery')}
             </Button>
             <Button variant="outline" onClick={() => navigate('/auth/login')}>
-              Đăng nhập
+              {t('landing.login')}
             </Button>
             <Button onClick={() => navigate('/auth/register')}>
-              Bắt đầu
+              {t('landing.getStarted')}
             </Button>
           </div>
         </div>
@@ -75,42 +60,41 @@ const LandingPage = () => {
         <section className="grid gap-8 lg:grid-cols-[1.15fr_0.85fr] lg:items-center">
           <div className="flex flex-col gap-6">
             <Badge color="success" className="w-fit px-3 py-1 text-[11px] uppercase tracking-[0.18em]">
-              Frontend đồng bộ với backend JWT + OTP
+              {t('landing.heroBadge')}
             </Badge>
             <H1 className="max-w-3xl text-5xl leading-tight">
-              Workspace sạch, rõ luồng nghiệp vụ, và bám sát backend hiện tại.
+              {t('landing.heroTitle')}
             </H1>
             <Text className="max-w-2xl text-lg text-slate-600">
-              Frontend này đã được chốt lại theo workflow đăng ký, verify OTP, đăng nhập, quản lý dự án,
-              báo giá, hợp đồng và thông báo cho cả khách hàng lẫn freelancer.
+              {t('landing.heroDescription')}
             </Text>
 
             <div className="flex flex-wrap gap-3">
               <Button onClick={() => navigate('/auth/register')}>
-                Tạo tài khoản mới
+                {t('landing.createAccount')}
               </Button>
               <Button variant="outline" onClick={() => navigate('/auth/login')}>
-                Đăng nhập workspace
+                {t('landing.enterWorkspace')}
               </Button>
               <Button variant="ghost" onClick={() => navigate('/api-lab')}>
-                API Lab
+                {t('landing.apiLab')}
               </Button>
             </div>
           </div>
 
           <Card className="border-2 border-secondary-900 bg-secondary-900 p-6 text-white">
             <Caption className="text-[11px] uppercase tracking-[0.18em] text-primary-100">
-              Quy trình
+              {t('landing.processTitle')}
             </Caption>
             <div className="mt-4 flex flex-col gap-4">
               {steps.map((step, index) => (
                 <div key={step.title} className="border border-slate-700 bg-slate-800/60 p-4">
                   <div className="flex items-center gap-3">
                     <div className="border border-primary-400 p-2">
-                      <step.icon className="h-5 w-5 text-primary-300" />
+                      {React.createElement(iconMap[step.icon], { className: 'h-5 w-5 text-primary-300' })}
                     </div>
                     <div className="text-xs font-black uppercase tracking-[0.18em] text-primary-200">
-                      Bước {index + 1}
+                      {t('landing.stepLabel', { index: index + 1 })}
                     </div>
                   </div>
                   <H2 className="mt-4 text-xl text-white">
@@ -125,14 +109,13 @@ const LandingPage = () => {
           </Card>
         </section>
 
-        <Callout type="info" title="Xác thực email là bắt buộc">
-          Hệ thống chỉ cho phép đăng nhập sau khi tài khoản đã nhận OTP qua email và xác thực thành công.
-          Frontend và backend đều bám sát một luồng nghiệp vụ duy nhất, không có debug OTP endpoint trong runtime thông thường.
+        <Callout type="info" title={t('landing.calloutTitle')}>
+          {t('landing.calloutDescription')}
         </Callout>
 
         <section className="grid gap-4 lg:grid-cols-2">
           {roleCards.map((card) => (
-            <Card key={card.eyebrow} className="border-2 border-slate-200 bg-white p-6">
+            <Card key={`${card.eyebrow}-${card.title}`} className="border-2 border-slate-200 bg-white p-6">
               <Caption className="text-[11px] uppercase tracking-[0.18em] text-primary-700">
                 {card.eyebrow}
               </Caption>
@@ -152,21 +135,13 @@ const LandingPage = () => {
         </section>
 
         <section className="grid gap-4 lg:grid-cols-3">
-          <Card className="border-2 border-slate-200 bg-white p-6">
-            <Page className="h-7 w-7 text-primary-700" />
-            <H2 className="mt-4 text-xl">Bảng dự án</H2>
-            <Text className="mt-3 text-sm">Khách hàng tạo project, freelancer xem project đang mở và gửi bid từ cùng một workspace.</Text>
-          </Card>
-          <Card className="border-2 border-slate-200 bg-white p-6">
-            <ProfileCircle className="h-7 w-7 text-primary-700" />
-            <H2 className="mt-4 text-xl">Hồ sơ & quyền sở hữu</H2>
-            <Text className="mt-3 text-sm">Frontend lấy profile trực tiếp từ access token, không dùng local auth giả lập làm source of truth.</Text>
-          </Card>
-          <Card className="border-2 border-slate-200 bg-white p-6">
-            <Lock className="h-7 w-7 text-primary-700" />
-            <H2 className="mt-4 text-xl">Truyền tải auth an toàn</H2>
-            <Text className="mt-3 text-sm">Access token tự động được gắn vào request, 401 được refresh thông qua HttpOnly cookie.</Text>
-          </Card>
+          {featureCards.map((card) => (
+            <Card key={card.title} className="border-2 border-slate-200 bg-white p-6">
+              {React.createElement(iconMap[card.icon], { className: 'h-7 w-7 text-primary-700' })}
+              <H2 className="mt-4 text-xl">{card.title}</H2>
+              <Text className="mt-3 text-sm">{card.description}</Text>
+            </Card>
+          ))}
         </section>
       </main>
     </div>

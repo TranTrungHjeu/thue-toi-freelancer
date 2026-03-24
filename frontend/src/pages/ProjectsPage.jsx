@@ -8,8 +8,16 @@ import Callout from '../components/common/Callout';
 import { H1, H2, Text, Caption } from '../components/common/Typography';
 import { useAuth } from '../hooks/useAuth';
 import { useToast } from '../hooks/useToast';
+import { useI18n } from '../hooks/useI18n';
 import marketplaceApi from '../api/marketplaceApi';
-import { buildBudgetRange, formatCurrency, formatDate, formatDateTime, getBidStatusMeta, getProjectStatusMeta } from '../utils/formatters';
+import {
+  buildBudgetRange,
+  formatCurrency,
+  formatDate,
+  formatDateTime,
+  getBidStatusMeta,
+  getProjectStatusMeta,
+} from '../utils/formatters';
 
 const initialProjectForm = {
   title: '',
@@ -25,9 +33,46 @@ const initialBidForm = {
   message: '',
 };
 
+const formatDateForInput = (value) => {
+  if (!value) {
+    return '';
+  }
+
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) {
+    return '';
+  }
+
+  return date.toISOString().slice(0, 10);
+};
+
+const toIsoDateOrNull = (value) => {
+  if (!value) {
+    return null;
+  }
+
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) {
+    return null;
+  }
+
+  return date.toISOString();
+};
+
+const buildProjectUpdatePayload = (project, statusOverride) => ({
+  title: project.title,
+  description: project.description || '',
+  budgetMin: Number(project.budgetMin),
+  budgetMax: Number(project.budgetMax),
+  deadline: toIsoDateOrNull(project.deadline),
+  status: statusOverride ?? project.status,
+});
+
 const ProjectsPage = () => {
   const { user } = useAuth();
   const { addToast } = useToast();
+  const { locale, t } = useI18n();
+  const copy = t('projectsPage');
   const [loading, setLoading] = useState(true);
   const [projectForm, setProjectForm] = useState(initialProjectForm);
   const [bidForm, setBidForm] = useState(initialBidForm);
@@ -38,6 +83,9 @@ const ProjectsPage = () => {
   const [submittingProject, setSubmittingProject] = useState(false);
   const [submittingBid, setSubmittingBid] = useState(false);
   const [loadingProjectBids, setLoadingProjectBids] = useState(false);
+  const [editingProjectId, setEditingProjectId] = useState(null);
+  const [projectActionId, setProjectActionId] = useState(null);
+  const [bidActionId, setBidActionId] = useState(null);
 
   const isCustomer = user?.role === 'customer';
 
@@ -51,7 +99,6 @@ const ProjectsPage = () => {
       if (isCustomer) {
         const projectsResponse = await marketplaceApi.getMyProjects();
         setProjects(projectsResponse.data || []);
-        setSelectedProjectBids([]);
       } else {
         const [projectsResponse, bidsResponse] = await Promise.all([
           marketplaceApi.getAllProjects(),
@@ -61,11 +108,25 @@ const ProjectsPage = () => {
         setMyBids(bidsResponse.data || []);
       }
     } catch (error) {
-      addToast(error?.message || 'Không thể tải trang dự án.', 'error');
+      addToast(error?.message || t('toasts.projects.loadPageError'), 'error');
     } finally {
       setLoading(false);
     }
-  }, [addToast, isCustomer, user]);
+  }, [addToast, isCustomer, t, user]);
+
+  const loadProjectBids = useCallback(async (project) => {
+    setSelectedProject(project);
+    setLoadingProjectBids(true);
+
+    try {
+      const response = await marketplaceApi.getBidsByProject(project.id);
+      setSelectedProjectBids(response.data || []);
+    } catch (error) {
+      addToast(error?.message || t('toasts.projects.loadBidsError'), 'error');
+    } finally {
+      setLoadingProjectBids(false);
+    }
+  }, [addToast, t]);
 
   useEffect(() => {
     loadPageData();
@@ -77,8 +138,11 @@ const ProjectsPage = () => {
       if (project.status === 'open') {
         accumulator.open += 1;
       }
+      if (project.status === 'cancelled') {
+        accumulator.cancelled += 1;
+      }
       return accumulator;
-    }, { total: 0, open: 0 });
+    }, { total: 0, open: 0, cancelled: 0 });
   }, [projects]);
 
   const handleProjectFieldChange = (field) => (event) => {
@@ -95,62 +159,119 @@ const ProjectsPage = () => {
     }));
   };
 
-  const handleCreateProject = async (event) => {
+  const resetProjectComposer = () => {
+    setProjectForm(initialProjectForm);
+    setEditingProjectId(null);
+  };
+
+  const startEditingProject = (project) => {
+    setEditingProjectId(project.id);
+    setProjectForm({
+      title: project.title || '',
+      description: project.description || '',
+      budgetMin: project.budgetMin ?? '',
+      budgetMax: project.budgetMax ?? '',
+      deadline: formatDateForInput(project.deadline),
+    });
+  };
+
+  const handleSubmitProject = async (event) => {
     event.preventDefault();
     setSubmittingProject(true);
 
+    const payload = {
+      title: projectForm.title,
+      description: projectForm.description,
+      budgetMin: Number(projectForm.budgetMin),
+      budgetMax: Number(projectForm.budgetMax),
+      deadline: toIsoDateOrNull(projectForm.deadline),
+    };
+
     try {
-      await marketplaceApi.createProject({
-        title: projectForm.title,
-        description: projectForm.description,
-        budgetMin: Number(projectForm.budgetMin),
-        budgetMax: Number(projectForm.budgetMax),
-        deadline: projectForm.deadline ? new Date(projectForm.deadline).toISOString() : null,
-      });
-      addToast('Đã tạo project mới thành công.', 'success');
-      setProjectForm(initialProjectForm);
+      if (editingProjectId) {
+        await marketplaceApi.updateProject(editingProjectId, payload);
+        addToast(t('toasts.projects.updateSuccess'), 'success');
+      } else {
+        await marketplaceApi.createProject(payload);
+        addToast(t('toasts.projects.createSuccess'), 'success');
+      }
+      resetProjectComposer();
       await loadPageData();
     } catch (error) {
-      addToast(error?.message || 'Không thể tạo project.', 'error');
+      addToast(error?.message || t('toasts.projects.saveError'), 'error');
     } finally {
       setSubmittingProject(false);
     }
   };
 
-  const handleLoadProjectBids = async (project) => {
-    setSelectedProject(project);
-    setLoadingProjectBids(true);
-
+  const handleCancelProject = async (project) => {
+    setProjectActionId(project.id);
     try {
-      const response = await marketplaceApi.getBidsByProject(project.id);
-      setSelectedProjectBids(response.data || []);
+      await marketplaceApi.updateProject(project.id, buildProjectUpdatePayload(project, 'cancelled'));
+      addToast(t('toasts.projects.cancelSuccess'), 'success');
+      if (selectedProject?.id === project.id) {
+        setSelectedProject((previous) => previous ? { ...previous, status: 'cancelled' } : previous);
+      }
+      if (editingProjectId === project.id) {
+        resetProjectComposer();
+      }
+      await loadPageData();
     } catch (error) {
-      addToast(error?.message || 'Không thể tải danh sách bid.', 'error');
+      addToast(error?.message || t('toasts.projects.cancelError'), 'error');
     } finally {
-      setLoadingProjectBids(false);
+      setProjectActionId(null);
     }
   };
 
   const handleAcceptBid = async (bidId) => {
+    setBidActionId(bidId);
     try {
       await marketplaceApi.acceptBid(bidId);
-      addToast('Da chap nhan bid va tao hop dong thanh cong.', 'success');
+      addToast(t('toasts.projects.acceptSuccess'), 'success');
       await loadPageData();
       if (selectedProject) {
-        await handleLoadProjectBids({
-          ...selectedProject,
-          status: 'in_progress',
-        });
+        await loadProjectBids({ ...selectedProject, status: 'in_progress' });
       }
     } catch (error) {
-      addToast(error?.message || 'Không thể chấp nhận bid.', 'error');
+      addToast(error?.message || t('toasts.projects.acceptError'), 'error');
+    } finally {
+      setBidActionId(null);
+    }
+  };
+
+  const handleRejectBid = async (bidId) => {
+    setBidActionId(bidId);
+    try {
+      await marketplaceApi.updateBidStatus(bidId, 'rejected');
+      addToast(t('toasts.projects.rejectSuccess'), 'success');
+      if (selectedProject) {
+        await loadProjectBids(selectedProject);
+      }
+      await loadPageData();
+    } catch (error) {
+      addToast(error?.message || t('toasts.projects.rejectError'), 'error');
+    } finally {
+      setBidActionId(null);
+    }
+  };
+
+  const handleWithdrawBid = async (bidId) => {
+    setBidActionId(bidId);
+    try {
+      await marketplaceApi.updateBidStatus(bidId, 'withdrawn');
+      addToast(t('toasts.projects.withdrawSuccess'), 'success');
+      await loadPageData();
+    } catch (error) {
+      addToast(error?.message || t('toasts.projects.withdrawError'), 'error');
+    } finally {
+      setBidActionId(null);
     }
   };
 
   const handleSubmitBid = async (event) => {
     event.preventDefault();
     if (!selectedProject) {
-      addToast('Hãy chọn một project trước khi gửi bid.', 'warning');
+      addToast(t('toasts.projects.selectProjectWarning'), 'warning');
       return;
     }
 
@@ -163,11 +284,11 @@ const ProjectsPage = () => {
         message: bidForm.message,
         attachments: '',
       });
-      addToast('Đã gửi bid thành công.', 'success');
+      addToast(t('toasts.projects.submitSuccess'), 'success');
       setBidForm(initialBidForm);
       await loadPageData();
     } catch (error) {
-      addToast(error?.message || 'Không thể gửi bid.', 'error');
+      addToast(error?.message || t('toasts.projects.submitError'), 'error');
     } finally {
       setSubmittingBid(false);
     }
@@ -178,27 +299,25 @@ const ProjectsPage = () => {
       <section className="grid gap-5 lg:grid-cols-[1.1fr_0.9fr]">
         <Card className="border-2 border-slate-200 bg-white p-6 md:p-8">
           <Caption className="text-[11px] uppercase tracking-[0.18em] text-primary-700">
-            Dự án
+            {copy.hero.caption}
           </Caption>
           <H1 className="mt-3 text-4xl">
-            {isCustomer ? 'Quản lý project và xử lý bid' : 'Duyệt project và gửi báo giá'}
+            {isCustomer ? copy.hero.titleCustomer : copy.hero.titleFreelancer}
           </H1>
           <Text className="mt-4 text-slate-600">
-            Frontend này đang gọi trực tiếp các endpoint <code>projects</code> và <code>bids</code> hiện có của backend, không còn dùng mock gallery flow.
+            {copy.hero.description}
           </Text>
         </Card>
 
         <Card className="border-2 border-secondary-900 bg-secondary-900 p-6 text-white">
           <Caption className="text-[11px] uppercase tracking-[0.18em] text-primary-100">
-            Ghi chú nghiệp vụ
+            {copy.note.caption}
           </Caption>
           <H2 className="mt-3 text-2xl text-white">
-            {isCustomer ? 'Từ đăng job đến chọn bid' : 'Từ marketplace đến proposal'}
+            {isCustomer ? copy.note.titleCustomer : copy.note.titleFreelancer}
           </H2>
           <Text className="mt-4 text-sm text-slate-300">
-            {isCustomer
-              ? 'Khách hàng có thể đăng project, xem bid theo từng project, và chấp nhận bid đã phù hợp.'
-              : 'Freelancer có thể lọc project đang mở, mở proposal composer, và quản lý lịch sử bid đã gửi.'}
+            {isCustomer ? copy.note.descriptionCustomer : copy.note.descriptionFreelancer}
           </Text>
         </Card>
       </section>
@@ -208,7 +327,7 @@ const ProjectsPage = () => {
           <section className="grid gap-4 md:grid-cols-3">
             <Card className="border-2 border-slate-200 bg-white p-5">
               <Caption className="text-[11px] uppercase tracking-[0.18em] text-slate-500">
-                Tổng số project
+                {copy.stats.total}
               </Caption>
               <div className="mt-4 text-4xl font-black text-secondary-900">
                 {loading ? '...' : customerProjectSummary.total}
@@ -216,7 +335,7 @@ const ProjectsPage = () => {
             </Card>
             <Card className="border-2 border-slate-200 bg-white p-5">
               <Caption className="text-[11px] uppercase tracking-[0.18em] text-slate-500">
-                Project đang mở
+                {copy.stats.open}
               </Caption>
               <div className="mt-4 text-4xl font-black text-secondary-900">
                 {loading ? '...' : customerProjectSummary.open}
@@ -224,53 +343,74 @@ const ProjectsPage = () => {
             </Card>
             <Card className="border-2 border-slate-200 bg-white p-5">
               <Caption className="text-[11px] uppercase tracking-[0.18em] text-slate-500">
-                Luồng được bám sát
+                {copy.stats.cancelled}
               </Caption>
-              <Text className="mt-4 text-sm text-slate-600">
-                Đăng project, nhận bid, chấp nhận bid, rồi chuyển sang bước hợp đồng.
-              </Text>
+              <div className="mt-4 text-4xl font-black text-secondary-900">
+                {loading ? '...' : customerProjectSummary.cancelled}
+              </div>
             </Card>
           </section>
 
           <section className="grid gap-6 lg:grid-cols-[0.95fr_1.05fr]">
             <Card className="border-2 border-slate-200 bg-white p-6">
-              <Caption className="text-[11px] uppercase tracking-[0.18em] text-primary-700">
-                Tạo project
-              </Caption>
-              <H2 className="mt-2 text-2xl">
-                Đăng project mới
-              </H2>
-              <form className="mt-5 flex flex-col gap-4" onSubmit={handleCreateProject}>
-                <Input label="Tiêu đề" placeholder="VD: Xây dựng landing page giới thiệu sản phẩm" value={projectForm.title} onChange={handleProjectFieldChange('title')} />
-                <Textarea label="Mô tả project" placeholder="Nêu rõ bài toán, deliverable, mốc thời gian và kỹ năng mong muốn." value={projectForm.description} onChange={handleProjectFieldChange('description')} />
-                <div className="grid gap-4 md:grid-cols-2">
-                  <Input label="Ngân sách từ" type="number" min="0" value={projectForm.budgetMin} onChange={handleProjectFieldChange('budgetMin')} />
-                  <Input label="Đến" type="number" min="0" value={projectForm.budgetMax} onChange={handleProjectFieldChange('budgetMax')} />
+              <div className="flex items-start justify-between gap-4">
+                <div>
+                  <Caption className="text-[11px] uppercase tracking-[0.18em] text-primary-700">
+                    {editingProjectId ? copy.customerComposer.captionUpdate : copy.customerComposer.captionCreate}
+                  </Caption>
+                  <H2 className="mt-2 text-2xl">
+                    {editingProjectId ? copy.customerComposer.titleUpdate : copy.customerComposer.titleCreate}
+                  </H2>
                 </div>
-                <Input label="Deadline" type="date" value={projectForm.deadline} onChange={handleProjectFieldChange('deadline')} />
+                {editingProjectId && (
+                  <Button variant="ghost" onClick={resetProjectComposer}>
+                    {copy.customerComposer.cancelEdit}
+                  </Button>
+                )}
+              </div>
+
+              {editingProjectId && (
+                <Callout className="mt-5" type="info" title={copy.customerComposer.updateModeTitle}>
+                  {copy.customerComposer.updateModeDescription}
+                </Callout>
+              )}
+
+              <form className="mt-5 flex flex-col gap-4" onSubmit={handleSubmitProject}>
+                <Input label={copy.customerComposer.titleLabel} placeholder={copy.customerComposer.titlePlaceholder} value={projectForm.title} onChange={handleProjectFieldChange('title')} />
+                <Textarea label={copy.customerComposer.descriptionLabel} placeholder={copy.customerComposer.descriptionPlaceholder} value={projectForm.description} onChange={handleProjectFieldChange('description')} />
+                <div className="grid gap-4 md:grid-cols-2">
+                  <Input label={copy.customerComposer.budgetMinLabel} type="number" min="0" value={projectForm.budgetMin} onChange={handleProjectFieldChange('budgetMin')} />
+                  <Input label={copy.customerComposer.budgetMaxLabel} type="number" min="0" value={projectForm.budgetMax} onChange={handleProjectFieldChange('budgetMax')} />
+                </div>
+                <Input label={copy.customerComposer.deadlineLabel} type="date" value={projectForm.deadline} onChange={handleProjectFieldChange('deadline')} />
                 <Button type="submit" disabled={submittingProject}>
-                  {submittingProject ? 'Đang tạo project...' : 'Đăng project'}
+                  {submittingProject
+                    ? (editingProjectId ? copy.customerComposer.submitUpdating : copy.customerComposer.submitCreating)
+                    : (editingProjectId ? copy.customerComposer.submitUpdate : copy.customerComposer.submitCreate)}
                 </Button>
               </form>
             </Card>
 
             <Card className="border-2 border-slate-200 bg-white p-6">
               <Caption className="text-[11px] uppercase tracking-[0.18em] text-primary-700">
-                Danh sách project
+                {copy.customerList.caption}
               </Caption>
               <H2 className="mt-2 text-2xl">
-                Project của bạn
+                {copy.customerList.title}
               </H2>
               <div className="mt-5 flex flex-col gap-3">
                 {projects.map((project) => {
-                  const statusMeta = getProjectStatusMeta(project.status);
+                  const statusMeta = getProjectStatusMeta(project.status, locale);
+                  const canManageProject = project.status === 'open' || project.status === 'cancelled';
+                  const isCancellingProject = projectActionId === project.id;
+
                   return (
                     <div key={project.id} className="border border-slate-200 bg-slate-50 p-4">
                       <div className="flex items-start justify-between gap-3">
                         <div>
                           <div className="text-sm font-bold text-secondary-900">{project.title}</div>
                           <Caption className="text-xs text-slate-500">
-                            Hạn: {formatDate(project.deadline)}
+                            {t('projectsPage.customerList.deadline', { date: formatDate(project.deadline, locale) })}
                           </Caption>
                         </div>
                         <Badge color={statusMeta.color}>
@@ -278,23 +418,37 @@ const ProjectsPage = () => {
                         </Badge>
                       </div>
                       <Text className="mt-3 text-sm text-slate-600">
-                        {project.description || 'Chưa có mô tả chi tiết cho project này.'}
+                        {project.description || copy.customerList.descriptionFallback}
                       </Text>
                       <div className="mt-3 text-sm font-semibold text-slate-700">
-                        Ngân sách: {buildBudgetRange(project)}
+                        {t('projectsPage.customerList.budget', { value: buildBudgetRange(project, locale) })}
                       </div>
                       <div className="mt-4 flex flex-wrap gap-3">
-                        <Button variant="outline" onClick={() => handleLoadProjectBids(project)}>
-                          Xem bid
+                        <Button variant="outline" onClick={() => loadProjectBids(project)}>
+                          {copy.customerList.viewBids}
                         </Button>
+                        {canManageProject && (
+                          <Button variant="ghost" onClick={() => startEditingProject(project)}>
+                            {copy.customerList.edit}
+                          </Button>
+                        )}
+                        {project.status === 'open' && (
+                          <Button
+                            variant="danger"
+                            disabled={isCancellingProject}
+                            onClick={() => handleCancelProject(project)}
+                          >
+                            {isCancellingProject ? copy.customerList.cancelling : copy.customerList.cancel}
+                          </Button>
+                        )}
                       </div>
                     </div>
                   );
                 })}
 
                 {!loading && projects.length === 0 && (
-                  <Callout type="info" title="Chưa có project">
-                    Bạn chưa đăng project nào. Hãy bắt đầu từ form bên trái.
+                  <Callout type="info" title={copy.customerList.emptyTitle}>
+                    {copy.customerList.emptyDescription}
                   </Callout>
                 )}
               </div>
@@ -304,29 +458,37 @@ const ProjectsPage = () => {
           {selectedProject && (
             <Card className="border-2 border-slate-200 bg-white p-6">
               <Caption className="text-[11px] uppercase tracking-[0.18em] text-primary-700">
-                Báo giá cho project
+                {copy.projectBids.caption}
               </Caption>
               <H2 className="mt-2 text-2xl">
-                Báo giá cho: {selectedProject.title}
+                {t('projectsPage.projectBids.title', { title: selectedProject.title })}
               </H2>
+              <div className="mt-2">
+                <Badge color={getProjectStatusMeta(selectedProject.status, locale).color}>
+                  {getProjectStatusMeta(selectedProject.status, locale).label}
+                </Badge>
+              </div>
               <div className="mt-5 flex flex-col gap-3">
                 {loadingProjectBids && (
                   <Text className="text-sm text-slate-500">
-                    Đang tải danh sách bid...
+                    {copy.projectBids.loading}
                   </Text>
                 )}
 
                 {!loadingProjectBids && selectedProjectBids.map((bid) => {
-                  const statusMeta = getBidStatusMeta(bid.status);
+                  const statusMeta = getBidStatusMeta(bid.status, locale);
+                  const isHandlingBid = bidActionId === bid.id;
+                  const canProcessBid = selectedProject.status === 'open' && bid.status === 'pending';
+
                   return (
                     <div key={bid.id} className="border border-slate-200 bg-slate-50 p-4">
                       <div className="flex items-start justify-between gap-3">
                         <div>
                           <div className="text-sm font-bold text-secondary-900">
-                            {bid.freelancer?.fullName || `Freelancer #${bid.freelancer?.id || bid.id}`}
+                            {bid.freelancer?.fullName || t('projectsPage.projectBids.freelancerFallback', { id: bid.freelancer?.id || bid.id })}
                           </div>
                           <Caption className="text-xs text-slate-500">
-                            Đề xuất lúc: {formatDateTime(bid.createdAt)}
+                            {t('projectsPage.projectBids.proposedAt', { value: formatDateTime(bid.createdAt, locale) })}
                           </Caption>
                         </div>
                         <Badge color={statusMeta.color}>
@@ -334,18 +496,21 @@ const ProjectsPage = () => {
                         </Badge>
                       </div>
                       <div className="mt-3 text-sm font-semibold text-slate-700">
-                        Giá đề xuất: {formatCurrency(bid.price)}
+                        {t('projectsPage.projectBids.price', { value: formatCurrency(bid.price, locale) })}
                       </div>
                       <Text className="mt-2 text-sm text-slate-600">
-                        {bid.message || 'Freelancer chưa điền message cho proposal này.'}
+                        {bid.message || copy.projectBids.messageFallback}
                       </Text>
                       <Text className="mt-2 text-sm text-slate-500">
-                        Thời gian dự kiến: {bid.estimatedTime || 'Đang cập nhật'}
+                        {t('projectsPage.projectBids.estimatedTime', { value: bid.estimatedTime || copy.projectBids.estimatedFallback })}
                       </Text>
-                      {selectedProject.status === 'open' && bid.status === 'pending' && (
-                        <div className="mt-4">
-                          <Button onClick={() => handleAcceptBid(bid.id)}>
-                            Chấp nhận bid
+                      {canProcessBid && (
+                        <div className="mt-4 flex flex-wrap gap-3">
+                          <Button disabled={isHandlingBid} onClick={() => handleAcceptBid(bid.id)}>
+                            {isHandlingBid ? copy.projectBids.processing : copy.projectBids.accept}
+                          </Button>
+                          <Button disabled={isHandlingBid} variant="danger" onClick={() => handleRejectBid(bid.id)}>
+                            {isHandlingBid ? copy.projectBids.processing : copy.projectBids.reject}
                           </Button>
                         </div>
                       )}
@@ -354,8 +519,8 @@ const ProjectsPage = () => {
                 })}
 
                 {!loadingProjectBids && selectedProjectBids.length === 0 && (
-                  <Callout type="info" title="Chưa có bid">
-                    Project này chưa nhận được proposal nào từ freelancer.
+                  <Callout type="info" title={copy.projectBids.emptyTitle}>
+                    {copy.projectBids.emptyDescription}
                   </Callout>
                 )}
               </div>
@@ -366,39 +531,39 @@ const ProjectsPage = () => {
         <section className="grid gap-6 lg:grid-cols-[1.05fr_0.95fr]">
           <Card className="border-2 border-slate-200 bg-white p-6">
             <Caption className="text-[11px] uppercase tracking-[0.18em] text-primary-700">
-              Dự án marketplace
+              {copy.marketplace.caption}
             </Caption>
             <H2 className="mt-2 text-2xl">
-              Project đang mở
+              {copy.marketplace.title}
             </H2>
             <div className="mt-5 flex flex-col gap-3">
               {projects.map((project) => {
-                const statusMeta = getProjectStatusMeta(project.status);
+                const statusMeta = getProjectStatusMeta(project.status, locale);
                 return (
                   <div key={project.id} className="border border-slate-200 bg-slate-50 p-4">
                     <div className="flex items-start justify-between gap-3">
-                      <div>
-                        <div className="text-sm font-bold text-secondary-900">{project.title}</div>
-                        <Caption className="text-xs text-slate-500">
-                          Chủ project: {project.user?.fullName || `Khách hàng #${project.user?.id || '---'}`}
-                        </Caption>
-                      </div>
+                    <div>
+                      <div className="text-sm font-bold text-secondary-900">{project.title}</div>
+                      <Caption className="text-xs text-slate-500">
+                          {t('projectsPage.marketplace.owner', { name: project.user?.fullName || t('projectsPage.marketplace.ownerFallback', { id: project.user?.id || '---' }) })}
+                      </Caption>
+                    </div>
                       <Badge color={statusMeta.color}>
                         {statusMeta.label}
                       </Badge>
                     </div>
                     <Text className="mt-3 text-sm text-slate-600">
-                      {project.description || 'Khách hàng chưa điền mô tả cho project này.'}
+                      {project.description || copy.marketplace.descriptionFallback}
                     </Text>
                     <div className="mt-3 text-sm font-semibold text-slate-700">
-                      Ngân sách: {buildBudgetRange(project)}
+                      {t('projectsPage.marketplace.budget', { value: buildBudgetRange(project, locale) })}
                     </div>
                     <div className="mt-2 text-sm text-slate-500">
-                      Hạn: {formatDate(project.deadline)}
+                      {t('projectsPage.marketplace.deadline', { date: formatDate(project.deadline, locale) })}
                     </div>
                     <div className="mt-4">
                       <Button variant="outline" onClick={() => setSelectedProject(project)}>
-                        Chọn project này
+                        {copy.marketplace.select}
                       </Button>
                     </div>
                   </div>
@@ -406,8 +571,8 @@ const ProjectsPage = () => {
               })}
 
               {!loading && projects.length === 0 && (
-                <Callout type="info" title="Chưa có project">
-                  Hiện tại chưa có project đang mở để gửi proposal.
+                <Callout type="info" title={copy.marketplace.emptyTitle}>
+                  {copy.marketplace.emptyDescription}
                 </Callout>
               )}
             </div>
@@ -416,22 +581,22 @@ const ProjectsPage = () => {
           <div className="flex flex-col gap-6">
             <Card className="border-2 border-slate-200 bg-white p-6">
               <Caption className="text-[11px] uppercase tracking-[0.18em] text-primary-700">
-                Soạn đề xuất
+                {copy.bidComposer.caption}
               </Caption>
               <H2 className="mt-2 text-2xl">
-                {selectedProject ? `Gửi bid cho: ${selectedProject.title}` : 'Chọn một project để gửi bid'}
+                {selectedProject ? t('projectsPage.bidComposer.titleSelected', { title: selectedProject.title }) : copy.bidComposer.titleDefault}
               </H2>
               {!selectedProject ? (
-                <Callout type="info" title="Hãy chọn project">
-                  Chọn một card project ở cột bên trái, sau đó điền giá, thời gian và thông điệp để gửi proposal.
+                <Callout type="info" title={copy.bidComposer.emptyTitle}>
+                  {copy.bidComposer.emptyDescription}
                 </Callout>
               ) : (
                 <form className="mt-5 flex flex-col gap-4" onSubmit={handleSubmitBid}>
-                  <Input label="Giá đề xuất" type="number" min="0" value={bidForm.price} onChange={handleBidFieldChange('price')} />
-                  <Input label="Thời gian dự kiến" placeholder="VD: 7 ngày làm việc" value={bidForm.estimatedTime} onChange={handleBidFieldChange('estimatedTime')} />
-                  <Textarea label="Thông điệp đề xuất" placeholder="Tóm tắt cách bạn sẽ tiếp cận project này." value={bidForm.message} onChange={handleBidFieldChange('message')} />
+                  <Input label={copy.bidComposer.priceLabel} type="number" min="0" value={bidForm.price} onChange={handleBidFieldChange('price')} />
+                  <Input label={copy.bidComposer.estimatedLabel} placeholder={copy.bidComposer.estimatedPlaceholder} value={bidForm.estimatedTime} onChange={handleBidFieldChange('estimatedTime')} />
+                  <Textarea label={copy.bidComposer.messageLabel} placeholder={copy.bidComposer.messagePlaceholder} value={bidForm.message} onChange={handleBidFieldChange('message')} />
                   <Button type="submit" disabled={submittingBid}>
-                    {submittingBid ? 'Đang gửi bid...' : 'Gửi bid'}
+                    {submittingBid ? copy.bidComposer.submitting : copy.bidComposer.submit}
                   </Button>
                 </form>
               )}
@@ -439,23 +604,25 @@ const ProjectsPage = () => {
 
             <Card className="border-2 border-slate-200 bg-white p-6">
               <Caption className="text-[11px] uppercase tracking-[0.18em] text-primary-700">
-                Báo giá của tôi
+                {copy.myBids.caption}
               </Caption>
               <H2 className="mt-2 text-2xl">
-                Báo giá đã gửi
+                {copy.myBids.title}
               </H2>
               <div className="mt-5 flex flex-col gap-3">
                 {myBids.map((bid) => {
-                  const statusMeta = getBidStatusMeta(bid.status);
+                  const statusMeta = getBidStatusMeta(bid.status, locale);
+                  const isHandlingBid = bidActionId === bid.id;
+
                   return (
                     <div key={bid.id} className="border border-slate-200 bg-slate-50 p-4">
                       <div className="flex items-start justify-between gap-3">
                         <div>
                           <div className="text-sm font-bold text-secondary-900">
-                            {bid.project?.title || `Project #${bid.project?.id || bid.id}`}
+                            {bid.project?.title || t('projectsPage.myBids.projectFallback', { id: bid.project?.id || bid.id })}
                           </div>
                           <Caption className="text-xs text-slate-500">
-                            Giá đề xuất: {formatCurrency(bid.price)}
+                            {t('projectsPage.myBids.price', { value: formatCurrency(bid.price, locale) })}
                           </Caption>
                         </div>
                         <Badge color={statusMeta.color}>
@@ -463,15 +630,25 @@ const ProjectsPage = () => {
                         </Badge>
                       </div>
                       <Text className="mt-3 text-sm text-slate-600">
-                        {bid.message || 'Chưa có note cho bid này.'}
+                        {bid.message || copy.myBids.messageFallback}
                       </Text>
+                      <Text className="mt-2 text-sm text-slate-500">
+                        {t('projectsPage.myBids.estimatedTime', { value: bid.estimatedTime || copy.myBids.estimatedFallback })}
+                      </Text>
+                      {bid.status === 'pending' && (
+                        <div className="mt-4">
+                          <Button disabled={isHandlingBid} variant="danger" onClick={() => handleWithdrawBid(bid.id)}>
+                            {isHandlingBid ? copy.myBids.processing : copy.myBids.withdraw}
+                          </Button>
+                        </div>
+                      )}
                     </div>
                   );
                 })}
 
                 {!loading && myBids.length === 0 && (
-                  <Callout type="info" title="Chưa gửi bid">
-                    Chọn một project đang mở và gửi proposal để bắt đầu.
+                  <Callout type="info" title={copy.myBids.emptyTitle}>
+                    {copy.myBids.emptyDescription}
                   </Callout>
                 )}
               </div>

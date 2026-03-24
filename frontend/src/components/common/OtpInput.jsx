@@ -2,7 +2,7 @@ import React, { useRef } from 'react';
 import { PasteClipboard } from 'iconoir-react';
 
 /**
- * 6-box OTP input với auto-advance, backspace navigation và nút dán nhanh.
+ * Cụm nhập mã xác thực 6 ô, tự chuyển ô và hỗ trợ dán nhanh.
  * value: string (tối đa 6 ký tự số)
  * onChange: (newValue: string) => void
  */
@@ -65,10 +65,9 @@ const OtpInput = ({ value = '', onChange, length = 6 }) => {
 
   return (
     <div className="flex flex-col gap-1.5">
-      {/* Label row */}
       <div className="flex items-center justify-between">
         <label className="text-sm font-semibold text-secondary-900 font-sans">
-          Mã OTP
+          Mã xác thực
         </label>
         <button
           type="button"
@@ -80,7 +79,6 @@ const OtpInput = ({ value = '', onChange, length = 6 }) => {
         </button>
       </div>
 
-      {/* 6 ô nhập */}
       <div className="flex gap-2">
         {digits.map((digit, index) => (
           <input

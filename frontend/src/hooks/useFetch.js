@@ -1,5 +1,6 @@
 import { useState, useCallback } from 'react';
 import axiosClient from '../api/axiosClient';
+import { createApiError } from '../utils/apiError';
 
 /**
  * Custom hook quản lý các giao dịch API bất đồng bộ.
@@ -33,15 +34,11 @@ export const useFetch = () => {
                 setData(result.data);
                 return result.data;
             } else {
-                throw new Error(result.message || 'Lỗi hệ thống');
+                throw createApiError(result, 'Không thể hoàn thành yêu cầu.');
             }
             
         } catch (err) {
-            const errorObj = {
-                message: err?.message || 'Lỗi mạng hoặc không thể kết nối server',
-                code: err?.code || 'ERR_SYS_00',
-                errors: err?.errors || null,
-            };
+            const errorObj = createApiError(err, 'Không thể kết nối tới hệ thống.');
             
             setError(errorObj);
             throw errorObj; // Ném lỗi ra ngoài để component giao diện xử lý (VD: Hiện thông báo Toast)

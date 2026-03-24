@@ -9,8 +9,8 @@ import { motion } from "motion/react";
 const MotionDiv = motion.div;
 
 /**
- * StatCard component for dashboard metrics.
- * Follows "Strict Sharpness" with interactive icon.
+ * Thẻ thống kê dùng cho khu vực tổng quan.
+ * Giữ phong cách giao diện góc cạnh và hỗ trợ biểu tượng động.
  */
 const StatCard = ({ 
   label, 

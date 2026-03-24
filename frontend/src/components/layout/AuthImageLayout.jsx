@@ -2,11 +2,6 @@ import React from 'react';
 import { Outlet } from 'react-router-dom';
 import bgImage from '../../assets/pexels-luna-lovegood-4087177.webp';
 
-// Preload ảnh vào memory cache của browser ngay khi module được nạp.
-// Mọi lần render sau đó dùng lại từ cache — không có network request.
-const _preload = new window.Image();
-_preload.src = bgImage;
-
 const AuthImageLayout = () => (
   <>
     <div

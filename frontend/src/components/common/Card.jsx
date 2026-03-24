@@ -1,8 +1,8 @@
 import React from 'react';
 
 /**
- * Common Card component following "Strict Sharpness".
- * No rounded corners, thin borders.
+ * Thành phần thẻ nội dung dùng chung theo phong cách giao diện góc cạnh.
+ * Không bo tròn và dùng đường viền mảnh.
  */
 const Card = ({ children, className = '', ...props }) => {
   return (

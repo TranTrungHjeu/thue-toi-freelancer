@@ -1,10 +1,10 @@
 import React from 'react';
 
 /**
- * Common Table component following "Strict Sharpness".
- * @param {Array} headers - List of header strings or objects
- * @param {Array} data - List of data objects
- * @param {function} renderRow - Custom row renderer
+ * Thành phần bảng dùng chung theo phong cách giao diện góc cạnh.
+ * @param {Array} headers - Danh sách tiêu đề cột
+ * @param {Array} data - Danh sách dữ liệu
+ * @param {function} renderRow - Hàm dựng từng dòng tùy chỉnh
  */
 const Table = ({ headers, data, renderRow, className = '' }) => {
   return (

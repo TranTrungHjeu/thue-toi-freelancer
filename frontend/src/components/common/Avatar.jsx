@@ -1,8 +1,8 @@
 import React from 'react';
 
 /**
- * Common Avatar component.
- * Strict Sharpness: No rounded corners.
+ * Thành phần ảnh đại diện dùng chung.
+ * Giữ phong cách giao diện góc cạnh, không bo tròn.
  */
 const Avatar = ({ src, alt, size = 'md', className = '' }) => {
   const sizes = {
