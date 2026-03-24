@@ -17,14 +17,14 @@ const NotFoundPage = () => {
           Không tìm thấy trang bạn cần.
         </H1>
         <Text className="mt-4 text-slate-600">
-          Hãy quay về trang chủ hoặc workspace để tiếp tục dùng các luồng nghiệp vụ đã được hoàn thiện.
+          Hãy quay về trang chủ hoặc khu làm việc để tiếp tục sử dụng các luồng nghiệp vụ đã được hoàn thiện.
         </Text>
         <div className="mt-6 flex justify-center gap-3">
           <Button variant="outline" onClick={() => navigate('/')}>
             Về trang chủ
           </Button>
           <Button onClick={() => navigate('/workspace')}>
-            Vào workspace
+            Vào khu làm việc
           </Button>
         </div>
       </Card>

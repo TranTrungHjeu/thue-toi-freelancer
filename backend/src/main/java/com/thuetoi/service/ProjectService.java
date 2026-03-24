@@ -2,6 +2,7 @@ package com.thuetoi.service;
 
 import com.thuetoi.entity.Project;
 import com.thuetoi.entity.User;
+import com.thuetoi.enums.ProjectStatus;
 import com.thuetoi.exception.BusinessException;
 import com.thuetoi.repository.ProjectRepository;
 import com.thuetoi.repository.UserRepository;
@@ -14,15 +15,12 @@ import java.util.Date;
 import java.util.List;
 import java.util.Locale;
 import java.util.Optional;
-import java.util.Set;
 
 /**
  * Service Project: Xử lý logic nghiệp vụ dự án
  */
 @Service
 public class ProjectService {
-    private static final Set<String> ALLOWED_PROJECT_STATUSES = Set.of("open", "in_progress", "completed", "cancelled");
-
     @Autowired
     private ProjectRepository projectRepository;
 
@@ -30,7 +28,7 @@ public class ProjectService {
      * Lấy tất cả dự án
      */
     public List<Project> getAllProjects() {
-        return projectRepository.findByStatusOrderByCreatedAtDesc("open");
+        return projectRepository.findByStatusOrderByCreatedAtDesc(ProjectStatus.OPEN.getValue());
     }
 
     @Autowired
@@ -52,7 +50,7 @@ public class ProjectService {
         project.setBudgetMin(budgetMin);
         project.setBudgetMax(budgetMax);
         project.setDeadline(deadline);
-        project.setStatus("open");
+        project.setStatus(ProjectStatus.OPEN.getValue());
         return projectRepository.save(project);
     }
 
@@ -60,7 +58,9 @@ public class ProjectService {
      * Lấy danh sách dự án theo status
      */
     public List<Project> getProjectsByStatus(String status) {
-        return projectRepository.findByStatus(status);
+        ProjectStatus normalizedStatus = ProjectStatus.fromValue(status)
+            .orElseThrow(() -> new BusinessException("ERR_SYS_02", "Trạng thái dự án không hợp lệ", HttpStatus.BAD_REQUEST));
+        return projectRepository.findByStatus(normalizedStatus.getValue());
     }
 
     /**
@@ -152,17 +152,15 @@ public class ProjectService {
         if (status == null || status.trim().isEmpty()) {
             return fallbackStatus;
         }
-        String normalizedStatus = status.trim().toLowerCase(Locale.ROOT);
-        if (!ALLOWED_PROJECT_STATUSES.contains(normalizedStatus)) {
-            throw new BusinessException("ERR_SYS_02", "Trạng thái dự án không hợp lệ", HttpStatus.BAD_REQUEST);
-        }
-        if ("in_progress".equals(normalizedStatus) || "completed".equals(normalizedStatus)) {
+        ProjectStatus normalizedStatus = ProjectStatus.fromValue(status)
+            .orElseThrow(() -> new BusinessException("ERR_SYS_02", "Trạng thái dự án không hợp lệ", HttpStatus.BAD_REQUEST));
+        if (normalizedStatus == ProjectStatus.IN_PROGRESS || normalizedStatus == ProjectStatus.COMPLETED) {
             throw new BusinessException(
                 "ERR_SYS_02",
                 "Trạng thái in_progress và completed được quản lý bởi luồng hợp đồng, không cập nhật thủ công",
                 HttpStatus.BAD_REQUEST
             );
         }
-        return normalizedStatus;
+        return normalizedStatus.getValue();
     }
 }

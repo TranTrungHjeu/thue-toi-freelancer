@@ -1,9 +1,9 @@
 import React from 'react';
 
 /**
- * Common Button component following "Strict Sharpness" rules.
+ * Thành phần nút dùng chung theo quy chuẩn giao diện góc cạnh.
  * @param {string} variant - 'primary' | 'outline' | 'ghost' | 'danger'
- * @param {string} className - Additional classes
+ * @param {string} className - Lớp CSS bổ sung
  */
 const Button = ({ children, variant = 'primary', className = '', ...props }) => {
   const baseStyles = 'inline-flex min-h-11 items-center justify-center gap-2 px-4 py-2 text-sm font-semibold transition-all focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-60';

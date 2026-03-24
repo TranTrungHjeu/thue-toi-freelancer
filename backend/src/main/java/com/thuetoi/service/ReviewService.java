@@ -3,6 +3,7 @@ package com.thuetoi.service;
 import com.thuetoi.dto.request.ReviewRequest;
 import com.thuetoi.entity.Contract;
 import com.thuetoi.entity.Review;
+import com.thuetoi.enums.ContractStatus;
 import com.thuetoi.exception.BusinessException;
 import com.thuetoi.repository.ReviewRepository;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -21,7 +22,7 @@ public class ReviewService {
 
     public Review createReview(Long currentUserId, ReviewRequest request) {
         Contract contract = contractAccessService.requireAccessibleContract(request.getContractId(), currentUserId);
-        if (!"completed".equalsIgnoreCase(contract.getStatus())) {
+        if (!ContractStatus.COMPLETED.matches(contract.getStatus())) {
             throw new BusinessException("ERR_SYS_02", "Chỉ có thể đánh giá hợp đồng đã hoàn thành", HttpStatus.BAD_REQUEST);
         }
         if (reviewRepository.existsByContractIdAndReviewerId(request.getContractId(), currentUserId)) {

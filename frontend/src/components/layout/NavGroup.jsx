@@ -8,8 +8,8 @@ import AnimatedIcon from '../common/AnimatedIcon';
 const MotionDiv = motion.div;
 
 /**
- * Collapsible Navigation Group for Sidebar.
- * Supports multi-level nesting with "Strict Sharpness" style.
+ * Nhóm điều hướng có thể thu gọn trong thanh bên.
+ * Hỗ trợ nhiều cấp hiển thị theo phong cách giao diện góc cạnh.
  */
 const NavGroup = ({ 
   icon: Icon, 

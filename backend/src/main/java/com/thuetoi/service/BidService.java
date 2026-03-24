@@ -3,6 +3,8 @@ package com.thuetoi.service;
 import com.thuetoi.entity.Bid;
 import com.thuetoi.entity.Project;
 import com.thuetoi.entity.User;
+import com.thuetoi.enums.BidStatus;
+import com.thuetoi.enums.ProjectStatus;
 import com.thuetoi.exception.BusinessException;
 import com.thuetoi.repository.BidRepository;
 import com.thuetoi.repository.ProjectRepository;
@@ -15,15 +17,12 @@ import org.springframework.transaction.annotation.Transactional;
 import java.util.List;
 import java.util.Locale;
 import java.util.Optional;
-import java.util.Set;
 
 /**
  * Service Bid: Xử lý logic nghiệp vụ báo giá.
  */
 @Service
 public class BidService {
-    private static final Set<String> ALLOWED_BID_STATUSES = Set.of("pending", "accepted", "rejected", "withdrawn");
-
     @Autowired
     private BidRepository bidRepository;
 
@@ -35,6 +34,9 @@ public class BidService {
 
     @Autowired
     private ContractService contractService;
+
+    @Autowired
+    private NotificationService notificationService;
 
     /**
      * Lấy toàn bộ bid mà user hiện tại được phép xem.
@@ -57,7 +59,7 @@ public class BidService {
         User freelancer = getRequiredUser(freelancerId);
 
         ensureFreelancer(freelancer);
-        if (!"open".equalsIgnoreCase(project.getStatus())) {
+        if (!ProjectStatus.OPEN.matches(project.getStatus())) {
             throw new BusinessException("ERR_SYS_02", "Chỉ có thể gửi bid cho project đang mở", HttpStatus.BAD_REQUEST);
         }
         if (project.getUser().getId().equals(freelancerId)) {
@@ -72,8 +74,16 @@ public class BidService {
         bid.setMessage(normalizeText(message));
         bid.setEstimatedTime(normalizeText(estimatedTime));
         bid.setAttachments(normalizeText(attachments));
-        bid.setStatus("pending");
-        return bidRepository.save(bid);
+        bid.setStatus(BidStatus.PENDING.getValue());
+        Bid createdBid = bidRepository.save(bid);
+        notificationService.createNotificationForUser(
+            project.getUser().getId(),
+            "bid",
+            "Bạn có bid mới",
+            "Freelancer \"" + resolveUserDisplayName(freelancer, "Freelancer") + "\" vừa gửi bid cho project \"" + project.getTitle() + "\".",
+            "/workspace/projects"
+        );
+        return createdBid;
     }
 
     /**
@@ -119,28 +129,36 @@ public class BidService {
             throw new BusinessException("ERR_AUTH_04", "Bạn không có quyền cập nhật bid này", HttpStatus.FORBIDDEN);
         }
 
-        String normalizedStatus = normalizeBidStatus(status);
-        if ("accepted".equals(normalizedStatus)) {
+        BidStatus normalizedStatus = normalizeBidStatus(status);
+        if (normalizedStatus == BidStatus.ACCEPTED) {
             throw new BusinessException("ERR_SYS_02", "Bid chỉ có thể được chấp nhận qua endpoint accept", HttpStatus.BAD_REQUEST);
         }
-        if (!"pending".equalsIgnoreCase(bid.getStatus())) {
+        if (!BidStatus.PENDING.matches(bid.getStatus())) {
             throw new BusinessException("ERR_SYS_02", "Chỉ bid đang chờ mới được cập nhật trạng thái thủ công", HttpStatus.BAD_REQUEST);
         }
 
         if (isBidOwner) {
-            if (!"withdrawn".equals(normalizedStatus)) {
+            if (normalizedStatus != BidStatus.WITHDRAWN) {
                 throw new BusinessException("ERR_AUTH_04", "Freelancer chỉ có thể rút bid của mình", HttpStatus.FORBIDDEN);
             }
-            bid.setStatus("withdrawn");
+            bid.setStatus(BidStatus.WITHDRAWN.getValue());
             return bidRepository.save(bid);
         }
 
-        if (!"rejected".equals(normalizedStatus)) {
+        if (normalizedStatus != BidStatus.REJECTED) {
             throw new BusinessException("ERR_AUTH_04", "Customer chỉ có thể từ chối bid qua endpoint cập nhật trạng thái", HttpStatus.FORBIDDEN);
         }
 
-        bid.setStatus("rejected");
-        return bidRepository.save(bid);
+        bid.setStatus(BidStatus.REJECTED.getValue());
+        Bid updatedBid = bidRepository.save(bid);
+        notificationService.createNotificationForUser(
+            bid.getFreelancer().getId(),
+            "bid",
+            "Bid của bạn đã bị từ chối",
+            "Khách hàng đã từ chối bid của bạn cho project \"" + bid.getProject().getTitle() + "\".",
+            "/workspace/projects"
+        );
+        return updatedBid;
     }
 
     /**
@@ -193,14 +211,19 @@ public class BidService {
         return normalized.isEmpty() ? null : normalized;
     }
 
-    private String normalizeBidStatus(String status) {
+    private BidStatus normalizeBidStatus(String status) {
         if (status == null || status.trim().isEmpty()) {
             throw new BusinessException("ERR_SYS_02", "Trạng thái bid không được để trống", HttpStatus.BAD_REQUEST);
         }
-        String normalizedStatus = status.trim().toLowerCase(Locale.ROOT);
-        if (!ALLOWED_BID_STATUSES.contains(normalizedStatus)) {
-            throw new BusinessException("ERR_SYS_02", "Trạng thái bid không hợp lệ", HttpStatus.BAD_REQUEST);
+        return BidStatus.fromValue(status)
+            .orElseThrow(() -> new BusinessException("ERR_SYS_02", "Trạng thái bid không hợp lệ", HttpStatus.BAD_REQUEST));
+    }
+
+    private String resolveUserDisplayName(User user, String fallbackPrefix) {
+        if (user == null) {
+            return fallbackPrefix;
         }
-        return normalizedStatus;
+        String fullName = normalizeText(user.getFullName());
+        return fullName != null ? fullName : fallbackPrefix + " #" + user.getId();
     }
 }

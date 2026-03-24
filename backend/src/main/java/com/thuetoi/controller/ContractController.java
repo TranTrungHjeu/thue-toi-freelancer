@@ -3,9 +3,12 @@ package com.thuetoi.controller;
 import com.thuetoi.dto.request.ContractCreateRequest;
 import com.thuetoi.dto.request.MilestoneRequest;
 import com.thuetoi.dto.response.ApiResponse;
+import com.thuetoi.dto.response.marketplace.ContractResponse;
+import com.thuetoi.dto.response.marketplace.MilestoneResponse;
 import com.thuetoi.entity.Contract;
 import com.thuetoi.entity.Milestone;
 import com.thuetoi.exception.BusinessException;
+import com.thuetoi.mapper.MarketplaceResponseMapper;
 import com.thuetoi.security.CurrentUserProvider;
 import com.thuetoi.service.ContractService;
 import jakarta.validation.Valid;
@@ -28,42 +31,45 @@ public class ContractController {
     @Autowired
     private CurrentUserProvider currentUserProvider;
 
+    @Autowired
+    private MarketplaceResponseMapper marketplaceResponseMapper;
+
     /**
      * Lấy tất cả hợp đồng mà user hiện tại được phép xem.
      */
     @GetMapping
-    public ApiResponse<List<Contract>> getAllContracts(Principal principal) {
+    public ApiResponse<List<ContractResponse>> getAllContracts(Principal principal) {
         Long currentUserId = currentUserProvider.requireCurrentUserId(principal);
         List<Contract> contracts = contractService.getAllContracts(currentUserId);
-        return ApiResponse.success("Lấy danh sách hợp đồng có thể truy cập", contracts);
+        return ApiResponse.success("Lấy danh sách hợp đồng có thể truy cập", marketplaceResponseMapper.toContractResponses(contracts));
     }
 
     @PostMapping
-    public ApiResponse<Contract> createContract(@Valid @RequestBody ContractCreateRequest request, Principal principal) {
+    public ApiResponse<ContractResponse> createContract(@Valid @RequestBody ContractCreateRequest request, Principal principal) {
         Long currentUserId = currentUserProvider.requireCurrentUserId(principal);
         Contract created = contractService.createContractFromBid(currentUserId, request.getBidId());
-        return ApiResponse.success("Tạo hợp đồng thành công", created);
+        return ApiResponse.success("Tạo hợp đồng thành công", marketplaceResponseMapper.toContractResponse(created));
     }
 
     @GetMapping("/my")
-    public ApiResponse<List<Contract>> getMyContracts(Principal principal) {
+    public ApiResponse<List<ContractResponse>> getMyContracts(Principal principal) {
         Long currentUserId = currentUserProvider.requireCurrentUserId(principal);
         List<Contract> contracts = contractService.getContractsByUser(currentUserId);
-        return ApiResponse.success("Lấy hợp đồng của user hiện tại thành công", contracts);
+        return ApiResponse.success("Lấy hợp đồng của user hiện tại thành công", marketplaceResponseMapper.toContractResponses(contracts));
     }
 
     @GetMapping("/user/{userId}")
-    public ApiResponse<List<Contract>> getContractsByUser(@PathVariable Long userId, Principal principal) {
+    public ApiResponse<List<ContractResponse>> getContractsByUser(@PathVariable Long userId, Principal principal) {
         Long currentUserId = currentUserProvider.requireCurrentUserId(principal);
         if (!userId.equals(currentUserId)) {
             throw new BusinessException("ERR_AUTH_04", "Bạn không có quyền xem hợp đồng của người dùng khác", HttpStatus.FORBIDDEN);
         }
         List<Contract> contracts = contractService.getContractsByUser(userId);
-        return ApiResponse.success("Lấy hợp đồng theo user thành công", contracts);
+        return ApiResponse.success("Lấy hợp đồng theo user thành công", marketplaceResponseMapper.toContractResponses(contracts));
     }
 
     @PostMapping("/{contractId}/milestones")
-    public ApiResponse<Milestone> addMilestone(
+    public ApiResponse<MilestoneResponse> addMilestone(
         @PathVariable Long contractId,
         @Valid @RequestBody MilestoneRequest request,
         Principal principal
@@ -77,21 +83,21 @@ public class ContractController {
             parseDueDate(request.getDueDate()),
             request.getStatus()
         );
-        return ApiResponse.success("Tạo milestone thành công", created);
+        return ApiResponse.success("Tạo milestone thành công", marketplaceResponseMapper.toMilestoneResponse(created));
     }
 
     @GetMapping("/{contractId}/milestones")
-    public ApiResponse<List<Milestone>> getMilestonesByContract(@PathVariable Long contractId, Principal principal) {
+    public ApiResponse<List<MilestoneResponse>> getMilestonesByContract(@PathVariable Long contractId, Principal principal) {
         Long currentUserId = currentUserProvider.requireCurrentUserId(principal);
         List<Milestone> milestones = contractService.getMilestonesByContract(contractId, currentUserId);
-        return ApiResponse.success("Lấy milestone theo hợp đồng thành công", milestones);
+        return ApiResponse.success("Lấy milestone theo hợp đồng thành công", marketplaceResponseMapper.toMilestoneResponses(milestones));
     }
 
     @PutMapping("/{contractId}/status")
-    public ApiResponse<Contract> updateContractStatus(@PathVariable Long contractId, @RequestParam String status, Principal principal) {
+    public ApiResponse<ContractResponse> updateContractStatus(@PathVariable Long contractId, @RequestParam String status, Principal principal) {
         Long currentUserId = currentUserProvider.requireCurrentUserId(principal);
         Contract updated = contractService.updateContractStatus(contractId, currentUserId, status);
-        return ApiResponse.success("Cập nhật trạng thái hợp đồng thành công", updated);
+        return ApiResponse.success("Cập nhật trạng thái hợp đồng thành công", marketplaceResponseMapper.toContractResponse(updated));
     }
 
     private LocalDateTime parseDueDate(String dueDate) {

@@ -9,7 +9,7 @@ import { Search, Xmark } from 'iconoir-react';
 const SearchInput = ({ 
   value, 
   onChange, 
-  placeholder = "Search projects, skills...", 
+  placeholder = "Tìm dự án, kỹ năng...", 
   className = "" 
 }) => {
   const [isFocused, setIsFocused] = useState(false);

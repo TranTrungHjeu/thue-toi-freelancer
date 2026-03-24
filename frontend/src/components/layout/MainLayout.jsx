@@ -6,38 +6,40 @@ import Sidebar from './Sidebar';
 import MobileDrawer from './MobileDrawer';
 import BottomNav from './BottomNav';
 import { useAuth } from '../../hooks/useAuth';
+import { useI18n } from '../../hooks/useI18n';
 
 const MainLayout = () => {
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
   const { user, logout } = useAuth();
   const location = useLocation();
+  const { t } = useI18n();
 
   const navigation = [
     {
-      title: 'Workspace',
+      title: t('layout.navigation.workspace'),
       items: [
-        { label: 'Tong quan', to: '/workspace', icon: Home },
-        { label: 'Du an', to: '/workspace/projects', icon: ViewGrid },
-        { label: 'Hop dong', to: '/workspace/contracts', icon: PageSearch },
-        { label: 'Thong bao', to: '/workspace/notifications', icon: Bell },
-        { label: 'Ho so', to: '/workspace/profile', icon: ProfileCircle },
+        { label: t('layout.navigation.dashboard'), to: '/workspace', icon: Home },
+        { label: t('layout.navigation.projects'), to: '/workspace/projects', icon: ViewGrid },
+        { label: t('layout.navigation.contracts'), to: '/workspace/contracts', icon: PageSearch },
+        { label: t('layout.navigation.notifications'), to: '/workspace/notifications', icon: Bell },
+        { label: t('layout.navigation.profile'), to: '/workspace/profile', icon: ProfileCircle },
       ],
     },
     {
-      title: 'Resources',
+      title: t('layout.navigation.tools'),
       items: [
-        { label: 'UI Gallery', to: '/gallery', icon: Page },
-        { label: 'API Lab', to: '/api-lab', icon: PageSearch },
+        { label: t('layout.navigation.gallery'), to: '/gallery', icon: Page },
+        { label: t('layout.navigation.apiLab'), to: '/api-lab', icon: PageSearch },
       ],
     },
   ];
 
   const mobileNavigation = [
-    { label: 'Tong quan', to: '/workspace', icon: Home },
-    { label: 'Du an', to: '/workspace/projects', icon: ViewGrid },
-    { label: 'Hop dong', to: '/workspace/contracts', icon: PageSearch },
-    { label: 'Thong bao', to: '/workspace/notifications', icon: Bell },
-    { label: 'Ho so', to: '/workspace/profile', icon: ProfileCircle },
+    { label: t('layout.navigation.dashboard'), to: '/workspace', icon: Home },
+    { label: t('layout.navigation.projects'), to: '/workspace/projects', icon: ViewGrid },
+    { label: t('layout.navigation.contracts'), to: '/workspace/contracts', icon: PageSearch },
+    { label: t('layout.navigation.notifications'), to: '/workspace/notifications', icon: Bell },
+    { label: t('layout.navigation.profile'), to: '/workspace/profile', icon: ProfileCircle },
   ];
 
   return (

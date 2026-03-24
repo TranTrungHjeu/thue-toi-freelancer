@@ -1,7 +1,9 @@
 package com.thuetoi.controller;
 
 import com.thuetoi.dto.response.ApiResponse;
+import com.thuetoi.dto.response.marketplace.MilestoneResponse;
 import com.thuetoi.entity.Milestone;
+import com.thuetoi.mapper.MarketplaceResponseMapper;
 import com.thuetoi.security.CurrentUserProvider;
 import com.thuetoi.service.ContractService;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -21,13 +23,19 @@ public class MilestoneController {
     @Autowired
     private CurrentUserProvider currentUserProvider;
 
+    @Autowired
+    private MarketplaceResponseMapper marketplaceResponseMapper;
+
     /**
      * Lấy toàn bộ milestone mà user hiện tại được phép xem.
      */
     @GetMapping
-    public ApiResponse<List<Milestone>> getAllMilestones(Principal principal) {
+    public ApiResponse<List<MilestoneResponse>> getAllMilestones(Principal principal) {
         Long currentUserId = currentUserProvider.requireCurrentUserId(principal);
         List<Milestone> milestones = contractService.getMilestonesByUser(currentUserId);
-        return ApiResponse.success("Lấy danh sách milestone có thể truy cập", milestones);
+        return ApiResponse.success(
+            "Lấy danh sách milestone có thể truy cập",
+            marketplaceResponseMapper.toMilestoneResponses(milestones)
+        );
     }
 }

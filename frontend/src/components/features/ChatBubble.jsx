@@ -4,8 +4,8 @@ import React from 'react';
 import { Caption, Text } from '../common/Typography';
 
 /**
- * Chat bubble for messaging interfaces.
- * Strictly sharp design, supports sender/receiver logic.
+ * Bong bóng trò chuyện cho khu vực trao đổi trong hợp đồng.
+ * Thiết kế góc cạnh, hỗ trợ phân biệt người gửi và người nhận.
  */
 const ChatBubble = ({ 
   message, 

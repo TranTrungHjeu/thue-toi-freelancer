@@ -1,8 +1,8 @@
 import React from 'react';
 
 /**
- * Common Input component with label and error support.
- * Follows "Strict Sharpness" (no border radius).
+ * Thành phần ô nhập liệu dùng chung, hỗ trợ nhãn và hiển thị lỗi.
+ * Giữ phong cách giao diện góc cạnh, không bo tròn.
  */
 const Input = ({ label, error, className = '', ...props }) => {
   return (

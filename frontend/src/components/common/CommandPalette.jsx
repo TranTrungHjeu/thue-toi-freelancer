@@ -50,10 +50,10 @@ const CommandPalette = ({ isOpen, onClose, actions = [] }) => {
           >
             <div className="flex items-center px-4 py-4 border-b-2 border-slate-100">
               <Search className="w-6 h-6 text-slate-400 mr-4" />
-              <input 
+                <input 
                 autoFocus
                 type="text"
-                placeholder="Tìm kiếm hành động hoặc dự án... (ESC để thoát)"
+                placeholder="Tìm thao tác hoặc dự án... (nhấn Esc để đóng)"
                 className="flex-1 bg-transparent border-none outline-none text-lg font-medium text-secondary-900 placeholder-slate-300"
                 value={query}
                 onChange={(e) => setQuery(e.target.value)}
