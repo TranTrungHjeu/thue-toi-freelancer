@@ -5,8 +5,6 @@ import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Positive;
 import lombok.Data;
 
-import java.time.LocalDateTime;
-
 /**
  * DTO tạo milestone cho hợp đồng.
  */
@@ -19,6 +17,6 @@ public class MilestoneRequest {
     @Positive(message = "Giá trị milestone phải lớn hơn 0")
     private Double amount;
 
-    private LocalDateTime dueDate;
+    private String dueDate;
     private String status;
 }

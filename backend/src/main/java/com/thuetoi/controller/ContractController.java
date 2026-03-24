@@ -14,6 +14,9 @@ import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.*;
 
 import java.security.Principal;
+import java.time.LocalDateTime;
+import java.time.OffsetDateTime;
+import java.time.format.DateTimeParseException;
 import java.util.List;
 
 @RestController
@@ -71,7 +74,7 @@ public class ContractController {
             currentUserId,
             request.getTitle(),
             request.getAmount(),
-            request.getDueDate(),
+            parseDueDate(request.getDueDate()),
             request.getStatus()
         );
         return ApiResponse.success("Tạo milestone thành công", created);
@@ -89,5 +92,27 @@ public class ContractController {
         Long currentUserId = currentUserProvider.requireCurrentUserId(principal);
         Contract updated = contractService.updateContractStatus(contractId, currentUserId, status);
         return ApiResponse.success("Cập nhật trạng thái hợp đồng thành công", updated);
+    }
+
+    private LocalDateTime parseDueDate(String dueDate) {
+        if (dueDate == null || dueDate.trim().isEmpty()) {
+            return null;
+        }
+
+        String normalizedDueDate = dueDate.trim();
+        try {
+            return OffsetDateTime.parse(normalizedDueDate).toLocalDateTime();
+        } catch (DateTimeParseException ignored) {
+            try {
+                return LocalDateTime.parse(normalizedDueDate);
+            } catch (DateTimeParseException ex) {
+                throw new BusinessException(
+                    "ERR_SYS_02",
+                    "Định dạng dueDate không hợp lệ. Hãy dùng ISO-8601, ví dụ 2026-03-31T19:02:35 hoặc 2026-03-31T19:02:35+07:00",
+                    HttpStatus.BAD_REQUEST,
+                    ex
+                );
+            }
+        }
     }
 }
