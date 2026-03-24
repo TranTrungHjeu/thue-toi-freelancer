@@ -13,6 +13,7 @@ import java.time.Instant;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.util.Date;
+import java.util.UUID;
 
 @Component
 public class JwtTokenProvider {
@@ -34,6 +35,7 @@ public class JwtTokenProvider {
         Instant expiry = now.plusMillis(accessTokenExpirationMs);
 
         return Jwts.builder()
+            .id(UUID.randomUUID().toString())
             .subject(subject)
             .claim("role", role)
             .issuedAt(Date.from(now))
@@ -47,6 +49,7 @@ public class JwtTokenProvider {
         Instant expiry = now.plusMillis(refreshTokenExpirationMs);
 
         return Jwts.builder()
+            .id(UUID.randomUUID().toString())
             .subject(subject)
             .issuedAt(Date.from(now))
             .expiration(Date.from(expiry))
