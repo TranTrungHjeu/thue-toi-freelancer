@@ -49,6 +49,9 @@ public class ContractService {
     @Autowired
     private ContractAccessService contractAccessService;
 
+    @Autowired
+    private TransactionService transactionService;
+
     /**
      * Lấy tất cả hợp đồng mà user hiện tại được phép xem.
      */
@@ -211,6 +214,13 @@ public class ContractService {
             "Contract #" + contractId + " vừa được cập nhật sang trạng thái \"" + normalizedStatus.getValue() + "\".",
             "/workspace/contracts"
         );
+
+        // Tạo transaction khi hợp đồng hoàn thành theo marketplace_rules
+        if (normalizedStatus == ContractStatus.COMPLETED) {
+            BigDecimal amount = updatedContract.getTotalAmount() != null ? updatedContract.getTotalAmount() : BigDecimal.ZERO;
+            transactionService.createTransaction(contractId, amount, "contract_completion", "completed");
+        }
+
         return updatedContract;
     }
 
@@ -273,5 +283,43 @@ public class ContractService {
             project.setStatus(projectStatus.getValue());
             projectRepository.save(project);
         });
+    }
+
+    /**
+     * Cập nhật trạng thái milestone và tạo transaction nếu hoàn thành
+     */
+    @Transactional
+    public Milestone updateMilestoneStatus(Long milestoneId, Long currentUserId, String status) {
+        Milestone milestone = milestoneRepository.findById(milestoneId)
+            .orElseThrow(() -> new BusinessException("ERR_MILESTONE_01", "Không tìm thấy milestone", HttpStatus.NOT_FOUND));
+
+        Contract contract = contractRepository.findById(milestone.getContractId())
+            .orElseThrow(() -> new BusinessException("ERR_CONTRACT_01", "Không tìm thấy hợp đồng", HttpStatus.NOT_FOUND));
+
+        contractAccessService.requireAccessibleContract(contract.getId(), currentUserId);
+
+        MilestoneStatus current = normalizeMilestoneStatus(milestone.getStatus());
+        MilestoneStatus normalized = normalizeMilestoneStatus(status);
+
+        if (current == normalized) {
+            return milestone;
+        }
+
+        milestone.setStatus(normalized.getValue());
+        Milestone updatedMilestone = milestoneRepository.save(milestone);
+
+        if (normalized == MilestoneStatus.COMPLETED) {
+            ensureContractInProgress(contract, "Chỉ có thể hoàn thành milestone khi contract đang tiến hành");
+            transactionService.createTransaction(milestone.getContractId(), milestone.getAmount(), "milestone_completion", "completed");
+            notificationService.createNotificationForUser(
+                contract.getFreelancerId(),
+                "contract",
+                "Milestone đã hoàn thành",
+                "Milestone \"" + milestone.getTitle() + "\" đã được hoàn thành.",
+                "/workspace/contracts"
+            );
+        }
+
+        return updatedMilestone;
     }
 }
