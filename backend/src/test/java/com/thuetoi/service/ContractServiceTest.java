@@ -17,6 +17,7 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.http.HttpStatus;
 
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 
@@ -99,6 +100,13 @@ class ContractServiceTest {
             eq("Khách hàng đã chấp nhận bid của bạn cho project \"Landing page\"."),
             eq("/workspace/contracts")
         );
+        verify(notificationService).createNotificationForUser(
+            eq(3L),
+            eq("bid"),
+            eq("Bid của bạn không được chọn"),
+            eq("Khách hàng đã chọn một bid khác cho project \"Landing page\"."),
+            eq("/workspace/projects")
+        );
     }
 
     @Test
@@ -126,6 +134,140 @@ class ContractServiceTest {
         verify(notificationService, never()).createNotificationForUser(any(), any(), any(), any(), any());
     }
 
+    @Test
+    void createContractFromBidKeepsWithdrawnBidUnchanged() {
+        User customer = user(1L, "customer");
+        User selectedFreelancer = user(2L, "freelancer");
+        User withdrawnFreelancer = user(3L, "freelancer");
+
+        Project project = project(10L, customer, "Mobile app", "open");
+        Bid selectedBid = bid(100L, project, selectedFreelancer, 400.0, "pending");
+        Bid withdrawnBid = bid(101L, project, withdrawnFreelancer, 520.0, "withdrawn");
+
+        when(userRepository.findById(1L)).thenReturn(Optional.of(customer));
+        when(bidRepository.findById(100L)).thenReturn(Optional.of(selectedBid));
+        when(contractRepository.findByProjectId(10L)).thenReturn(Optional.empty());
+        when(bidRepository.findByProjectId(10L)).thenReturn(List.of(selectedBid, withdrawnBid));
+        when(contractRepository.save(any(Contract.class))).thenAnswer(invocation -> invocation.getArgument(0));
+
+        Contract contract = contractService.createContractFromBid(1L, 100L);
+
+        assertThat(contract.getStatus()).isEqualTo("in_progress");
+        assertThat(selectedBid.getStatus()).isEqualTo("accepted");
+        assertThat(withdrawnBid.getStatus()).isEqualTo("withdrawn");
+
+        verify(bidRepository).saveAll(List.of(selectedBid, withdrawnBid));
+        verify(projectRepository).save(project);
+        verify(notificationService, never()).createNotificationForUser(
+            eq(3L),
+            any(),
+            any(),
+            any(),
+            any()
+        );
+    }
+
+    @Test
+    void addMilestoneCreatesPendingMilestoneForCustomerContract() {
+        Contract contract = contract(70L, 10L, 1L, 2L, "in_progress");
+        LocalDateTime dueDate = LocalDateTime.of(2026, 4, 10, 0, 0);
+
+        when(contractAccessService.requireCustomerContract(70L, 1L)).thenReturn(contract);
+        when(milestoneRepository.save(any())).thenAnswer(invocation -> invocation.getArgument(0));
+
+        var milestone = contractService.addMilestone(70L, 1L, "  Phase 1  ", 1_500_000.0, dueDate, null);
+
+        assertThat(milestone.getContractId()).isEqualTo(70L);
+        assertThat(milestone.getTitle()).isEqualTo("Phase 1");
+        assertThat(milestone.getAmount()).isEqualTo(1_500_000.0);
+        assertThat(milestone.getDueDate()).isEqualTo(dueDate);
+        assertThat(milestone.getStatus()).isEqualTo("pending");
+        verify(notificationService).createNotificationForUser(
+            eq(2L),
+            eq("contract"),
+            eq("Bạn có milestone mới"),
+            eq("Khách hàng vừa thêm milestone \"Phase 1\" cho contract #70."),
+            eq("/workspace/contracts")
+        );
+    }
+
+    @Test
+    void addMilestoneRejectsFinishedContract() {
+        Contract contract = contract(70L, 10L, 1L, 2L, "completed");
+
+        when(contractAccessService.requireCustomerContract(70L, 1L)).thenReturn(contract);
+
+        assertThatThrownBy(() -> contractService.addMilestone(70L, 1L, "Phase 2", 900_000.0, LocalDateTime.now(), null))
+            .isInstanceOf(BusinessException.class)
+            .satisfies(throwable -> {
+                BusinessException ex = (BusinessException) throwable;
+                assertThat(ex.getCode()).isEqualTo("ERR_SYS_02");
+                assertThat(ex.getStatus()).isEqualTo(HttpStatus.BAD_REQUEST);
+            });
+
+        verify(milestoneRepository, never()).save(any());
+    }
+
+    @Test
+    void addMilestoneRejectsNonCustomerAccess() {
+        BusinessException forbidden = new BusinessException(
+            "ERR_AUTH_04",
+            "Bạn không có quyền tạo milestone cho hợp đồng này",
+            HttpStatus.FORBIDDEN
+        );
+
+        when(contractAccessService.requireCustomerContract(70L, 2L)).thenThrow(forbidden);
+
+        assertThatThrownBy(() -> contractService.addMilestone(70L, 2L, "Phase 2", 900_000.0, LocalDateTime.now(), null))
+            .isSameAs(forbidden);
+
+        verify(milestoneRepository, never()).save(any());
+    }
+
+    @Test
+    void updateContractStatusCompletesContractAndSyncsProjectStatus() {
+        Contract contract = contract(70L, 10L, 1L, 2L, "in_progress");
+        Project project = project(10L, user(1L, "customer"), "Delivery", "in_progress");
+
+        when(contractAccessService.requireAccessibleContract(70L, 2L)).thenReturn(contract);
+        when(projectRepository.findById(10L)).thenReturn(Optional.of(project));
+        when(contractRepository.save(any(Contract.class))).thenAnswer(invocation -> invocation.getArgument(0));
+
+        Contract updated = contractService.updateContractStatus(70L, 2L, "completed");
+
+        assertThat(updated.getStatus()).isEqualTo("completed");
+        assertThat(updated.getEndDate()).isNotNull();
+        assertThat(project.getStatus()).isEqualTo("completed");
+
+        verify(projectRepository).save(project);
+        verify(contractRepository).save(contract);
+        verify(notificationService).createNotificationForUser(
+            eq(1L),
+            eq("contract"),
+            eq("Hợp đồng đã hoàn thành"),
+            eq("Contract #70 vừa được cập nhật sang trạng thái \"completed\"."),
+            eq("/workspace/contracts")
+        );
+    }
+
+    @Test
+    void updateContractStatusRejectsChangesForFinishedContract() {
+        Contract contract = contract(70L, 10L, 1L, 2L, "completed");
+
+        when(contractAccessService.requireAccessibleContract(70L, 2L)).thenReturn(contract);
+
+        assertThatThrownBy(() -> contractService.updateContractStatus(70L, 2L, "cancelled"))
+            .isInstanceOf(BusinessException.class)
+            .satisfies(throwable -> {
+                BusinessException ex = (BusinessException) throwable;
+                assertThat(ex.getCode()).isEqualTo("ERR_SYS_02");
+                assertThat(ex.getStatus()).isEqualTo(HttpStatus.BAD_REQUEST);
+            });
+
+        verify(contractRepository, never()).save(any(Contract.class));
+        verify(projectRepository, never()).save(any(Project.class));
+    }
+
     private User user(Long id, String role) {
         User user = new User();
         user.setId(id);
@@ -143,6 +285,18 @@ class ContractServiceTest {
         project.setTitle(title);
         project.setStatus(status);
         return project;
+    }
+
+    private Contract contract(Long id, Long projectId, Long clientId, Long freelancerId, String status) {
+        Contract contract = new Contract();
+        contract.setId(id);
+        contract.setProjectId(projectId);
+        contract.setClientId(clientId);
+        contract.setFreelancerId(freelancerId);
+        contract.setStatus(status);
+        contract.setProgress(0);
+        contract.setStartDate(LocalDateTime.of(2026, 3, 24, 12, 0));
+        return contract;
     }
 
     private Bid bid(Long id, Project project, User freelancer, Double price, String status) {

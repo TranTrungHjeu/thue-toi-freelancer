@@ -51,3 +51,18 @@ Tài liệu này chốt các rule nghiệp vụ chính cho các module `project`
 - Chỉ hợp đồng `completed` mới được tạo review.
 - Mỗi user chỉ được đánh giá một lần cho mỗi hợp đồng.
 - Client không được tự gửi `reviewer_id`; backend phải lấy từ JWT principal.
+
+## 7. Skills
+
+- Skills được chuẩn hóa trong bảng `skills`.
+- User và Project có thể liên kết nhiều skills qua các bảng junction (`users_skills`, `projects_skills`).
+- Khi tạo project hoặc cập nhật profile freelancer, skills phải được liên kết đúng.
+- Backend nên validate skills tồn tại trước khi lưu.
+
+## 8. Payments & Transactions
+
+- Tất cả các trường tiền tệ (budget_min/max, price, agreed_price, amount) sử dụng DECIMAL(12,2) để tránh lỗi làm tròn.
+- Milestones đại diện cho các khoản thanh toán theo mốc.
+- Bảng `transaction_history` theo dõi lịch sử giao dịch (chưa có rule chi tiết trong API).
+- Thanh toán kích hoạt khi milestone hoàn thành hoặc contract completed.
+- Cần enforce rules ownership và trạng thái trước khi xử lý transaction.

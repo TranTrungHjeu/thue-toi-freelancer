@@ -7,12 +7,15 @@ import { Bell, LogOut, Page, Settings, User } from 'iconoir-react';
 import { Caption } from '../common/Typography';
 import Avatar from '../common/Avatar';
 import { useAuth } from '../../hooks/useAuth';
+import { useI18n } from '../../hooks/useI18n';
+import { formatRole } from '../../utils/formatters';
 
 const UserDropdown = ({ user }) => {
   const [isOpen, setIsOpen] = useState(false);
   const dropdownRef = useRef(null);
   const navigate = useNavigate();
   const { logout } = useAuth();
+  const { locale, t } = useI18n();
 
   useEffect(() => {
     const handleClickOutside = (event) => {
@@ -26,10 +29,10 @@ const UserDropdown = ({ user }) => {
   }, []);
 
   const menuItems = [
-    { icon: User, label: 'Ho so ca nhan', path: '/workspace/profile' },
-    { icon: Page, label: 'Du an cua toi', path: '/workspace/projects' },
-    { icon: Bell, label: 'Thong bao', path: '/workspace/notifications' },
-    { icon: Settings, label: 'Tong quan', path: '/workspace' },
+    { icon: User, label: t('layout.navigation.profile'), path: '/workspace/profile' },
+    { icon: Page, label: t('layout.navigation.projects'), path: '/workspace/projects' },
+    { icon: Bell, label: t('layout.navigation.notifications'), path: '/workspace/notifications' },
+    { icon: Settings, label: t('layout.navigation.dashboard'), path: '/workspace' },
   ];
 
   return (
@@ -40,8 +43,8 @@ const UserDropdown = ({ user }) => {
       >
         <Avatar size="sm" src={user?.avatarUrl || user?.avatar} />
         <div className="hidden flex-col items-start leading-none pr-2 md:flex">
-          <span className="text-sm font-bold text-secondary-900">{user?.fullName || user?.name || 'Tai khoan'}</span>
-          <Caption className="text-[10px] uppercase font-bold text-primary-600">{user?.role || 'user'}</Caption>
+          <span className="text-sm font-bold text-secondary-900">{user?.fullName || user?.name || t('common.account')}</span>
+          <Caption className="text-[10px] uppercase font-bold text-primary-600">{formatRole(user?.role, locale)}</Caption>
         </div>
       </button>
 
@@ -76,7 +79,7 @@ const UserDropdown = ({ user }) => {
                 }}
               >
                 <LogOut className="h-5 w-5" />
-                Dang xuat
+                {t('layout.logout')}
               </button>
             </div>
           </div>

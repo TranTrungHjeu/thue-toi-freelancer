@@ -1,6 +1,7 @@
 package com.thuetoi.service;
 
 import com.thuetoi.entity.Notification;
+import com.thuetoi.enums.NotificationType;
 import com.thuetoi.exception.BusinessException;
 import com.thuetoi.repository.NotificationRepository;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -9,7 +10,6 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
-import java.util.Locale;
 
 @Service
 public class NotificationService {
@@ -26,7 +26,6 @@ public class NotificationService {
     public Notification createNotification(Long userId, String type, String title, String content, String link) {
         Notification notification = new Notification();
         notification.setUserId(userId);
-        notification.setType(type);
         notification.setTitle(title == null ? null : title.trim());
         notification.setContent(normalizeText(content));
         notification.setLink(normalizeText(link));
@@ -34,11 +33,7 @@ public class NotificationService {
         if (notification.getTitle() == null || notification.getTitle().isEmpty()) {
             throw new BusinessException("ERR_SYS_02", "Tiêu đề thông báo không được để trống", HttpStatus.BAD_REQUEST);
         }
-        if (notification.getType() == null || notification.getType().trim().isEmpty()) {
-            notification.setType("system");
-        } else {
-            notification.setType(notification.getType().trim().toLowerCase(Locale.ROOT));
-        }
+        notification.setType(normalizeNotificationType(type).getValue());
         if (notification.getIsRead() == null) {
             notification.setIsRead(false);
         }
@@ -71,5 +66,13 @@ public class NotificationService {
         }
         String normalized = value.trim();
         return normalized.isEmpty() ? null : normalized;
+    }
+
+    private NotificationType normalizeNotificationType(String type) {
+        if (type == null || type.trim().isEmpty()) {
+            return NotificationType.SYSTEM;
+        }
+        return NotificationType.fromValue(type)
+            .orElseThrow(() -> new BusinessException("ERR_SYS_02", "Loại thông báo không hợp lệ", HttpStatus.BAD_REQUEST));
     }
 }

@@ -1,4 +1,5 @@
 import axios from 'axios';
+import { createApiError } from '../utils/apiError';
 
 const ACCESS_TOKEN_STORAGE_KEY = 'thuetoi_access_token';
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8080/api';
@@ -58,7 +59,7 @@ axiosClient.interceptors.response.use(
             clearAccessToken();
         }
         if (response.data?.success === false) {
-            return Promise.reject(response.data);
+            return Promise.reject(createApiError(response.data));
         }
         if (response.data && response.data.success !== undefined) {
             return response.data;
@@ -91,12 +92,12 @@ axiosClient.interceptors.response.use(
                 refreshPromise = null;
                 clearAccessToken();
                 localStorage.removeItem('currentUser');
-                return Promise.reject(refreshError.response?.data || refreshError);
+                return Promise.reject(createApiError(refreshError.response?.data || refreshError));
             }
         }
 
         console.error('API Error', error.response?.data);
-        return Promise.reject(error.response?.data || error);
+        return Promise.reject(createApiError(error.response?.data || error));
     }
 );
 

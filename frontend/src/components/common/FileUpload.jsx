@@ -4,6 +4,7 @@ import React, { useState } from 'react';
 import { Upload, Xmark, Notes } from 'iconoir-react';
 import { Text, Caption } from '../common/Typography';
 import { useToast } from '../../hooks/useToast';
+import { useI18n } from '../../hooks/useI18n';
 
 /**
  * Professional File Upload area with drag & drop support.
@@ -17,11 +18,12 @@ const FileUpload = ({
   const [files, setFiles] = useState([]);
   const [isDragOver, setIsDragOver] = useState(false);
   const { addToast } = useToast();
+  const { t } = useI18n();
 
   const handleFileChange = (e) => {
     const selectedFiles = Array.from(e.target.files);
     if (files.length + selectedFiles.length > maxFiles) {
-      addToast(`Chỉ được tải lên tối đa ${maxFiles} tệp`, "warning");
+      addToast(t('common.fileUploadMaxFiles', { maxFiles }), "warning");
       return;
     }
     setFiles([...files, ...selectedFiles]);
@@ -45,7 +47,7 @@ const FileUpload = ({
           setIsDragOver(false);
           const droppedFiles = Array.from(e.dataTransfer.files);
           if (files.length + droppedFiles.length > maxFiles) {
-            addToast(`Vượt quá số lượng tệp cho phép`, "warning");
+            addToast(t('common.fileUploadExceeded'), "warning");
             return;
           }
           setFiles([...files, ...droppedFiles]);
@@ -57,8 +59,8 @@ const FileUpload = ({
         style={{ borderRadius: '0px' }}
       >
         <Upload className={`w-8 h-8 mb-3 ${isDragOver ? 'text-primary-500' : 'text-slate-400'}`} />
-        <Text className="text-center font-medium">Nhấn để tải lên hoặc kéo thả tệp</Text>
-        <Caption className="mt-1">PDF, DOCX, PNG (Max 10MB)</Caption>
+        <Text className="text-center font-medium">{t('common.fileUploadPrompt')}</Text>
+        <Caption className="mt-1">{t('common.fileUploadHint')}</Caption>
         <input 
           type="file" 
           multiple 

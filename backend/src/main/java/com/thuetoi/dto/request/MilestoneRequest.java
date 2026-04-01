@@ -5,6 +5,8 @@ import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Positive;
 import lombok.Data;
 
+import java.math.BigDecimal;
+
 /**
  * DTO tạo milestone cho hợp đồng.
  */
@@ -15,7 +17,7 @@ public class MilestoneRequest {
 
     @NotNull(message = "Giá trị milestone không được để trống")
     @Positive(message = "Giá trị milestone phải lớn hơn 0")
-    private Double amount;
+    private BigDecimal amount;
 
     private String dueDate;
     private String status;

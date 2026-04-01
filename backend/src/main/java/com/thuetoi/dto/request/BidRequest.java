@@ -4,6 +4,8 @@ import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Positive;
 import lombok.Data;
 
+import java.math.BigDecimal;
+
 /**
  * DTO gửi/cập nhật báo giá
  */
@@ -14,7 +16,7 @@ public class BidRequest {
 
     @NotNull(message = "Giá đề xuất không được để trống")
     @Positive(message = "Giá đề xuất phải lớn hơn 0")
-    private Double price;
+    private BigDecimal price;
 
     private String message;
     private String estimatedTime;

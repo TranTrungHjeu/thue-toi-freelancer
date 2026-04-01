@@ -4,6 +4,7 @@ import jakarta.persistence.*;
 import lombok.Data;
 import org.hibernate.annotations.CreationTimestamp;
 
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
 /**
@@ -26,7 +27,7 @@ public class Bid {
     private User freelancer;
 
     @Column(nullable = false)
-    private Double price;
+    private BigDecimal price;
 
     private String message;
     private String estimatedTime;

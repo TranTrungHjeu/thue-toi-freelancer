@@ -1,8 +1,8 @@
 import React from 'react';
 
 /**
- * Common Spinner component.
- * Strict Sharpness: Using a linear progress approach instead of a circle.
+ * Thành phần hiển thị trạng thái tải dùng chung.
+ * Dùng thanh tiến trình tuyến tính để phù hợp phong cách giao diện góc cạnh.
  */
 const Spinner = ({ className = '' }) => {
   return (

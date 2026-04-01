@@ -1,5 +1,9 @@
 -- File import dữ liệu mẫu cho database, phục vụ test nghiệp vụ
 -- Thêm user (freelancer, customer, admin)
+-- Tài khoản demo sau khi import DB sạch:
+--   freelancer1@gmail.com / Demo@123
+--   customer1@gmail.com   / Demo@123
+--   admin@gmail.com       / Demo@123
 INSERT INTO users (
         email,
         password_hash,
@@ -8,38 +12,42 @@ INSERT INTO users (
         avatar_url,
         profile_description,
         is_active,
+        verified,
         created_at,
         updated_at
     )
 VALUES (
         'freelancer1@gmail.com',
-        '$2b$10$3joVRbCbSfcD1m5V/bfewuTgqC39dozbn5erz2XsUiwFa3doa3XNG',
+        '$2b$10$6CNPAOSUzjMdxC9rLr2.FesC5Z3XsOAfU7coqulv521xuzrJniDHi',
         'Nguyễn Freelancer',
         'freelancer',
         'avatar1.jpg',
         'Chuyên thiết kế logo',
+        TRUE,
         TRUE,
         '2026-03-01',
         '2026-03-01'
     ),
     (
         'customer1@gmail.com',
-        '$2b$10$3joVRbCbSfcD1m5V/bfewuTgqC39dozbn5erz2XsUiwFa3doa3XNG',
+        '$2b$10$6CNPAOSUzjMdxC9rLr2.FesC5Z3XsOAfU7coqulv521xuzrJniDHi',
         'Trần Khách Hàng',
         'customer',
         'avatar2.jpg',
         'Cần thuê dịch vụ marketing',
+        TRUE,
         TRUE,
         '2026-03-02',
         '2026-03-02'
     ),
     (
         'admin@gmail.com',
-        '$2b$10$3joVRbCbSfcD1m5V/bfewuTgqC39dozbn5erz2XsUiwFa3doa3XNG',
+        '$2b$10$6CNPAOSUzjMdxC9rLr2.FesC5Z3XsOAfU7coqulv521xuzrJniDHi',
         'Admin Hệ Thống',
         'admin',
         NULL,
         'Quản trị hệ thống',
+        TRUE,
         TRUE,
         '2026-03-03',
         '2026-03-03'

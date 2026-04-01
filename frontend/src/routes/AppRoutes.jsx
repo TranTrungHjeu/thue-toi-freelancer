@@ -1,20 +1,22 @@
+import { lazy } from 'react';
 import { Routes, Route } from 'react-router-dom';
-import MainLayout from '../components/layout/MainLayout';
-import AuthImageLayout from '../components/layout/AuthImageLayout';
-import ComponentGallery from '../pages/ComponentGallery';
-import ApiTest from '../pages/ApiTest';
-import LandingPage from '../pages/LandingPage';
-import LoginPage from '../pages/LoginPage';
-import RegisterPage from '../pages/RegisterPage';
-import VerifyEmailPage from '../pages/VerifyEmailPage';
-import WorkspaceDashboardPage from '../pages/WorkspaceDashboardPage';
-import ProjectsPage from '../pages/ProjectsPage';
-import ContractsPage from '../pages/ContractsPage';
-import NotificationsPage from '../pages/NotificationsPage';
-import ProfilePage from '../pages/ProfilePage';
-import NotFoundPage from '../pages/NotFoundPage';
 import ProtectedRoute from './ProtectedRoute';
 import GuestRoute from './GuestRoute';
+
+const MainLayout = lazy(() => import('../components/layout/MainLayout'));
+const AuthImageLayout = lazy(() => import('../components/layout/AuthImageLayout'));
+const ComponentGallery = lazy(() => import('../pages/ComponentGallery'));
+const ApiTest = lazy(() => import('../pages/ApiTest'));
+const LandingPage = lazy(() => import('../pages/LandingPage'));
+const LoginPage = lazy(() => import('../pages/LoginPage'));
+const RegisterPage = lazy(() => import('../pages/RegisterPage'));
+const VerifyEmailPage = lazy(() => import('../pages/VerifyEmailPage'));
+const WorkspaceDashboardPage = lazy(() => import('../pages/WorkspaceDashboardPage'));
+const ProjectsPage = lazy(() => import('../pages/ProjectsPage'));
+const ContractsPage = lazy(() => import('../pages/ContractsPage'));
+const NotificationsPage = lazy(() => import('../pages/NotificationsPage'));
+const ProfilePage = lazy(() => import('../pages/ProfilePage'));
+const NotFoundPage = lazy(() => import('../pages/NotFoundPage'));
 
 const AppRoutes = () => (
   <Routes>

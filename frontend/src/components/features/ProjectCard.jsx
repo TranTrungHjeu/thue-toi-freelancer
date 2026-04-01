@@ -9,7 +9,7 @@ import { H2, Text, Caption } from '../common/Typography';
 import { Calendar, User, Wallet } from 'iconoir-react';
 
 /**
- * Business job/project card for service listings.
+ * Thẻ dự án dùng cho danh sách công việc dịch vụ.
  */
 const ProjectCard = ({ 
   title, 
@@ -44,7 +44,7 @@ const ProjectCard = ({
       </div>
 
       <div className="pt-6 border-t border-slate-100 flex gap-3">
-        <Button className="flex-1">Gửi Báo Giá</Button>
+        <Button className="flex-1">Gửi báo giá</Button>
         <Button variant="outline" className="px-3">
           <Wallet className="w-5 h-5" />
         </Button>

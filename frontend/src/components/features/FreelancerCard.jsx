@@ -9,8 +9,8 @@ import { H2, Text, Caption } from '../common/Typography';
 import { Star, Wallet, CheckCircle } from 'iconoir-react';
 
 /**
- * Freelancer profile card.
- * Strictly sharp, displays rating, skills, and hourly rate.
+ * Thẻ hồ sơ người tìm việc.
+ * Thiết kế góc cạnh, hiển thị đánh giá, kỹ năng và mức phí.
  */
 const FreelancerCard = ({ 
   name, 
@@ -67,7 +67,7 @@ const FreelancerCard = ({
             <span>{rate}</span>
           </div>
         </div>
-        <Button variant="outline" className="px-6">Xem Hồ Sơ</Button>
+        <Button variant="outline" className="px-6">Xem hồ sơ</Button>
       </div>
     </Card>
   );
