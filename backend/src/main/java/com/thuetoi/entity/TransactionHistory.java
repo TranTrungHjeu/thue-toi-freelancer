@@ -2,21 +2,18 @@ package com.thuetoi.entity;
 
 import jakarta.persistence.*;
 import lombok.Data;
-import org.hibernate.annotations.CreationTimestamp;
+import lombok.EqualsAndHashCode;
 
 import java.math.BigDecimal;
-import java.time.LocalDateTime;
 
 /**
- * Entity TransactionHistory: Lịch sử thanh toán hợp đồng theo schema.sql
+ * Entity TransactionHistory: Lịch sử thanh toán hợp đồng theo schema.sql và BaseEntity
  */
 @Entity
 @Table(name = "transaction_history")
 @Data
-public class TransactionHistory {
-    @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
+@EqualsAndHashCode(callSuper = false)
+public class TransactionHistory extends BaseEntity {
 
     @Column(name = "contract_id", nullable = false)
     private Long contractId;
@@ -29,8 +26,4 @@ public class TransactionHistory {
 
     @Column(name = "status", nullable = false)
     private String status;
-
-    @CreationTimestamp
-    @Column(name = "created_at", updatable = false)
-    private LocalDateTime createdAt;
 }
