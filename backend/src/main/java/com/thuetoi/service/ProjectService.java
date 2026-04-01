@@ -164,4 +164,22 @@ public class ProjectService {
         }
         return normalizedStatus.getValue();
     }
+
+    /**
+     * Tìm kiếm project theo kỹ năng (skill-based search)
+     */
+    public List<Project> searchProjectsBySkills(List<String> skillNames, String status) {
+        if (skillNames == null || skillNames.isEmpty()) {
+            return getProjectsByStatus(status != null ? status : "open");
+        }
+        List<String> normalizedSkills = skillNames.stream()
+            .map(s -> s.trim().toLowerCase())
+            .filter(s -> !s.isEmpty())
+            .toList();
+        if (normalizedSkills.isEmpty()) {
+            return getProjectsByStatus(status != null ? status : "open");
+        }
+        return projectRepository.findDistinctBySkillsNameIn(normalizedSkills);
+    }
 }
+

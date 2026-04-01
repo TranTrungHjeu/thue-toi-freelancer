@@ -67,6 +67,17 @@ public class ProjectController {
     }
 
     /**
+     * Tìm kiếm project theo kỹ năng (skill-based search)
+     */
+    @GetMapping("/search")
+    public ApiResponse<List<ProjectResponse>> searchProjects(
+            @RequestParam(required = false) List<String> skills,
+            @RequestParam(required = false) String status) {
+        List<Project> projects = projectService.searchProjectsBySkills(skills, status);
+        return ApiResponse.success("Tìm kiếm project theo kỹ năng thành công", marketplaceResponseMapper.toProjectResponses(projects));
+    }
+
+    /**
      * Lấy danh sách dự án của user hiện tại
      */
     @GetMapping("/my")

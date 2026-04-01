@@ -15,4 +15,7 @@ public interface ProjectRepository extends JpaRepository<Project, Long> {
     List<Project> findByUserId(Long userId);
     List<Project> findByStatusOrderByCreatedAtDesc(String status);
     List<Project> findByUserIdOrderByCreatedAtDesc(Long userId);
+
+    /** Tìm project theo skills (many-to-many) */
+    List<Project> findDistinctBySkillsNameIn(List<String> skillNames);
 }
