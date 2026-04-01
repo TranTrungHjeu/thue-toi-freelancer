@@ -114,11 +114,12 @@ Việc cần làm:
 
 ### Phase 1 - Hoàn thiện Backend (Entities, Types, Interfaces)
 
-- Thêm entity cho `Skill`, `UserSkill`/`UsersSkills`, `ProjectSkill`, `TransactionHistory`.
+- Thêm entity cho `Skill`, `UserSkill`/`UsersSkills`, `ProjectSkill`, `TransactionHistory` (đã extend BaseEntity).
 - Standardize date to `LocalDateTime`, money to `BigDecimal`.
 - Tạo service interfaces per CONVENTIONS.md (UserService, ProjectServiceImpl etc.).
 - Enhance validation with @Valid and central error handling per error_codes.md.
 - Implement file storage per file_storage.md (update paths from gigs to projects/uploads).
+- **Improvement**: TransactionHistory + realtime WebSocket + skill search + Flyway/Swagger (đã implement và commit).
 
 ### Phase 2 - Frontend i18n & UI Completion
 
