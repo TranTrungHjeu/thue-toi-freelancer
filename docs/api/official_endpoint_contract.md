@@ -86,6 +86,7 @@ Authorization: Bearer <access_token>
 | `GET` | `/projects` | Không | Không | `ProjectResponse[]` | Chỉ trả project `open` trên marketplace |
 | `POST` | `/projects` | Có | `title`, `description?`, `budgetMin`, `budgetMax`, `deadline?` | `ProjectResponse` | Chỉ `customer` được tạo |
 | `GET` | `/projects/status/{status}` | Không | Path `status` | `ProjectResponse[]` | `status` hợp lệ: `open`, `in_progress`, `completed`, `cancelled` |
+| `GET` | `/projects/search` | Không | Query `skills?`, `status?` | `ProjectResponse[]` | Skill-based search (tên kỹ năng), optional status |
 | `GET` | `/projects/my` | Có | Không | `ProjectResponse[]` | Dự án của user hiện tại |
 | `GET` | `/projects/user/{userId}` | Có | Path `userId` | `ProjectResponse[]` | Chỉ cho chính owner xem |
 | `GET` | `/projects/{id}` | Không | Path `id` | `ProjectResponse` | Chi tiết project |
