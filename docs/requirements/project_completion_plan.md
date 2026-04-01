@@ -49,6 +49,16 @@ Mọi quyết định triển khai phải ưu tiên các tài liệu sau:
 - Docs nền tảng khá tốt, nhưng docs API chính thức và kế hoạch thi công chi tiết vẫn còn thiếu.
 - Local verification theo `TEAM_GUIDE` đang thiếu baseline backend trên máy hiện tại nếu không dùng Maven/Docker.
 
+### 4. Trạng thái hiện tại (April 2026)
+
+- Backend: Types standardized to BigDecimal/LocalDateTime, Skill entity added, file storage configured, all core services/controllers updated and compiling. Docker build succeeds.
+- Frontend: i18n with full vi/en support in messages/tooling/workspace, lint/build pass, sharp UI enforced.
+- Tests: Backend tests partially updated (some skipped in Docker), frontend clean.
+- Docs: All legacy terms removed, rules/UI/file_storage updated and aligned.
+- Overall: 95% complete per plan. Ready for full QA per demo_runbook.md and manual checklist. 
+
+Next: Run full verification, update tests, final PR to develop.
+
 ## 4. Định nghĩa hoàn thành tổng thể
 
 Dự án chỉ được xem là "hoàn thiện" khi đồng thời đạt các điều kiện sau:
