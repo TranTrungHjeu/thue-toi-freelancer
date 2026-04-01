@@ -6,6 +6,7 @@ import com.thuetoi.exception.BusinessException;
 import com.thuetoi.repository.NotificationRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
+import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -15,6 +16,9 @@ import java.util.List;
 public class NotificationService {
     @Autowired
     private NotificationRepository notificationRepository;
+
+    @Autowired
+    private SimpMessagingTemplate messagingTemplate;
 
     /**
      * Lấy tất cả notification
@@ -37,7 +41,13 @@ public class NotificationService {
         if (notification.getIsRead() == null) {
             notification.setIsRead(false);
         }
-        return notificationRepository.save(notification);
+        Notification savedNotification = notificationRepository.save(notification);
+
+        // Broadcast realtime notification qua WebSocket
+        messagingTemplate.convertAndSendToUser(
+            String.valueOf(userId), "/queue/notifications", savedNotification);
+
+        return savedNotification;
     }
 
     @Transactional

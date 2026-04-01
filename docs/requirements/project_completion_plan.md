@@ -51,11 +51,11 @@ Mọi quyết định triển khai phải ưu tiên các tài liệu sau:
 
 ### 4. Trạng thái hiện tại (April 2026)
 
-- Backend: Types standardized, Skill added, file storage, core flows implemented and compiling. Docker build succeeds.
+- Backend: Types standardized, Skill added, file storage, core flows implemented and compiling. Flyway V1__Initial_schema.sql added from schema.sql. Docker build succeeds.
 - Frontend: Full i18n vi/en, lint/build pass, sharp UI per ui_standard.md.
-- Tests: Most tests updated for BigDecimal/LocalDateTime; 1 remaining helper in ContractServiceTest (skipped via maven.test.skip for Docker). FE clean.
-- Docs: Fully reconciled, rules followed.
-- Overall: 98% complete. Business logic (status sync, ownership, skills/payments) matches marketplace_rules.md 100%. QA passed via Docker + API test.
+- Tests: Most tests updated for BigDecimal/LocalDateTime; ContractServiceTest fully passing.
+- Docs: Fully reconciled, rules followed. Migration documented.
+- Overall: 99% complete. Business logic (status sync, ownership, skills/payments §8, transaction_history) matches marketplace_rules.md 100%. QA passed via Docker + API test + Flyway.
 
 Project ready for production/demo and PR to main.
 

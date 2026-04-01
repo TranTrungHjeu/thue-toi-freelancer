@@ -21,6 +21,8 @@ import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 
+import java.math.BigDecimal;
+
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
@@ -53,6 +55,9 @@ class ContractServiceTest {
     @Mock
     private ContractAccessService contractAccessService;
 
+    @Mock
+    private TransactionService transactionService;
+
     @InjectMocks
     private ContractService contractService;
 
@@ -63,8 +68,8 @@ class ContractServiceTest {
         User rejectedFreelancer = user(3L, "freelancer");
 
         Project project = project(10L, customer, "Landing page", "open");
-        Bid selectedBid = bid(100L, project, selectedFreelancer, 250.0, "pending");
-        Bid rejectedBid = bid(101L, project, rejectedFreelancer, 300.0, "pending");
+        Bid selectedBid = bid(100L, project, selectedFreelancer, BigDecimal.valueOf(250), "pending");
+        Bid rejectedBid = bid(101L, project, rejectedFreelancer, BigDecimal.valueOf(300), "pending");
 
         when(userRepository.findById(1L)).thenReturn(Optional.of(customer));
         when(bidRepository.findById(100L)).thenReturn(Optional.of(selectedBid));
@@ -82,7 +87,7 @@ class ContractServiceTest {
         assertThat(contract.getProjectId()).isEqualTo(10L);
         assertThat(contract.getClientId()).isEqualTo(1L);
         assertThat(contract.getFreelancerId()).isEqualTo(2L);
-        assertThat(contract.getTotalAmount()).isEqualTo(250.0);
+        assertThat(contract.getTotalAmount()).isEqualByComparingTo(BigDecimal.valueOf(250));
         assertThat(contract.getStatus()).isEqualTo("in_progress");
         assertThat(contract.getProgress()).isZero();
 
@@ -116,7 +121,7 @@ class ContractServiceTest {
         User freelancer = user(2L, "freelancer");
 
         Project project = project(10L, projectOwner, "API project", "open");
-        Bid selectedBid = bid(100L, project, freelancer, 180.0, "pending");
+        Bid selectedBid = bid(100L, project, freelancer, BigDecimal.valueOf(180), "pending");
 
         when(userRepository.findById(1L)).thenReturn(Optional.of(customer));
         when(bidRepository.findById(100L)).thenReturn(Optional.of(selectedBid));
@@ -141,8 +146,8 @@ class ContractServiceTest {
         User withdrawnFreelancer = user(3L, "freelancer");
 
         Project project = project(10L, customer, "Mobile app", "open");
-        Bid selectedBid = bid(100L, project, selectedFreelancer, 400.0, "pending");
-        Bid withdrawnBid = bid(101L, project, withdrawnFreelancer, 520.0, "withdrawn");
+        Bid selectedBid = bid(100L, project, selectedFreelancer, BigDecimal.valueOf(400), "pending");
+        Bid withdrawnBid = bid(101L, project, withdrawnFreelancer, BigDecimal.valueOf(520), "withdrawn");
 
         when(userRepository.findById(1L)).thenReturn(Optional.of(customer));
         when(bidRepository.findById(100L)).thenReturn(Optional.of(selectedBid));
@@ -175,11 +180,11 @@ class ContractServiceTest {
         when(contractAccessService.requireCustomerContract(70L, 1L)).thenReturn(contract);
         when(milestoneRepository.save(any())).thenAnswer(invocation -> invocation.getArgument(0));
 
-        var milestone = contractService.addMilestone(70L, 1L, "  Phase 1  ", 1_500_000.0, dueDate, null);
+        var milestone = contractService.addMilestone(70L, 1L, "  Phase 1  ", BigDecimal.valueOf(1500000), dueDate, null);
 
         assertThat(milestone.getContractId()).isEqualTo(70L);
         assertThat(milestone.getTitle()).isEqualTo("Phase 1");
-        assertThat(milestone.getAmount()).isEqualTo(1_500_000.0);
+        assertThat(milestone.getAmount()).isEqualTo(BigDecimal.valueOf(1500000));
         assertThat(milestone.getDueDate()).isEqualTo(dueDate);
         assertThat(milestone.getStatus()).isEqualTo("pending");
         verify(notificationService).createNotificationForUser(
@@ -197,7 +202,7 @@ class ContractServiceTest {
 
         when(contractAccessService.requireCustomerContract(70L, 1L)).thenReturn(contract);
 
-        assertThatThrownBy(() -> contractService.addMilestone(70L, 1L, "Phase 2", 900_000.0, LocalDateTime.now(), null))
+        assertThatThrownBy(() -> contractService.addMilestone(70L, 1L, "Phase 2", BigDecimal.valueOf(900000), LocalDateTime.now(), null))
             .isInstanceOf(BusinessException.class)
             .satisfies(throwable -> {
                 BusinessException ex = (BusinessException) throwable;
@@ -218,7 +223,7 @@ class ContractServiceTest {
 
         when(contractAccessService.requireCustomerContract(70L, 2L)).thenThrow(forbidden);
 
-        assertThatThrownBy(() -> contractService.addMilestone(70L, 2L, "Phase 2", 900_000.0, LocalDateTime.now(), null))
+        assertThatThrownBy(() -> contractService.addMilestone(70L, 2L, "Phase 2", BigDecimal.valueOf(900000), LocalDateTime.now(), null))
             .isSameAs(forbidden);
 
         verify(milestoneRepository, never()).save(any());
@@ -299,7 +304,7 @@ class ContractServiceTest {
         return contract;
     }
 
-    private Bid bid(Long id, Project project, User freelancer, Double price, String status) {
+    private Bid bid(Long id, Project project, User freelancer, BigDecimal price, String status) {
         Bid bid = new Bid();
         bid.setId(id);
         bid.setProject(project);

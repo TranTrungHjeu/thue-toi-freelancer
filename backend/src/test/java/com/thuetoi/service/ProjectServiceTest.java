@@ -12,8 +12,10 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.http.HttpStatus;
 
-import java.util.Date;
+import java.time.LocalDateTime;
 import java.util.Optional;
+
+import java.math.BigDecimal;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -37,7 +39,7 @@ class ProjectServiceTest {
     @Test
     void createProjectSetsOpenStatusForCustomer() {
         User customer = user(5L, "customer");
-        Date deadline = new Date();
+        LocalDateTime deadline = LocalDateTime.now().plusDays(7);
 
         when(userRepository.findById(5L)).thenReturn(Optional.of(customer));
         when(projectRepository.save(any(Project.class))).thenAnswer(invocation -> invocation.getArgument(0));
@@ -46,16 +48,16 @@ class ProjectServiceTest {
             5L,
             "  Xay dung landing page  ",
             "  Can freelancer fullstack  ",
-            1_000_000.0,
-            2_000_000.0,
+            BigDecimal.valueOf(1000000),
+            BigDecimal.valueOf(2000000),
             deadline
         );
 
         assertThat(project.getUser()).isEqualTo(customer);
         assertThat(project.getTitle()).isEqualTo("Xay dung landing page");
         assertThat(project.getDescription()).isEqualTo("Can freelancer fullstack");
-        assertThat(project.getBudgetMin()).isEqualTo(1_000_000.0);
-        assertThat(project.getBudgetMax()).isEqualTo(2_000_000.0);
+        assertThat(project.getBudgetMin()).isEqualTo(BigDecimal.valueOf(1000000));
+        assertThat(project.getBudgetMax()).isEqualTo(BigDecimal.valueOf(2000000));
         assertThat(project.getDeadline()).isEqualTo(deadline);
         assertThat(project.getStatus()).isEqualTo("open");
     }
@@ -89,9 +91,9 @@ class ProjectServiceTest {
             5L,
             "New title",
             "New description",
-            1_000_000.0,
-            2_000_000.0,
-            new Date(),
+            BigDecimal.valueOf(1000000),
+            BigDecimal.valueOf(2000000),
+            LocalDateTime.now().plusDays(7),
             "in_progress"
         ))
             .isInstanceOf(BusinessException.class)
