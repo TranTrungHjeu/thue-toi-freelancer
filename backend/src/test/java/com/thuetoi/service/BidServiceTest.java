@@ -16,6 +16,8 @@ import org.springframework.http.HttpStatus;
 
 import java.util.Optional;
 
+import java.math.BigDecimal;
+
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
@@ -54,10 +56,10 @@ class BidServiceTest {
         when(userRepository.findById(2L)).thenReturn(Optional.of(freelancer));
         when(bidRepository.save(any(Bid.class))).thenAnswer(invocation -> invocation.getArgument(0));
 
-        Bid created = bidService.createBid(10L, 2L, 2_000_000.0, "  Em co the lam trong 5 ngay  ", "5 ngày", null);
+        Bid created = bidService.createBid(10L, 2L, BigDecimal.valueOf(2000000), "  Em co the lam trong 5 ngay  ", "5 ngày", null);
 
         assertThat(created.getStatus()).isEqualTo("pending");
-        assertThat(created.getPrice()).isEqualTo(2_000_000.0);
+        assertThat(created.getPrice()).isEqualTo(BigDecimal.valueOf(2000000));
         assertThat(created.getMessage()).isEqualTo("Em co the lam trong 5 ngay");
 
         verify(notificationService).createNotificationForUser(

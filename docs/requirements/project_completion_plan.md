@@ -98,6 +98,38 @@ Mục tiêu: đưa codebase về trạng thái đủ ổn định để team cù
 Việc cần làm:
 
 - Rà soát độ khớp giữa `schema.sql`, entity, DTO và API response.
+- Cập nhật docs để loại bỏ legacy terms (gigs, orders, service_categories).
+- Reconcile design_system.md với ui_standard.md (Strict Sharpness).
+- Thêm sections cho Skills và Payments vào marketplace_rules.md (đã thực hiện).
+
+### Phase 1 - Hoàn thiện Backend (Entities, Types, Interfaces)
+
+- Thêm entity cho `Skill`, `UserSkill`/`UsersSkills`, `ProjectSkill`, `TransactionHistory`.
+- Standardize date to `LocalDateTime`, money to `BigDecimal`.
+- Tạo service interfaces per CONVENTIONS.md (UserService, ProjectServiceImpl etc.).
+- Enhance validation with @Valid and central error handling per error_codes.md.
+- Implement file storage per file_storage.md (update paths from gigs to projects/uploads).
+
+### Phase 2 - Frontend i18n & UI Completion
+
+- Hoàn thiện i18n với full English translations in messages.js/en.
+- Update LanguageSwitcher and ensure all pages use useI18n hook.
+- Enforce strict sharpness in all components/pages (no rounded, border-2, correct fonts).
+- Complete bidding, milestone, review, message UIs using common components.
+- Ensure API calls match official_endpoint_contract.md exactly.
+
+### Phase 3 - Testing, QA & Verification
+
+- Extend unit tests for new entities and rules.
+- Run mvn test, npm run lint/build.
+- Execute full demo_runbook.md and manual_smoke_checklist.md.
+- Verify all status transitions, ownership, error codes.
+
+### Phase 4 - Docs Sync & Deployment
+
+- Update all changed docs in same branch.
+- Verify Docker compose works.
+- Prepare PR to develop per git rules (no direct main, proper commit messages).
 - Chuẩn hóa status bằng hằng số hoặc enum cho `project`, `bid`, `contract`, `milestone`, `message`.
 - Rà soát các endpoint đang trả entity trực tiếp, xác định danh sách cần chuyển sang response DTO.
 - Chuẩn hóa error handling theo `docs/architecture/error_codes.md`.

@@ -11,7 +11,8 @@ import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.util.Date;
+import java.math.BigDecimal;
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Locale;
 import java.util.Optional;
@@ -38,10 +39,10 @@ public class ProjectService {
      * Tạo dự án mới
      */
     @Transactional
-    public Project createProject(Long userId, String title, String description, Double budgetMin, Double budgetMax, Date deadline) {
+    public Project createProject(Long userId, String title, String description, BigDecimal budgetMin, BigDecimal budgetMax, LocalDateTime deadline) {
         User user = getRequiredUser(userId);
         ensureCustomer(user);
-        validateProjectPayload(title, budgetMin, budgetMax);
+        validateProjectPayload(title, budgetMin != null ? budgetMin.doubleValue() : null, budgetMax != null ? budgetMax.doubleValue() : null);
 
         Project project = new Project();
         project.setUser(user);
@@ -81,9 +82,9 @@ public class ProjectService {
      * Cập nhật dự án
      */
     @Transactional
-    public Project updateProject(Long id, Long userId, String title, String description, Double budgetMin, Double budgetMax, Date deadline, String status) {
+    public Project updateProject(Long id, Long userId, String title, String description, BigDecimal budgetMin, BigDecimal budgetMax, LocalDateTime deadline, String status) {
         Project project = getOwnedProject(id, userId);
-        validateProjectPayload(title, budgetMin, budgetMax);
+        validateProjectPayload(title, budgetMin != null ? budgetMin.doubleValue() : null, budgetMax != null ? budgetMax.doubleValue() : null);
 
         project.setTitle(title.trim());
         project.setDescription(normalizeText(description));

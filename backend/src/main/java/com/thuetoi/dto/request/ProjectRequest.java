@@ -5,7 +5,8 @@ import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import lombok.Data;
 
-import java.util.Date;
+import java.math.BigDecimal;
+import java.time.LocalDateTime;
 
 /**
  * DTO tạo/cập nhật dự án
@@ -19,12 +20,12 @@ public class ProjectRequest {
 
     @NotNull(message = "Ngân sách tối thiểu không được để trống")
     @DecimalMin(value = "0.0", message = "Ngân sách tối thiểu không được âm")
-    private Double budgetMin;
+    private BigDecimal budgetMin;
 
     @NotNull(message = "Ngân sách tối đa không được để trống")
     @DecimalMin(value = "0.0", message = "Ngân sách tối đa không được âm")
-    private Double budgetMax;
+    private BigDecimal budgetMax;
 
-    private Date deadline;
+    private LocalDateTime deadline;
     private String status;
 }
