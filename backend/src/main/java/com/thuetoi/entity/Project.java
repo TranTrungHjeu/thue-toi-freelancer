@@ -3,7 +3,10 @@ package com.thuetoi.entity;
 import jakarta.persistence.*;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
-import java.util.Date;
+import java.math.BigDecimal;
+import java.time.LocalDateTime;
+import java.util.HashSet;
+import java.util.Set;
 
 /**
  * Entity Project: Quản lý dự án/việc làm
@@ -22,13 +25,21 @@ public class Project extends BaseEntity {
 
     private String description;
 
-    private Double budgetMin;
-    private Double budgetMax;
+    private BigDecimal budgetMin;
+    private BigDecimal budgetMax;
 
-    private Date deadline;
+    private LocalDateTime deadline;
 
     @Column(nullable = false)
     private String status; // open, in_progress, completed, cancelled
+
+    @ManyToMany
+    @JoinTable(
+        name = "projects_skills",
+        joinColumns = @JoinColumn(name = "project_id"),
+        inverseJoinColumns = @JoinColumn(name = "skill_id")
+    )
+    private Set<Skill> skills = new HashSet<>();
 
     // Getter, Setter, Constructor
 }

@@ -1,5 +1,6 @@
 package com.thuetoi.dto.response.marketplace;
 
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
 public record ContractResponse(
@@ -8,7 +9,7 @@ public record ContractResponse(
     Long freelancerId,
     Long customerId,
     Long clientId,
-    Double totalAmount,
+    BigDecimal totalAmount,
     Integer progress,
     String status,
     LocalDateTime startDate,

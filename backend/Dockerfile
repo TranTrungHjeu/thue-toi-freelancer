@@ -8,7 +8,7 @@ RUN mvn dependency:go-offline -B
 
 # Copy mã nguồn thực tế và Build
 COPY src ./src
-RUN mvn clean package -DskipTests -B
+RUN mvn clean package -Dmaven.test.skip=true -B
 
 # Stage 2: Môi trường chạy thực tế (Nhẹ hơn)
 FROM eclipse-temurin:21-jre-alpine

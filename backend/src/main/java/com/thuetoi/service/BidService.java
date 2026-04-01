@@ -18,6 +18,8 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Optional;
 
+import java.math.BigDecimal;
+
 /**
  * Service Bid: Xử lý logic nghiệp vụ báo giá.
  */
@@ -53,7 +55,7 @@ public class BidService {
      * Freelancer gửi báo giá cho dự án.
      */
     @Transactional
-    public Bid createBid(Long projectId, Long freelancerId, Double price, String message, String estimatedTime, String attachments) {
+    public Bid createBid(Long projectId, Long freelancerId, BigDecimal price, String message, String estimatedTime, String attachments) {
         Project project = projectRepository.findById(projectId)
             .orElseThrow(() -> new BusinessException("ERR_PROJECT_01", "Không tìm thấy dự án", HttpStatus.NOT_FOUND));
         User freelancer = getRequiredUser(freelancerId);
@@ -197,8 +199,8 @@ public class BidService {
         }
     }
 
-    private void validateBidPayload(Double price) {
-        if (price == null || price <= 0) {
+    private void validateBidPayload(BigDecimal price) {
+        if (price == null || price.compareTo(BigDecimal.ZERO) <= 0) {
             throw new BusinessException("ERR_SYS_02", "Giá đề xuất phải lớn hơn 0", HttpStatus.BAD_REQUEST);
         }
     }

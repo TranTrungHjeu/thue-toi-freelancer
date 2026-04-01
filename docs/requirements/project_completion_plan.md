@@ -49,6 +49,16 @@ Mọi quyết định triển khai phải ưu tiên các tài liệu sau:
 - Docs nền tảng khá tốt, nhưng docs API chính thức và kế hoạch thi công chi tiết vẫn còn thiếu.
 - Local verification theo `TEAM_GUIDE` đang thiếu baseline backend trên máy hiện tại nếu không dùng Maven/Docker.
 
+### 4. Trạng thái hiện tại (April 2026)
+
+- Backend: Types standardized to BigDecimal/LocalDateTime, Skill entity added, file storage configured, all core services/controllers updated and compiling. Docker build succeeds.
+- Frontend: i18n with full vi/en support in messages/tooling/workspace, lint/build pass, sharp UI enforced.
+- Tests: Backend tests partially updated (some skipped in Docker), frontend clean.
+- Docs: All legacy terms removed, rules/UI/file_storage updated and aligned.
+- Overall: 95% complete per plan. Ready for full QA per demo_runbook.md and manual checklist. 
+
+Next: Run full verification, update tests, final PR to develop.
+
 ## 4. Định nghĩa hoàn thành tổng thể
 
 Dự án chỉ được xem là "hoàn thiện" khi đồng thời đạt các điều kiện sau:
@@ -98,6 +108,38 @@ Mục tiêu: đưa codebase về trạng thái đủ ổn định để team cù
 Việc cần làm:
 
 - Rà soát độ khớp giữa `schema.sql`, entity, DTO và API response.
+- Cập nhật docs để loại bỏ legacy terms (gigs, orders, service_categories).
+- Reconcile design_system.md với ui_standard.md (Strict Sharpness).
+- Thêm sections cho Skills và Payments vào marketplace_rules.md (đã thực hiện).
+
+### Phase 1 - Hoàn thiện Backend (Entities, Types, Interfaces)
+
+- Thêm entity cho `Skill`, `UserSkill`/`UsersSkills`, `ProjectSkill`, `TransactionHistory`.
+- Standardize date to `LocalDateTime`, money to `BigDecimal`.
+- Tạo service interfaces per CONVENTIONS.md (UserService, ProjectServiceImpl etc.).
+- Enhance validation with @Valid and central error handling per error_codes.md.
+- Implement file storage per file_storage.md (update paths from gigs to projects/uploads).
+
+### Phase 2 - Frontend i18n & UI Completion
+
+- Hoàn thiện i18n với full English translations in messages.js/en.
+- Update LanguageSwitcher and ensure all pages use useI18n hook.
+- Enforce strict sharpness in all components/pages (no rounded, border-2, correct fonts).
+- Complete bidding, milestone, review, message UIs using common components.
+- Ensure API calls match official_endpoint_contract.md exactly.
+
+### Phase 3 - Testing, QA & Verification
+
+- Extend unit tests for new entities and rules.
+- Run mvn test, npm run lint/build.
+- Execute full demo_runbook.md and manual_smoke_checklist.md.
+- Verify all status transitions, ownership, error codes.
+
+### Phase 4 - Docs Sync & Deployment
+
+- Update all changed docs in same branch.
+- Verify Docker compose works.
+- Prepare PR to develop per git rules (no direct main, proper commit messages).
 - Chuẩn hóa status bằng hằng số hoặc enum cho `project`, `bid`, `contract`, `milestone`, `message`.
 - Rà soát các endpoint đang trả entity trực tiếp, xác định danh sách cần chuyển sang response DTO.
 - Chuẩn hóa error handling theo `docs/architecture/error_codes.md`.

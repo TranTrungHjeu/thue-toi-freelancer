@@ -18,6 +18,8 @@ import com.thuetoi.repository.UserRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
+
+import java.math.BigDecimal;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
@@ -134,7 +136,7 @@ public class ContractService {
         Long contractId,
         Long currentUserId,
         String title,
-        Double amount,
+        BigDecimal amount,
         LocalDateTime dueDate,
         String status
     ) {
@@ -144,7 +146,7 @@ public class ContractService {
         if (title == null || title.trim().isEmpty()) {
             throw new BusinessException("ERR_SYS_02", "Tiêu đề milestone không được để trống", HttpStatus.BAD_REQUEST);
         }
-        if (amount == null || amount <= 0) {
+        if (amount == null || amount.compareTo(BigDecimal.ZERO) <= 0) {
             throw new BusinessException("ERR_SYS_02", "Giá trị milestone phải lớn hơn 0", HttpStatus.BAD_REQUEST);
         }
 
