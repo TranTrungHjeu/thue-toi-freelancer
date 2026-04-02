@@ -8,6 +8,7 @@ import { H1, H2, Text, Caption } from '../components/common/Typography';
 import { useToast } from '../hooks/useToast';
 import { useI18n } from '../hooks/useI18n';
 import marketplaceApi from '../api/marketplaceApi';
+import { useWebSocket } from '../hooks/useWebSocket';
 import { formatDateTime, getNotificationTypeMeta } from '../utils/formatters';
 
 const NotificationsPage = () => {
@@ -33,6 +34,14 @@ const NotificationsPage = () => {
       setLoading(false);
     }
   }, [addToast, t]);
+
+  // Realtime updates via WebSocket (reuses NotificationService patterns)
+  useWebSocket((type, payload) => {
+    if (type === 'notification') {
+      setNotifications((prev) => [payload, ...prev]);
+      addToast('Thông báo mới', 'info');
+    }
+  }, ['/user/queue/notifications']);
 
   useEffect(() => {
     loadNotifications();
