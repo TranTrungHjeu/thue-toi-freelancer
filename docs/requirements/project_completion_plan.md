@@ -28,12 +28,11 @@ Mọi quyết định triển khai phải ưu tiên các tài liệu sau:
 
 ### 3.1. Backend
 
-- Đã có controller/service/repository/entity cho các module chính: `auth`, `project`, `bid`, `contract`, `milestone`, `message`, `review`, `notification`.
-- Luồng auth đã có đủ register, OTP verify, resend OTP, login, refresh, logout, profile.
-- Luồng `project -> bid -> contract -> milestone` đã có nền tảng nghiệp vụ và đã bắt đầu bám rule.
-- Test backend hiện mới tập trung ở một phần service (`ContractService`, `MessageService`, `ReviewService`), chưa phủ toàn bộ auth/project/bid/notification.
-- API hiện vẫn đang trả entity trực tiếp ở nhiều endpoint, dễ phát sinh lệch contract giữa backend và frontend về sau.
-- `docs/api/README.md` vẫn chưa có OpenAPI/Postman chính thức, nên rủi ro lệch API contract còn cao.
+- Đã có controller/service/repository/entity cho các module chính: `auth`, `project`, `bid`, `contract`, `milestone`, `message`, `review`, `notification`, `transaction`, admin.
+- Luồng auth, project-bid-contract-milestone-message-review-notification-realtime, payments §8, admin moderation: [DONE] with WebSocket, triggers, BigDecimal.
+- Test backend covers core + realtime mocks, payments edges (ContractServiceTest, etc.).
+- API uses DTOs/ApiResponse, realtime WS documented.
+- Flyway, Docker, i18n, sharp UI complete.
 
 ### 3.2. Frontend
 
