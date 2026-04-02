@@ -162,6 +162,15 @@ Quy tắc payload:
 | `GET` | `/notifications/user/me` | Có | Không | `NotificationResponse[]` | Alias tiện dụng cho user hiện tại |
 | `PUT` | `/notifications/{notificationId}/read` | Có | Path `notificationId` | `NotificationResponse` | Chỉ chủ notification được đánh dấu đã đọc |
 
+## 10. Transaction (Payments)
+
+| Method | Path | Auth | Request | Data success | Rule chính |
+| --- | --- | --- | --- | --- | --- |
+| `GET` | `/transactions` | Có | Không | array | Lịch sử transaction của user/contract |
+| `POST` | `/contracts/{id}/transactions` | Có | amount, method | TransactionResponse | Trigger khi milestone/completed (theo ContractService) |
+
+**Note**: Sử dụng DECIMAL, status pending/completed/failed. Realtime qua WebSocket.
+
 ### 9.1. Notification events đang phát sinh tự động
 
 - Có bid mới cho project của customer

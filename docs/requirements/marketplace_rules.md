@@ -63,6 +63,7 @@ Tài liệu này chốt các rule nghiệp vụ chính cho các module `project`
 
 - Tất cả các trường tiền tệ (budget_min/max, price, agreed_price, amount) sử dụng DECIMAL(12,2) để tránh lỗi làm tròn.
 - Milestones đại diện cho các khoản thanh toán theo mốc.
-- Bảng `transaction_history` theo dõi lịch sử giao dịch (chưa có rule chi tiết trong API).
+- Bảng `transaction_history` theo dõi lịch sử giao dịch (đã implement trigger trong ContractService).
 - Thanh toán kích hoạt khi milestone hoàn thành hoặc contract completed.
 - Cần enforce rules ownership và trạng thái trước khi xử lý transaction.
+- Flyway V1 migration áp dụng schema đầy đủ.
