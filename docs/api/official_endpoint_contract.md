@@ -171,6 +171,16 @@ Quy tắc payload:
 
 **Note**: Sử dụng DECIMAL, status pending/completed/failed. Realtime qua WebSocket.
 
+## 11. WebSocket / Realtime (STOMP)
+
+- Endpoint: `/ws` (SockJS + STOMP).
+- Subscriptions: `/user/queue/notifications`, `/topic/contract/{id}`.
+- Backend: `SimpMessagingTemplate` in NotificationService/MessageService.
+- Frontend: `useWebSocket` hook in NotificationsPage/ContractsPage.
+- Rule: Live updates for status, messages, notifications per rules §3-5,8.
+
+Update demo_runbook.md with realtime demo steps.
+
 ### 9.1. Notification events đang phát sinh tự động
 
 - Có bid mới cho project của customer

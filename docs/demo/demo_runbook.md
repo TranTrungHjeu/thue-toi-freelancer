@@ -79,16 +79,18 @@ Demo cần chứng minh được 4 điểm:
 3. Tạo review từ một bên.
 4. Nếu còn thời gian, tạo review từ bên còn lại để chứng minh rule “mỗi user một lần mỗi contract”.
 
-### Màn 7. Notification center
+### Màn 7. Notification center + Realtime
 
 1. Mở `Notifications`.
 2. Cho thấy type badge, unread count, mark-as-read và điều hướng bằng `link`.
-3. Nêu các event hiện có:
+3. Trigger action ở tab khác (contract status/message) để demo realtime update qua WebSocket (no refresh).
+4. Nêu các event hiện có:
    - bid mới
    - bid bị từ chối hoặc không được chọn
    - contract mới
    - milestone mới
    - contract hoàn thành hoặc bị hủy
+   - live notifications/messages (useWebSocket hook)
 
 ## 4. Fallback demo
 
