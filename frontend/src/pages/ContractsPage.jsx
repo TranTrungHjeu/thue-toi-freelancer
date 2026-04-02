@@ -56,6 +56,8 @@ const ContractsPage = () => {
   const [loadingMilestones, setLoadingMilestones] = useState(false);
   const [loadingMessages, setLoadingMessages] = useState(false);
   const [loadingReviews, setLoadingReviews] = useState(false);
+  const [loadingTransactions, setLoadingTransactions] = useState(false);
+  const [transactions, setTransactions] = useState([]);
   const [milestoneForm, setMilestoneForm] = useState(initialMilestoneForm);
   const [messageForm, setMessageForm] = useState(initialMessageForm);
   const [reviewForm, setReviewForm] = useState(initialReviewForm);
@@ -123,6 +125,23 @@ const ContractsPage = () => {
     }
   }, []);
 
+  const loadTransactions = useCallback(async (contractId) => {
+    if (!contractId) {
+      setTransactions([]);
+      return;
+    }
+    setLoadingTransactions(true);
+    try {
+      // API for transaction_history per §8 payments
+      const response = await marketplaceApi.getTransactionsByContract(contractId);
+      setTransactions(response.data || []);
+    } catch (error) {
+      console.warn('Transaction load skipped (mock for phase 3)');
+    } finally {
+      setLoadingTransactions(false);
+    }
+  }, []);
+
   const loadMessages = useCallback(async (contractId) => {
     if (!contractId) {
       setMessages([]);
@@ -152,8 +171,8 @@ const ContractsPage = () => {
   }, []);
 
   const loadContractWorkspace = useCallback(async (contractId) => {
-    await Promise.all([loadMilestones(contractId), loadMessages(contractId), loadReviews(contractId)]);
-  }, [loadMessages, loadMilestones, loadReviews]);
+    await Promise.all([loadMilestones(contractId), loadMessages(contractId), loadReviews(contractId), loadTransactions(contractId)]);
+  }, [loadMessages, loadMilestones, loadReviews, loadTransactions]);
 
   useEffect(() => {
     if (!user?.id) return;
