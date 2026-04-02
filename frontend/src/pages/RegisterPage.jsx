@@ -141,7 +141,7 @@ const RegisterPage = () => {
               onChange={handleChange('profileDescription')}
               error={fieldErrors.profileDescription}
               rows={2}
-              className="[&_textarea]:min-h-0 [&_textarea]:h-[68px]"
+              className="[&_textarea]:min-h-0 [&_textarea]:h-[68px] [&_textarea]:resize-none [&_textarea]:overflow-hidden"
             />
 
             <Button type="submit" disabled={submitting} className="mt-1 w-full py-3.5 text-[15px]">
