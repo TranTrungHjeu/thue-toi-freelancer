@@ -15,20 +15,20 @@ const AuthShell = ({ eyebrow, title, description, children, tips = [] }) => {
             </div>
             <div className="flex flex-col">
               <span className="text-sm font-black uppercase tracking-[0.18em] text-secondary-900">
-                Thue Toi
+                Thuê Tôi
               </span>
               <Caption className="text-[11px] uppercase tracking-[0.18em] text-slate-500">
-                JWT + OTP Workflow
+                Xác thực tài khoản
               </Caption>
             </div>
           </Link>
 
           <div className="flex items-center gap-3 text-sm font-semibold text-slate-600">
             <Link to="/gallery" className="border-2 border-transparent px-3 py-2 hover:border-slate-200 hover:bg-white">
-              Gallery
+              Thư viện
             </Link>
             <Link to="/api-lab" className="border-2 border-transparent px-3 py-2 hover:border-slate-200 hover:bg-white">
-              API Lab
+              Phòng thử API
             </Link>
           </div>
         </div>

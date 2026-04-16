@@ -30,12 +30,13 @@ const InteractiveRating = ({
         {[...Array(max)].map((_, i) => {
           const val = i + 1;
           const isFilled = (hover || rating) >= val;
-          return (
-            <button
-              key={val}
-              onMouseEnter={() => setHover(val)}
-              onMouseLeave={() => setHover(0)}
-              onClick={() => handleClick(val)}
+            return (
+              <button
+                key={val}
+                type="button"
+                onMouseEnter={() => setHover(val)}
+                onMouseLeave={() => setHover(0)}
+                onClick={() => handleClick(val)}
               className="p-1 transition-transform active:scale-90"
             >
               {isFilled ? (

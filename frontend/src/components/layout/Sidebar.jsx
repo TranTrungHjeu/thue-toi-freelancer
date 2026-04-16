@@ -3,8 +3,11 @@ import { NavLink } from 'react-router-dom';
 import { LogOut } from 'iconoir-react';
 import { Caption } from '../common/Typography';
 import Button from '../common/Button';
+import { useI18n } from '../../hooks/useI18n';
 
 const Sidebar = ({ navigation = [], currentPath = '', onLogout }) => {
+  const { t } = useI18n();
+
   return (
     <aside className="flex h-full w-64 flex-col overflow-y-auto border-r border-slate-200 bg-white py-6">
       <nav className="flex flex-1 flex-col gap-1 px-3">
@@ -39,7 +42,7 @@ const Sidebar = ({ navigation = [], currentPath = '', onLogout }) => {
       <div className="px-3">
         <Button variant="ghost" className="w-full justify-start text-red-600 hover:border-red-100 hover:bg-red-50" onClick={onLogout}>
           <LogOut className="h-5 w-5" />
-          Dang xuat
+          {t('layout.logout')}
         </Button>
       </div>
     </aside>

@@ -6,6 +6,8 @@ import { AnimatePresence, motion } from 'motion/react';
 import { LogOut, Xmark } from 'iconoir-react';
 import { H2 } from '../common/Typography';
 import Button from '../common/Button';
+import LanguageSwitcher from '../common/LanguageSwitcher';
+import { useI18n } from '../../hooks/useI18n';
 
 const MotionDiv = motion.div;
 
@@ -16,6 +18,8 @@ const MobileDrawer = ({
   currentPath = '',
   onLogout,
 }) => {
+  const { t } = useI18n();
+
   return (
     <AnimatePresence>
       {isOpen && (
@@ -37,7 +41,7 @@ const MobileDrawer = ({
             style={{ borderRadius: '0px' }}
           >
             <div className="flex items-center justify-between border-b border-slate-100 p-6">
-              <H2 className="mb-0 text-xl font-black tracking-tighter">THUE TOI</H2>
+              <H2 className="mb-0 text-xl font-black tracking-tighter uppercase">{t('app.brand')}</H2>
               <button onClick={onClose} className="p-2 transition-colors hover:bg-slate-100">
                 <Xmark className="h-5 w-5 text-slate-500" />
               </button>
@@ -76,6 +80,7 @@ const MobileDrawer = ({
             </div>
 
             <div className="flex flex-col gap-4 border-t border-slate-100 p-6">
+              <LanguageSwitcher className="w-full" />
               <Button
                 variant="ghost"
                 className="w-full justify-start text-red-600 hover:border-red-100 hover:bg-red-50"
@@ -85,10 +90,10 @@ const MobileDrawer = ({
                 }}
               >
                 <LogOut className="h-5 w-5" />
-                Dang xuat
+                {t('layout.logout')}
               </Button>
               <div className="text-[10px] font-bold uppercase tracking-widest text-slate-400">
-                v1.0.0 Alpha
+                {t('layout.version')}
               </div>
             </div>
           </MotionDiv>

@@ -20,20 +20,17 @@ Bạn KHÔNG được phép dùng các màu tuỳ hứng (như `bg-red-500`, `te
 Thay vì code HTML lặp đi lặp lại ở mọi trang, hãy tạo sẵn các React Component chuẩn:
 
 ### 3.1 Nút Bấm (Button)
-Mọi nút bấm trong App phải là Component `<Button />`, được bo góc vừa phải (`rounded-md`), có hiệu ứng Bóng (`shadow-sm`) và chuyển màu mượt khi Hover (`transition-all`).
-```jsx
-// Ví dụ Button Chính
-<button className="bg-primary-600 text-white px-5 py-2 rounded-md shadow hover:bg-primary-700 transition">
-   Bắt Đầu Ngay
-</button>
-```
+Mọi nút bấm phải sử dụng `<Button />` component chung từ `common/` (theo ui_standard.md "Strict Sharpness"):
+- `!rounded-none`, `border-2`, primary emerald-600.
+- Sử dụng Tailwind classes từ tailwind.config.js và common/Button.jsx.
+- Hiệu ứng hover transition-all, không dùng shadow nặng.
 
 ### 3.2 Khối Thông Tin (Card)
-Bất kỳ một Gói Dịch Vụ (Gig) hay Form Đăng Nhập nào cũng phải đặt trong một Card:
-- Màu nền: `bg-white`
-- Bo góc: `rounded-xl`
-- Đổ bóng nhẹ: `shadow-sm hover:shadow-md transition-shadow`
-- Viền mảnh mờ: `border border-gray-100`
+Mọi Project Card, Form hay component hiển thị phải sử dụng Card component chung (theo ui_standard.md):
+- Màu nền: `bg-white` hoặc `bg-gray-50`
+- **Góc vuông tuyệt đối**: `!rounded-none` (strict sharpness)
+- Viền đậm: `border-2 border-slate-900`
+- Không dùng shadow nặng; ưu tiên contrast cao và spacing `p-6`
 
 ## 4. Hiệu Ứng (Micro-Animations & Glassmorphism)
 Một giao diện chết là giao diện không phản hồi.
@@ -42,5 +39,7 @@ Một giao diện chết là giao diện không phản hồi.
 - Tailwind class: `backdrop-blur-sm bg-black/30`.
 
 ## 5. Typography (Phông Chữ)
-- Dùng Font sans-serif hiện đại, vuông vức (như `Inter` hoặc `Roboto`). Đã được Tailwind mặc định gán cho thẻ `body`.
-- Chữ tiêu đề luôn ưu tiên làm đậm `font-semibold` hoặc `font-bold` và chữ đen than `text-gray-900`. Chữ nội dung làm mờ hơn `text-gray-600`.
+- Theo ui_standard.md: Tiêu đề dùng **Lora** (serif), nội dung dùng **Manrope** (sans-serif). Load via Google Fonts in index.html.
+- Chữ tiêu đề: `font-bold text-slate-900`, nội dung: `text-slate-700`.
+
+**Note**: `ui_standard.md` là tài liệu authoritative cho Strict Sharpness. Design system này được reconcile để phù hợp với current implementation (no rounded corners, border-2, emerald/slate palette).

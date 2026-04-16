@@ -6,6 +6,8 @@ import lombok.EqualsAndHashCode;
 
 import jakarta.persistence.*;
 import java.util.Date;
+import java.util.HashSet;
+import java.util.Set;
 
 /**
  * Entity User: Quản lý thông tin người dùng, freelancer, khách hàng
@@ -36,6 +38,14 @@ public class User extends BaseEntity {
     private Boolean isActive = true;
 
     private Boolean verified = false;
+
+    @ManyToMany
+    @JoinTable(
+        name = "users_skills",
+        joinColumns = @JoinColumn(name = "user_id"),
+        inverseJoinColumns = @JoinColumn(name = "skill_id")
+    )
+    private Set<Skill> skills = new HashSet<>();
 
     // Getter, Setter, Constructor
 }

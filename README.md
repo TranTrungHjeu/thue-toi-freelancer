@@ -60,6 +60,21 @@ Docker sẽ dựng một máy chủ MySQL ở cổng `3307` trên máy local.
 
 Nếu bạn muốn dùng công cụ như DBeaver hoặc MySQL Workbench để xem dữ liệu, hãy điền các thông tin trên và trỏ Host về `localhost:3307`.
 
+### Tài khoản demo & dữ liệu seed
+
+Sau khi reset DB sạch bằng `docker compose down -v` rồi dựng lại, hệ thống sẽ nạp dữ liệu mẫu từ `docs/database/seed.sql`.
+
+Tài khoản demo hiện có:
+
+- `customer1@gmail.com / Demo@123`
+- `freelancer1@gmail.com / Demo@123`
+- `admin@gmail.com / Demo@123`
+
+Lưu ý:
+
+- Các tài khoản seed trên đã ở trạng thái `verified = true` để phục vụ demo và smoke test ngay sau khi dựng môi trường.
+- `admin` hiện chủ yếu phục vụ kiểm tra API/dữ liệu; luồng frontend chính của dự án tập trung vào `customer` và `freelancer`.
+
 ### Ghi chú deploy VPS
 
 Khi deploy full stack lên VPS, bạn vẫn có thể override các giá trị mặc định của backend bằng biến môi trường chuẩn Spring Boot như:
@@ -205,3 +220,8 @@ Tất cả các thành phần được xây dựng sẵn và lưu trữ tại `f
 - [docs/architecture/ui_standard.md](docs/architecture/ui_standard.md) — **Quy chuẩn UI & Mobile UX (QUAN TRỌNG)**
 - [docs/TEAM_GUIDE.md](docs/TEAM_GUIDE.md) — Quy trình làm việc nhóm
 - [docs/architecture/auth_session_flow.md](docs/architecture/auth_session_flow.md) — Luồng xác thực JWT + OTP
+- [docs/architecture/error_codes.md](docs/architecture/error_codes.md) — Từ điển error code giữa backend và frontend
+- [docs/requirements/project_completion_plan.md](docs/requirements/project_completion_plan.md) — Roadmap hoàn thiện dự án theo phase
+- [docs/api/official_endpoint_contract.md](docs/api/official_endpoint_contract.md) — Contract API chính thức đang chạy
+- [docs/qa/manual_smoke_checklist.md](docs/qa/manual_smoke_checklist.md) — Checklist smoke test customer/freelancer
+- [docs/demo/demo_runbook.md](docs/demo/demo_runbook.md) — Kịch bản demo chuẩn

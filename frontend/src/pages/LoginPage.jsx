@@ -4,9 +4,11 @@ import { PageSearch } from 'iconoir-react';
 import Input from '../components/common/Input';
 import Button from '../components/common/Button';
 import Callout from '../components/common/Callout';
+import LanguageSwitcher from '../components/common/LanguageSwitcher';
 import { Caption } from '../components/common/Typography';
 import { useToast } from '../hooks/useToast';
 import { useAuth } from '../hooks/useAuth';
+import { useI18n } from '../hooks/useI18n';
 
 const LoginPage = () => {
   const [searchParams] = useSearchParams();
@@ -14,6 +16,7 @@ const LoginPage = () => {
   const location = useLocation();
   const { addToast } = useToast();
   const { login } = useAuth();
+  const { t } = useI18n();
   const nextPath = location.state?.from?.pathname || '/workspace';
 
   const initialEmail = useMemo(() => searchParams.get('email') || '', [searchParams]);
@@ -31,16 +34,16 @@ const LoginPage = () => {
 
     try {
       await login(email, password);
-      addToast('Đăng nhập thành công.', 'success');
+      addToast(t('toasts.auth.loginSuccess'), 'success');
       navigate(nextPath, { replace: true });
     } catch (error) {
       if (error?.code === 'ERR_AUTH_07') {
-        addToast('Tài khoản chưa xác thực email. Hãy nhập OTP trước.', 'warning');
+        addToast(t('toasts.auth.unverifiedRedirect'), 'warning');
         navigate(`/auth/verify-email?email=${encodeURIComponent(email)}`);
         return;
       }
-      setFormError(error?.message || 'Không thể đăng nhập lúc này.');
-      addToast(error?.message || 'Đăng nhập thất bại', 'error');
+      setFormError(error?.message || t('toasts.auth.loginFormError'));
+      addToast(error?.message || t('toasts.auth.loginError'), 'error');
     } finally {
       setSubmitting(false);
     }
@@ -48,66 +51,62 @@ const LoginPage = () => {
 
   return (
     <div className="relative flex min-h-screen flex-col">
-
-      {/* ══ TOP NAV ══ */}
       <header className="relative z-10 flex items-center justify-between px-8 py-4">
         <Link to="/" className="flex items-center gap-2.5">
           <div className="border-2 border-white bg-white/10 px-2.5 py-1 text-xs font-black uppercase tracking-[0.22em] text-white backdrop-blur-sm">
             TT
           </div>
           <span className="text-sm font-black uppercase tracking-[0.18em] text-white">
-            Thuê Tôi
+            {t('app.brand')}
           </span>
         </Link>
-        <Link
-          to="/auth/register"
-          className="border border-white/60 px-6 py-2 text-sm font-semibold text-white transition-colors hover:bg-white/10"
-        >
-          Đăng ký
-        </Link>
+        <div className="flex items-center gap-3">
+          <LanguageSwitcher />
+          <Link
+            to="/auth/register"
+            className="border border-white/60 px-6 py-2 text-sm font-semibold text-white transition-colors hover:bg-white/10"
+          >
+            {t('authPages.login.navAction')}
+          </Link>
+        </div>
       </header>
 
-      {/* ══ CENTER CARD ══ */}
       <main className="relative z-10 flex flex-1 items-center justify-center px-4 py-2">
         <div className="w-full max-w-[480px] border border-slate-100 bg-white px-10 py-8 shadow-lg">
-
-          {/* Figma: "Welcome to Float Wallet" heading */}
           <div className="mb-5 text-center">
             <h1 className="font-serif text-[2rem] font-bold leading-tight text-secondary-900">
-              Chào mừng trở lại
+              {t('authPages.login.title')}
             </h1>
             <p className="mt-3 text-sm leading-relaxed text-slate-500">
-              Đăng nhập để quản lý dự án, nhận báo giá và kết nối với freelancer chuyên nghiệp trên Thuê Tôi.
+              {t('authPages.login.description')}
             </p>
           </div>
 
-          {/* ── Form ── */}
           <form className="flex flex-col gap-3.5" onSubmit={handleSubmit}>
             {formError && (
-              <Callout type="danger" title="Không thể đăng nhập">
+              <Callout type="danger" title={t('authPages.login.errorTitle')}>
                 {formError}
               </Callout>
             )}
 
             <Input
-              label="E-mail"
+              label={t('authPages.login.emailLabel')}
               type="email"
-              placeholder="example@thuetoi.vn"
+              placeholder={t('authPages.login.emailPlaceholder')}
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               autoComplete="email"
             />
 
             <Input
-              label="Mật khẩu"
+              label={t('authPages.login.passwordLabel')}
               type="password"
-              placeholder="••••••••"
+              placeholder={t('authPages.login.passwordPlaceholder')}
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               autoComplete="current-password"
             />
 
-            {/* Remember me + OTP link */}
             <div className="flex items-center justify-between gap-3">
               <label className="flex cursor-pointer items-center gap-2">
                 <input
@@ -116,58 +115,53 @@ const LoginPage = () => {
                   onChange={(e) => setRememberMe(e.target.checked)}
                   className="h-4 w-4 cursor-pointer border border-slate-300 accent-primary-600"
                 />
-                <span className="text-sm text-slate-500">Ghi nhớ đăng nhập</span>
+                <span className="text-sm text-slate-500">{t('authPages.login.rememberMe')}</span>
               </label>
               <Link
                 to={`/auth/verify-email?email=${encodeURIComponent(email)}`}
                 className="text-sm font-semibold text-primary-700 hover:text-primary-800"
               >
-                Chưa verify OTP?
+                {t('authPages.login.unverifiedLink')}
               </Link>
             </div>
 
-            {/* Figma: teal "Connect wallet" CTA → project: primary Button */}
             <Button type="submit" disabled={submitting} className="mt-1 w-full py-3.5 text-[15px]">
-              {submitting ? 'Đang đăng nhập...' : 'Đăng nhập'}
+              {submitting ? t('authPages.login.submitting') : t('authPages.login.submit')}
             </Button>
 
-            {/* Divider */}
             <div className="flex items-center gap-4">
               <div className="h-px flex-1 bg-slate-200" />
               <Caption className="text-[11px] font-medium uppercase tracking-[0.18em] text-slate-400">
-                Hoặc
+                {t('authPages.divider')}
               </Caption>
               <div className="h-px flex-1 bg-slate-200" />
             </div>
 
-            {/* Secondary: Figma "I already have an account" → project: workspace shortcut */}
             <button
               type="button"
               onClick={() => navigate('/workspace')}
               className="flex w-full items-center justify-center gap-2 border border-slate-200 bg-slate-50 px-6 py-3.5 text-sm font-medium text-slate-600 transition-colors hover:border-slate-300 hover:bg-slate-100"
             >
               <PageSearch className="h-5 w-5 text-primary-600" />
-              Tiếp tục vào Workspace
+              {t('authPages.login.workspaceShortcut')}
             </button>
           </form>
 
-          {/* Sign-up footer link */}
           <p className="mt-5 text-center text-sm text-slate-400">
-            Chưa có tài khoản?{' '}
+            {t('authPages.login.footerPrompt')}{' '}
             <Link
               to="/auth/register"
               className="font-semibold text-primary-700 hover:text-primary-800"
             >
-              Tạo ngay
+              {t('authPages.login.footerAction')}
             </Link>
           </p>
         </div>
       </main>
 
-      {/* ── Footer ── */}
       <footer className="relative z-10 pb-3 text-center">
         <Caption className="text-[11px] uppercase tracking-[0.18em] text-white/40">
-          © 2025 Thuê Tôi Platform
+          {t('authPages.footerBrand')}
         </Caption>
       </footer>
     </div>
