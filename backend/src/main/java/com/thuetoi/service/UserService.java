@@ -2,14 +2,15 @@ package com.thuetoi.service;
 
 import com.thuetoi.dto.response.AuthUserResponse;
 import com.thuetoi.entity.User;
-import com.thuetoi.repository.UserRepository;
 import com.thuetoi.exception.BusinessException;
+import com.thuetoi.repository.UserRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.List;
 import java.util.Locale;
 import java.util.Optional;
 
@@ -30,6 +31,9 @@ public class UserService {
 
     @Autowired
     private OtpService otpService;
+
+    @Autowired
+    private SkillService skillService;
 
     /**
      * Đăng ký tài khoản mới.
@@ -87,9 +91,7 @@ public class UserService {
     }
 
     public AuthUserResponse getAuthProfile(Long userId) {
-        User user = userRepository.findById(userId)
-            .orElseThrow(() -> new BusinessException("ERR_USER_01", "Không tìm thấy người dùng", HttpStatus.NOT_FOUND));
-        return toAuthUserResponse(user);
+        return toAuthUserResponse(getRequiredUser(userId));
     }
 
     /**
@@ -97,6 +99,32 @@ public class UserService {
      */
     public Optional<User> getUser(Long id) {
         return userRepository.findById(id);
+    }
+
+    @Transactional
+    public AuthUserResponse updateProfile(Long userId, String fullName, String profileDescription, String avatarUrl, List<String> skills) {
+        User user = getRequiredUser(userId);
+
+        if (fullName != null && !fullName.trim().isEmpty()) {
+            user.setFullName(fullName.trim());
+        }
+        if (profileDescription != null) {
+            user.setProfileDescription(normalizeProfileDescription(profileDescription));
+        }
+        if (avatarUrl != null) {
+            user.setAvatarUrl(normalizeOptionalText(avatarUrl));
+        }
+        if (skills != null) {
+            user.setSkills(skillService.resolveSkills(skills));
+        }
+
+        User savedUser = userRepository.save(user);
+        return toAuthUserResponse(savedUser);
+    }
+
+    private User getRequiredUser(Long userId) {
+        return userRepository.findById(userId)
+            .orElseThrow(() -> new BusinessException("ERR_USER_01", "Không tìm thấy người dùng", HttpStatus.NOT_FOUND));
     }
 
     private String normalizeRole(String role) {
@@ -116,14 +144,24 @@ public class UserService {
     }
 
     private String normalizeProfileDescription(String profileDescription) {
-        if (profileDescription == null) {
+        return normalizeOptionalText(profileDescription);
+    }
+
+    private String normalizeOptionalText(String value) {
+        if (value == null) {
             return null;
         }
-        String normalized = profileDescription.trim();
+        String normalized = value.trim();
         return normalized.isEmpty() ? null : normalized;
     }
 
     public AuthUserResponse toAuthUserResponse(User user) {
+        List<String> skills = user.getSkills() == null ? List.of() : user.getSkills().stream()
+            .map(skill -> skill.getName())
+            .filter(skillName -> skillName != null && !skillName.isBlank())
+            .sorted(String.CASE_INSENSITIVE_ORDER)
+            .toList();
+
         return new AuthUserResponse(
             user.getId(),
             user.getEmail(),
@@ -131,6 +169,7 @@ public class UserService {
             user.getRole(),
             user.getAvatarUrl(),
             user.getProfileDescription(),
+            skills,
             user.getIsActive(),
             user.getVerified(),
             user.getCreatedAt(),

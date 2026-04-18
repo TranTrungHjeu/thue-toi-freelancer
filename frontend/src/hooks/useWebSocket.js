@@ -1,38 +1,64 @@
-import { useEffect, useRef, useState } from 'react';
-import { Client } from '@stomp/stompjs';
-import SockJS from 'sockjs-client';
-import { useAuth } from './useAuth';
+import { useEffect, useMemo, useRef, useState } from "react";
+import { Client } from "@stomp/stompjs";
+import SockJS from "sockjs-client";
+import { useAuth } from "./useAuth";
+import { getAccessToken } from "../api/axiosClient";
 
-const WS_URL = '/ws'; // matches WebSocketConfig
+const API_BASE_URL =
+  import.meta.env.VITE_API_BASE_URL || "http://localhost:8080/api";
+const DEFAULT_WS_BASE_URL = API_BASE_URL.replace(/\/api\/?$/, "");
+const WS_BASE_URL = import.meta.env.VITE_WS_BASE_URL || DEFAULT_WS_BASE_URL;
+const NOTIFICATION_TOPIC_PREFIX = "/user/queue/notifications";
+
+const parseMessagePayload = (body) => {
+  try {
+    return JSON.parse(body);
+  } catch {
+    return body;
+  }
+};
+
+const resolveChannel = (topic) =>
+  topic.startsWith(NOTIFICATION_TOPIC_PREFIX) ? "notification" : "contract";
 
 export const useWebSocket = (onMessage, topics = []) => {
   const clientRef = useRef(null);
   const [isConnected, setIsConnected] = useState(false);
   const { user } = useAuth();
+  const normalizedTopics = useMemo(
+    () => [...new Set(topics.filter(Boolean))],
+    [topics],
+  );
 
   useEffect(() => {
-    if (!user?.id) return;
+    if (!user?.id || normalizedTopics.length === 0) {
+      return undefined;
+    }
+
+    const accessToken = getAccessToken();
 
     const client = new Client({
-      webSocketFactory: () => new SockJS(WS_URL),
+      webSocketFactory: () => new SockJS(`${WS_BASE_URL}/ws`),
+      connectHeaders: accessToken
+        ? { Authorization: `Bearer ${accessToken}` }
+        : {},
       reconnectDelay: 5000,
       onConnect: () => {
         setIsConnected(true);
-        console.log('WebSocket connected');
-
-        // Subscribe to user queue for notifications
-        client.subscribe(`/user/queue/notifications`, (message) => {
-          onMessage('notification', JSON.parse(message.body));
-        });
-
-        // Subscribe to custom topics (e.g. contract messages)
-        topics.forEach(topic => {
+        normalizedTopics.forEach((topic) => {
           client.subscribe(topic, (message) => {
-            onMessage('message', JSON.parse(message.body));
+            if (typeof onMessage !== "function") {
+              return;
+            }
+            onMessage({
+              channel: resolveChannel(topic),
+              topic,
+              payload: parseMessagePayload(message.body),
+            });
           });
         });
       },
-      onStompError: (error) => console.error('STOMP error', error),
+      onStompError: (error) => console.error("STOMP error", error),
     });
 
     client.activate();
@@ -40,9 +66,10 @@ export const useWebSocket = (onMessage, topics = []) => {
 
     return () => {
       client.deactivate();
+      clientRef.current = null;
       setIsConnected(false);
     };
-  }, [user?.id, onMessage, topics]);
+  }, [normalizedTopics, onMessage, user?.id]);
 
   const sendMessage = (destination, body) => {
     if (clientRef.current && isConnected) {

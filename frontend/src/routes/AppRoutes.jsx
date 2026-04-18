@@ -2,15 +2,12 @@ import { lazy } from 'react';
 import { Routes, Route } from 'react-router-dom';
 import ProtectedRoute from './ProtectedRoute';
 import GuestRoute from './GuestRoute';
+import AuthRouteBridge from './AuthRouteBridge';
+import LandingPage from '../pages/LandingPage.tsx';
 
 const MainLayout = lazy(() => import('../components/layout/MainLayout'));
-const AuthImageLayout = lazy(() => import('../components/layout/AuthImageLayout'));
 const ComponentGallery = lazy(() => import('../pages/ComponentGallery'));
 const ApiTest = lazy(() => import('../pages/ApiTest'));
-const LandingPage = lazy(() => import('../pages/LandingPage'));
-const LoginPage = lazy(() => import('../pages/LoginPage'));
-const RegisterPage = lazy(() => import('../pages/RegisterPage'));
-const VerifyEmailPage = lazy(() => import('../pages/VerifyEmailPage'));
 const WorkspaceDashboardPage = lazy(() => import('../pages/WorkspaceDashboardPage'));
 const ProjectsPage = lazy(() => import('../pages/ProjectsPage'));
 const ContractsPage = lazy(() => import('../pages/ContractsPage'));
@@ -25,11 +22,9 @@ const AppRoutes = () => (
     <Route path="/api-lab" element={<ApiTest />} />
 
     <Route element={<GuestRoute />}>
-      <Route element={<AuthImageLayout />}>
-        <Route path="/auth/login" element={<LoginPage />} />
-        <Route path="/auth/register" element={<RegisterPage />} />
-        <Route path="/auth/verify-email" element={<VerifyEmailPage />} />
-      </Route>
+      <Route path="/auth/login" element={<AuthRouteBridge mode="login" />} />
+      <Route path="/auth/register" element={<AuthRouteBridge mode="register" />} />
+      <Route path="/auth/verify-email" element={<AuthRouteBridge mode="verify" />} />
     </Route>
 
     <Route element={<ProtectedRoute />}>

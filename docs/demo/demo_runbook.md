@@ -14,7 +14,7 @@ Demo cần chứng minh được 4 điểm:
 ## 2. Chuẩn bị trước demo
 
 1. Nếu cần dữ liệu sạch, chạy `docker compose down -v`.
-2. Chạy `docker compose up -d --build` (Flyway sẽ tự apply V1__Initial_schema.sql).
+2. Chạy `docker compose up -d --build` (Flyway sẽ tự apply V1\_\_Initial_schema.sql).
 3. Xác nhận frontend và backend health đều lên, DB tables từ migration.
 4. Dùng sẵn tài khoản seed:
    - `customer1@gmail.com / Demo@123`

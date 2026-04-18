@@ -16,7 +16,7 @@ public class WebConfig {
             @Override
             public void addCorsMappings(@NonNull CorsRegistry registry) {
                 registry.addMapping("/**")
-                        .allowedOrigins("http://localhost:5173") // Cổng mặc định của Vite React
+                        .allowedOrigins("http://localhost:5173", "http://localhost:5174") // Cổng mặc định của Vite React
                         .allowedMethods("GET", "POST", "PUT", "DELETE", "OPTIONS")
                         .allowedHeaders("*")
                         .allowCredentials(true); // BẮT BUỘC để Session/Cookie hoạt động với ReactJS

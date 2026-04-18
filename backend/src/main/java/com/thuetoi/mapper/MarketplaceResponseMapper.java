@@ -8,6 +8,8 @@ import com.thuetoi.dto.response.marketplace.NotificationResponse;
 import com.thuetoi.dto.response.marketplace.ProjectResponse;
 import com.thuetoi.dto.response.marketplace.ProjectSummaryResponse;
 import com.thuetoi.dto.response.marketplace.ReviewResponse;
+import com.thuetoi.dto.response.marketplace.SkillResponse;
+import com.thuetoi.dto.response.marketplace.TransactionResponse;
 import com.thuetoi.dto.response.marketplace.UserSummaryResponse;
 import com.thuetoi.entity.Bid;
 import com.thuetoi.entity.Contract;
@@ -16,9 +18,12 @@ import com.thuetoi.entity.Milestone;
 import com.thuetoi.entity.Notification;
 import com.thuetoi.entity.Project;
 import com.thuetoi.entity.Review;
+import com.thuetoi.entity.Skill;
+import com.thuetoi.entity.TransactionHistory;
 import com.thuetoi.entity.User;
 import org.springframework.stereotype.Component;
 
+import java.util.Collection;
 import java.util.List;
 
 @Component
@@ -37,6 +42,7 @@ public class MarketplaceResponseMapper {
             project.getBudgetMax(),
             project.getDeadline(),
             project.getStatus(),
+            toSkillNames(project.getSkills()),
             project.getCreatedAt(),
             project.getUpdatedAt()
         );
@@ -75,7 +81,6 @@ public class MarketplaceResponseMapper {
             contract.getId(),
             contract.getProjectId(),
             contract.getFreelancerId(),
-            contract.getClientId(),
             contract.getClientId(),
             contract.getTotalAmount(),
             contract.getProgress(),
@@ -166,6 +171,35 @@ public class MarketplaceResponseMapper {
         return notifications.stream().map(this::toNotificationResponse).toList();
     }
 
+    public SkillResponse toSkillResponse(Skill skill) {
+        if (skill == null) {
+            return null;
+        }
+        return new SkillResponse(skill.getId(), skill.getName(), skill.getDescription());
+    }
+
+    public List<SkillResponse> toSkillResponses(List<Skill> skills) {
+        return skills.stream().map(this::toSkillResponse).toList();
+    }
+
+    public TransactionResponse toTransactionResponse(TransactionHistory transactionHistory) {
+        if (transactionHistory == null) {
+            return null;
+        }
+        return new TransactionResponse(
+            transactionHistory.getId(),
+            transactionHistory.getContractId(),
+            transactionHistory.getAmount(),
+            transactionHistory.getMethod(),
+            transactionHistory.getStatus(),
+            transactionHistory.getCreatedAt()
+        );
+    }
+
+    public List<TransactionResponse> toTransactionResponses(List<TransactionHistory> transactionHistories) {
+        return transactionHistories.stream().map(this::toTransactionResponse).toList();
+    }
+
     private UserSummaryResponse toUserSummary(User user) {
         if (user == null) {
             return null;
@@ -174,7 +208,8 @@ public class MarketplaceResponseMapper {
             user.getId(),
             user.getFullName(),
             user.getRole(),
-            user.getAvatarUrl()
+            user.getAvatarUrl(),
+            toSkillNames(user.getSkills())
         );
     }
 
@@ -183,5 +218,16 @@ public class MarketplaceResponseMapper {
             return null;
         }
         return new ProjectSummaryResponse(project.getId(), project.getTitle());
+    }
+
+    private List<String> toSkillNames(Collection<Skill> skills) {
+        if (skills == null || skills.isEmpty()) {
+            return List.of();
+        }
+        return skills.stream()
+            .map(Skill::getName)
+            .filter(name -> name != null && !name.isBlank())
+            .sorted(String.CASE_INSENSITIVE_ORDER)
+            .toList();
     }
 }

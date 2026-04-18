@@ -9,7 +9,6 @@ import com.thuetoi.exception.BusinessException;
 import com.thuetoi.repository.MessageRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
-import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
@@ -23,7 +22,7 @@ public class MessageService {
     private ContractAccessService contractAccessService;
 
     @Autowired
-    private SimpMessagingTemplate messagingTemplate;
+    private ContractRealtimePublisher contractRealtimePublisher;
 
     public Message sendMessage(Long currentUserId, MessageRequest request) {
         Contract contract = contractAccessService.requireAccessibleContract(request.getContractId(), currentUserId);
@@ -50,8 +49,9 @@ public class MessageService {
         message.setAttachments(normalizedAttachments);
         Message savedMessage = messageRepository.save(message);
 
-        // Broadcast realtime qua WebSocket cho các participant
-        messagingTemplate.convertAndSend("/topic/contract/" + request.getContractId(), savedMessage);
+        if (contractRealtimePublisher != null) {
+            contractRealtimePublisher.publish(request.getContractId(), "message.created", savedMessage);
+        }
 
         return savedMessage;
     }

@@ -2,6 +2,8 @@
 
 Tài liệu này chốt kế hoạch triển khai giai đoạn hoàn thiện dự án **Thuê Tôi Freelancer Platform** theo hướng logic, bám nghiệp vụ, bám docs hiện có và phù hợp với quy trình team trong repo.
 
+Lưu ý ngày `2026-04-18`: tài liệu này nên được xem là `roadmap + ghi chú tiến độ`, không phải nguồn sự thật duy nhất về trạng thái repo. Khi cần chốt hiện trạng thực tế, phải đối chiếu thêm controller/service hiện tại, `docs/api/official_endpoint_contract.md`, checklist QA và wiring frontend đang dùng.
+
 ## 1. Mục tiêu hoàn thiện
 
 Mục tiêu của giai đoạn này không chỉ là "có thêm code", mà là đưa dự án tới trạng thái có thể:
@@ -22,41 +24,36 @@ Mọi quyết định triển khai phải ưu tiên các tài liệu sau:
 - `docs/architecture/ui_standard.md`: chuẩn UI/UX Strict Sharpness, mobile-first và tái sử dụng component.
 - `docs/CONVENTIONS.md`: chuẩn naming cho DB, API, Java và React.
 - `docs/TEAM_GUIDE.md`: Git workflow, branch naming, local verification trước khi mở PR.
-- `docs/database/schema.sql`: schema nghiệp vụ hiện tại đang là nguồn tham chiếu DB chính.
+- `docs/database/schema.sql`: schema tham chiếu ở tầng docs; khi triển khai cần đối chiếu thêm migration Flyway hiện hành.
 
 ## 3. Đánh giá hiện trạng repo
 
 ### 3.1. Backend
 
 - Đã có controller/service/repository/entity cho các module chính: `auth`, `project`, `bid`, `contract`, `milestone`, `message`, `review`, `notification`, `transaction`, admin.
-- Luồng auth, project-bid-contract-milestone-message-review-notification-realtime, payments §8, admin moderation: [DONE] with WebSocket, triggers, BigDecimal.
-- Test backend covers core + realtime mocks, payments edges (ContractServiceTest, etc.).
-- API uses DTOs/ApiResponse, realtime WS documented.
-- Flyway, Docker, i18n, sharp UI complete.
+- Nhiều luồng cốt lõi đã có nền tảng tốt ở service layer, nhưng mức "khép kín thật" vẫn cần đối chiếu ở controller, security, frontend wiring và manual smoke test.
+- API dùng DTOs/ApiResponse, có nền tảng realtime WebSocket và transaction history.
+- Flyway, Docker và docs nền tảng đã có, nhưng không nên suy diễn là mọi flow đã xác nhận end-to-end chỉ từ sự hiện diện của code.
 
 ### 3.2. Frontend
 
 - Đã có landing, auth pages, workspace dashboard, projects, contracts, notifications, profile và component gallery.
-- `npm run lint` đang pass.
-- `npm run build` đang pass.
-- Frontend đã gọi dữ liệu thật cho auth, project, bid, contract, notification.
-- Chưa có đủ màn hình nghiệp vụ cho `message`, `review`, và các thao tác contract/milestone ở mức hoàn thiện.
-- API client frontend hiện chưa phủ hết toàn bộ endpoint backend đang có.
+- Frontend đã nối dữ liệu thật cho nhiều luồng chính, nhưng mức hoàn thiện giữa các màn không đồng đều.
+- Không nên mặc định coi `lint/build/test` là đang pass nếu chưa rerun lại trên máy hoặc CI hiện tại.
+- Cần tiếp tục đối chiếu giữa API client, page behavior, realtime subscription và docs chính thức sau mỗi thay đổi.
 
 ### 3.3. Tài liệu và quy trình
 
-- Docs nền tảng khá tốt, nhưng docs API chính thức và kế hoạch thi công chi tiết vẫn còn thiếu.
+- Docs nền tảng khá tốt, nhưng một số tài liệu vẫn có thể pha trộn giữa roadmap, claim trạng thái và mô tả implementation.
 - Local verification theo `TEAM_GUIDE` đang thiếu baseline backend trên máy hiện tại nếu không dùng Maven/Docker.
 
-### 4. Trạng thái hiện tại (April 2026)
+### 3.4. Trạng thái hiện tại (April 2026)
 
-- Backend: Types standardized, Skill added, file storage, core flows implemented and compiling. Flyway V1__Initial_schema.sql added from schema.sql. Docker build succeeds.
-- Frontend: Full i18n vi/en, lint/build pass, sharp UI per ui_standard.md.
-- Tests: Most tests updated for BigDecimal/LocalDateTime; ContractServiceTest fully passing.
-- Docs: Fully reconciled, rules followed. Migration documented.
-- Overall: 99% complete. Business logic (status sync, ownership, skills/payments §8, transaction_history) matches marketplace_rules.md 100%. QA passed via Docker + API test + Flyway.
-
-Project ready for production/demo and PR to main.
+- Backend: core marketplace modules hiện diện và nhiều rule quan trọng đã được thể hiện trong service layer; vẫn cần manual scenarios và runtime verification để xác nhận end-to-end.
+- Frontend: có đủ màn hình phục vụ demo/học thuật, nhưng từng flow vẫn cần được xác nhận lại sau thay đổi fullstack.
+- Tests & verification: chỉ được coi là đạt khi rerun thật trên môi trường hiện tại; không dùng file này như bằng chứng pass thay cho output thực.
+- Docs: có độ phủ tốt hơn trước, nhưng luôn phải ưu tiên đối chiếu API contract và code hiện tại khi có khác biệt.
+- Overall: phù hợp để tiếp tục hoàn thiện và review học thuật; chưa nên gọi là `production-ready` chỉ dựa trên static review hoặc claim trong tài liệu.
 
 ## 4. Định nghĩa hoàn thành tổng thể
 

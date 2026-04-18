@@ -1,5 +1,6 @@
 package com.thuetoi.service;
 
+import com.thuetoi.dto.response.OtpVerificationStatusResponse;
 import com.thuetoi.entity.EmailOtp;
 import com.thuetoi.entity.User;
 import com.thuetoi.exception.BusinessException;
@@ -10,6 +11,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.Duration;
 import java.time.LocalDateTime;
 import java.security.SecureRandom;
 import java.util.Locale;
@@ -93,6 +95,47 @@ public class OtpService {
 
         userRepository.save(user);
         otpRepository.save(emailOtp);
+    }
+
+    @Transactional(readOnly = true)
+    public OtpVerificationStatusResponse getVerificationOtpStatus(String email) {
+        String normalizedEmail = normalizeEmail(email);
+        User user = userRepository.findByEmail(normalizedEmail);
+        if (user == null) {
+            throw new BusinessException("ERR_USER_01", "Không tìm thấy người dùng", HttpStatus.NOT_FOUND);
+        }
+
+        if (Boolean.TRUE.equals(user.getVerified())) {
+            throw new BusinessException("ERR_AUTH_15", "Tài khoản đã được xác thực email", HttpStatus.CONFLICT);
+        }
+
+        LocalDateTime now = LocalDateTime.now();
+        EmailOtp latestOtp = otpRepository.findTopByEmailAndPurposeOrderByCreatedAtDesc(normalizedEmail, VERIFY_EMAIL_PURPOSE)
+            .orElse(null);
+
+        if (latestOtp == null) {
+            return new OtpVerificationStatusResponse(
+                null,
+                now,
+                0,
+                0
+            );
+        }
+
+        LocalDateTime resendAvailableAt = latestOtp.getCreatedAt().plusSeconds(RESEND_COOLDOWN_SECONDS);
+        long expiresInSeconds = 0;
+        if (!latestOtp.isUsed() && !latestOtp.isExpired()) {
+            expiresInSeconds = Math.max(0, Duration.between(now, latestOtp.getExpireTime()).getSeconds());
+        }
+
+        long resendCooldownSeconds = Math.max(0, Duration.between(now, resendAvailableAt).getSeconds());
+
+        return new OtpVerificationStatusResponse(
+            latestOtp.getExpireTime(),
+            resendAvailableAt,
+            expiresInSeconds,
+            resendCooldownSeconds
+        );
     }
 
     private String normalizeEmail(String email) {

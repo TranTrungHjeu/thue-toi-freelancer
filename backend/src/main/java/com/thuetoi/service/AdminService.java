@@ -1,10 +1,12 @@
 package com.thuetoi.service;
 
 import com.thuetoi.entity.Project;
+import com.thuetoi.enums.ProjectStatus;
 import com.thuetoi.exception.BusinessException;
 import com.thuetoi.repository.ProjectRepository;
 import com.thuetoi.service.ProjectService;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -27,15 +29,17 @@ public class AdminService {
     @Transactional
     public Project updateProjectStatus(Long projectId, String status) {
         Project project = projectRepository.findById(projectId)
-            .orElseThrow(() -> new BusinessException("ERR_PROJECT_01", "Project not found"));
+            .orElseThrow(() -> new BusinessException("ERR_PROJECT_01", "Project not found", HttpStatus.NOT_FOUND));
 
-        // Validate status per rules §1
-        project.setStatus(status);
+        ProjectStatus normalizedStatus = ProjectStatus.fromValue(status)
+            .orElseThrow(() -> new BusinessException("ERR_SYS_02", "Trạng thái project không hợp lệ", HttpStatus.BAD_REQUEST));
+
+        project.setStatus(normalizedStatus.getValue());
         Project saved = projectRepository.save(project);
 
         // Notify owner
         notificationService.createNotificationForUser(
-            project.getUser().getId(), "system", "Project status updated by admin", "Status: " + status, "/projects/" + projectId);
+            project.getUser().getId(), "system", "Project status updated by admin", "Status: " + normalizedStatus.getValue(), "/projects/" + projectId);
 
         return saved;
     }

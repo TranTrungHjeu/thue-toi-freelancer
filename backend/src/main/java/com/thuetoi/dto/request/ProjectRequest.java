@@ -7,6 +7,7 @@ import lombok.Data;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import java.util.List;
 
 /**
  * DTO tạo/cập nhật dự án
@@ -28,4 +29,5 @@ public class ProjectRequest {
 
     private LocalDateTime deadline;
     private String status;
+    private List<String> skills;
 }

@@ -5,6 +5,7 @@ import com.thuetoi.dto.request.MilestoneRequest;
 import com.thuetoi.dto.response.ApiResponse;
 import com.thuetoi.dto.response.marketplace.ContractResponse;
 import com.thuetoi.dto.response.marketplace.MilestoneResponse;
+import com.thuetoi.dto.response.marketplace.TransactionResponse;
 import com.thuetoi.entity.Contract;
 import com.thuetoi.entity.Milestone;
 import com.thuetoi.exception.BusinessException;
@@ -98,6 +99,15 @@ public class ContractController {
         Long currentUserId = currentUserProvider.requireCurrentUserId(principal);
         Contract updated = contractService.updateContractStatus(contractId, currentUserId, status);
         return ApiResponse.success("Cập nhật trạng thái hợp đồng thành công", marketplaceResponseMapper.toContractResponse(updated));
+    }
+
+    @GetMapping("/{contractId}/transactions")
+    public ApiResponse<List<TransactionResponse>> getTransactionsByContract(@PathVariable Long contractId, Principal principal) {
+        Long currentUserId = currentUserProvider.requireCurrentUserId(principal);
+        return ApiResponse.success(
+            "Lấy lịch sử giao dịch theo hợp đồng thành công",
+            marketplaceResponseMapper.toTransactionResponses(contractService.getTransactionsByContract(contractId, currentUserId))
+        );
     }
 
     private LocalDateTime parseDueDate(String dueDate) {

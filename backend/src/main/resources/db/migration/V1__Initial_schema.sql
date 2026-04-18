@@ -9,7 +9,11 @@ CREATE TABLE users (
     email VARCHAR(255) UNIQUE NOT NULL COMMENT 'Email đăng nhập, duy nhất',
     password_hash VARCHAR(255) NOT NULL COMMENT 'Mã hóa mật khẩu',
     full_name VARCHAR(255) NOT NULL COMMENT 'Họ tên đầy đủ',
-    role ENUM('freelancer', 'customer', 'admin') NOT NULL COMMENT 'Vai trò: freelancer, khách hàng, admin',
+    role ENUM(
+        'freelancer',
+        'customer',
+        'admin'
+    ) NOT NULL COMMENT 'Vai trò: freelancer, khách hàng, admin',
     avatar_url VARCHAR(255) COMMENT 'Đường dẫn ảnh đại diện',
     profile_description TEXT COMMENT 'Mô tả cá nhân, giới thiệu',
     is_active BOOLEAN DEFAULT TRUE COMMENT 'Trạng thái hoạt động',
@@ -41,7 +45,7 @@ CREATE TABLE refresh_tokens (
     revoked BOOLEAN DEFAULT FALSE COMMENT 'Token đã bị thu hồi hay chưa',
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP COMMENT 'Ngày tạo',
     updated_at DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT 'Ngày cập nhật',
-    FOREIGN KEY (user_id) REFERENCES users(id),
+    FOREIGN KEY (user_id) REFERENCES users (id),
     INDEX idx_refresh_user_id (user_id),
     INDEX idx_refresh_revoked (revoked),
     INDEX idx_refresh_expires_at (expires_at)
@@ -59,8 +63,8 @@ CREATE TABLE users_skills (
     user_id BIGINT NOT NULL COMMENT 'Mã người dùng',
     skill_id BIGINT NOT NULL COMMENT 'Mã kỹ năng',
     PRIMARY KEY (user_id, skill_id),
-    FOREIGN KEY (user_id) REFERENCES users(id),
-    FOREIGN KEY (skill_id) REFERENCES skills(id),
+    FOREIGN KEY (user_id) REFERENCES users (id),
+    FOREIGN KEY (skill_id) REFERENCES skills (id),
     INDEX idx_user_id (user_id),
     INDEX idx_skill_id (skill_id)
 );
@@ -74,10 +78,15 @@ CREATE TABLE projects (
     budget_min DECIMAL(12, 2) COMMENT 'Ngân sách tối thiểu',
     budget_max DECIMAL(12, 2) COMMENT 'Ngân sách tối đa',
     deadline DATETIME COMMENT 'Thời hạn hoàn thành mong muốn',
-    status ENUM('open', 'in_progress', 'completed', 'cancelled') DEFAULT 'open' COMMENT 'Trạng thái dự án',
+    status ENUM(
+        'open',
+        'in_progress',
+        'completed',
+        'cancelled'
+    ) DEFAULT 'open' COMMENT 'Trạng thái dự án',
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP COMMENT 'Ngày tạo',
     updated_at DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT 'Ngày cập nhật',
-    FOREIGN KEY (user_id) REFERENCES users(id),
+    FOREIGN KEY (user_id) REFERENCES users (id),
     INDEX idx_user_id (user_id),
     INDEX idx_status (status)
 );
@@ -87,8 +96,8 @@ CREATE TABLE projects_skills (
     project_id BIGINT NOT NULL COMMENT 'Mã dự án',
     skill_id BIGINT NOT NULL COMMENT 'Mã kỹ năng',
     PRIMARY KEY (project_id, skill_id),
-    FOREIGN KEY (project_id) REFERENCES projects(id),
-    FOREIGN KEY (skill_id) REFERENCES skills(id),
+    FOREIGN KEY (project_id) REFERENCES projects (id),
+    FOREIGN KEY (skill_id) REFERENCES skills (id),
     INDEX idx_project_id (project_id),
     INDEX idx_skill_id (skill_id)
 );
@@ -102,10 +111,15 @@ CREATE TABLE bids (
     message TEXT COMMENT 'Nội dung đề xuất, giải pháp',
     estimated_time VARCHAR(50) COMMENT 'Thời gian dự kiến hoàn thành',
     attachments TEXT COMMENT 'File đính kèm (portfolio, proposal)',
-    status ENUM('pending', 'accepted', 'rejected', 'withdrawn') DEFAULT 'pending' COMMENT 'Trạng thái báo giá',
+    status ENUM(
+        'pending',
+        'accepted',
+        'rejected',
+        'withdrawn'
+    ) DEFAULT 'pending' COMMENT 'Trạng thái báo giá',
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP COMMENT 'Ngày tạo',
-    FOREIGN KEY (project_id) REFERENCES projects(id),
-    FOREIGN KEY (freelancer_id) REFERENCES users(id),
+    FOREIGN KEY (project_id) REFERENCES projects (id),
+    FOREIGN KEY (freelancer_id) REFERENCES users (id),
     INDEX idx_project_id (project_id),
     INDEX idx_freelancer_id (freelancer_id),
     INDEX idx_status (status)
@@ -119,12 +133,16 @@ CREATE TABLE contracts (
     customer_id BIGINT NOT NULL COMMENT 'Mã khách hàng',
     agreed_price DECIMAL(12, 2) NOT NULL COMMENT 'Giá đã thỏa thuận',
     progress INT DEFAULT 0 COMMENT 'Tiến độ hoàn thành (%)',
-    status ENUM('in_progress', 'completed', 'cancelled') DEFAULT 'in_progress' COMMENT 'Trạng thái hợp đồng',
+    status ENUM(
+        'in_progress',
+        'completed',
+        'cancelled'
+    ) DEFAULT 'in_progress' COMMENT 'Trạng thái hợp đồng',
     start_date DATETIME COMMENT 'Ngày bắt đầu',
     end_date DATETIME COMMENT 'Ngày kết thúc',
-    FOREIGN KEY (project_id) REFERENCES projects(id),
-    FOREIGN KEY (freelancer_id) REFERENCES users(id),
-    FOREIGN KEY (customer_id) REFERENCES users(id),
+    FOREIGN KEY (project_id) REFERENCES projects (id),
+    FOREIGN KEY (freelancer_id) REFERENCES users (id),
+    FOREIGN KEY (customer_id) REFERENCES users (id),
     INDEX idx_project_id (project_id),
     INDEX idx_freelancer_id (freelancer_id),
     INDEX idx_customer_id (customer_id),
@@ -138,8 +156,12 @@ CREATE TABLE milestones (
     title VARCHAR(255) NOT NULL COMMENT 'Tên milestone',
     amount DECIMAL(12, 2) NOT NULL COMMENT 'Số tiền milestone',
     due_date DATETIME COMMENT 'Ngày đến hạn',
-    status ENUM('pending', 'completed', 'cancelled') DEFAULT 'pending' COMMENT 'Trạng thái milestone',
-    FOREIGN KEY (contract_id) REFERENCES contracts(id),
+    status ENUM(
+        'pending',
+        'completed',
+        'cancelled'
+    ) DEFAULT 'pending' COMMENT 'Trạng thái milestone',
+    FOREIGN KEY (contract_id) REFERENCES contracts (id),
     INDEX idx_contract_id (contract_id),
     INDEX idx_status (status)
 );
@@ -154,8 +176,8 @@ CREATE TABLE reviews (
     reply TEXT COMMENT 'Phản hồi của freelancer/khách',
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP COMMENT 'Ngày tạo',
     updated_at DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT 'Ngày cập nhật',
-    FOREIGN KEY (contract_id) REFERENCES contracts(id),
-    FOREIGN KEY (reviewer_id) REFERENCES users(id),
+    FOREIGN KEY (contract_id) REFERENCES contracts (id),
+    FOREIGN KEY (reviewer_id) REFERENCES users (id),
     INDEX idx_contract_id (contract_id),
     INDEX idx_reviewer_id (reviewer_id)
 );
@@ -169,8 +191,8 @@ CREATE TABLE messages (
     content TEXT COMMENT 'Nội dung tin nhắn',
     attachments TEXT COMMENT 'File đính kèm',
     sent_at DATETIME DEFAULT CURRENT_TIMESTAMP COMMENT 'Thời gian gửi',
-    FOREIGN KEY (contract_id) REFERENCES contracts(id),
-    FOREIGN KEY (sender_id) REFERENCES users(id),
+    FOREIGN KEY (contract_id) REFERENCES contracts (id),
+    FOREIGN KEY (sender_id) REFERENCES users (id),
     INDEX idx_contract_id (contract_id),
     INDEX idx_sender_id (sender_id),
     INDEX idx_message_type (message_type)
@@ -182,9 +204,13 @@ CREATE TABLE transaction_history (
     contract_id BIGINT NOT NULL COMMENT 'Mã hợp đồng',
     amount DECIMAL(12, 2) NOT NULL COMMENT 'Số tiền giao dịch',
     method VARCHAR(50) COMMENT 'Phương thức thanh toán',
-    status ENUM('pending', 'completed', 'failed') DEFAULT 'pending' COMMENT 'Trạng thái giao dịch',
+    status ENUM(
+        'pending',
+        'completed',
+        'failed'
+    ) DEFAULT 'pending' COMMENT 'Trạng thái giao dịch',
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP COMMENT 'Ngày tạo',
-    FOREIGN KEY (contract_id) REFERENCES contracts(id),
+    FOREIGN KEY (contract_id) REFERENCES contracts (id),
     INDEX idx_contract_id (contract_id),
     INDEX idx_status (status)
 );
@@ -193,13 +219,18 @@ CREATE TABLE transaction_history (
 CREATE TABLE notifications (
     id BIGINT PRIMARY KEY AUTO_INCREMENT COMMENT 'Khóa chính, mã thông báo',
     user_id BIGINT NOT NULL COMMENT 'Mã người nhận',
-    type ENUM('project', 'bid', 'contract', 'system') DEFAULT 'system' COMMENT 'Loại thông báo',
+    type ENUM(
+        'project',
+        'bid',
+        'contract',
+        'system'
+    ) DEFAULT 'system' COMMENT 'Loại thông báo',
     title VARCHAR(255) NOT NULL COMMENT 'Tiêu đề thông báo',
     content TEXT COMMENT 'Nội dung thông báo',
     link VARCHAR(255) COMMENT 'Đường dẫn liên quan',
     is_read BOOLEAN DEFAULT FALSE COMMENT 'Đã đọc hay chưa',
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP COMMENT 'Ngày tạo',
-    FOREIGN KEY (user_id) REFERENCES users(id),
+    FOREIGN KEY (user_id) REFERENCES users (id),
     INDEX idx_user_id (user_id),
     INDEX idx_type (type),
     INDEX idx_is_read (is_read)

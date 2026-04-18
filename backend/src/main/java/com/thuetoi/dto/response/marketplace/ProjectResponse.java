@@ -2,6 +2,7 @@ package com.thuetoi.dto.response.marketplace;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import java.util.List;
 
 public record ProjectResponse(
     Long id,
@@ -12,6 +13,7 @@ public record ProjectResponse(
     BigDecimal budgetMax,
     LocalDateTime deadline,
     String status,
+    List<String> skills,
     LocalDateTime createdAt,
     LocalDateTime updatedAt
 ) {

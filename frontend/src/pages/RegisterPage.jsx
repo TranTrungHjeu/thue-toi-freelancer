@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import Input from '../components/common/Input';
 import Select from '../components/common/Select';
 import Textarea from '../components/common/Textarea';
@@ -21,9 +21,11 @@ const initialFormState = {
 
 const RegisterPage = () => {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const { addToast } = useToast();
   const { t } = useI18n();
-  const [form, setForm] = useState(initialFormState);
+  const initialRole = searchParams.get('role') === 'freelancer' ? 'freelancer' : 'customer';
+  const [form, setForm] = useState(() => ({ ...initialFormState, role: initialRole }));
   const [fieldErrors, setFieldErrors] = useState({});
   const [formError, setFormError] = useState('');
   const [submitting, setSubmitting] = useState(false);
@@ -57,13 +59,16 @@ const RegisterPage = () => {
   };
 
   return (
-    <div className="relative flex min-h-screen flex-col">
+    <div className="relative flex min-h-screen flex-col overflow-hidden bg-black/30 text-white">
+      <div className="pointer-events-none absolute inset-0 -z-10 bg-[radial-gradient(circle_at_top,rgba(34,197,94,0.2),transparent_38%),linear-gradient(180deg,rgba(2,6,23,0.88),rgba(2,6,23,0.72))]" />
+      <div className="bg-noise pointer-events-none absolute inset-0 -z-10 opacity-[0.2]" />
+
       <header className="relative z-10 flex items-center justify-between px-8 py-4">
         <Link to="/" className="flex items-center gap-2.5">
-          <div className="border-2 border-white bg-white/10 px-2.5 py-1 text-xs font-black uppercase tracking-[0.22em] text-white backdrop-blur-sm">
+          <div className="border border-primary-400/50 bg-primary-500/12 px-2.5 py-1 text-xs font-black uppercase tracking-[0.22em] text-primary-200 backdrop-blur-sm">
             TT
           </div>
-          <span className="text-sm font-black uppercase tracking-[0.18em] text-white">
+          <span className="text-sm font-black uppercase tracking-[0.18em] text-primary-100">
             {t('app.brand')}
           </span>
         </Link>
@@ -71,7 +76,7 @@ const RegisterPage = () => {
           <LanguageSwitcher />
           <Link
             to="/auth/login"
-            className="border border-white/60 px-6 py-2 text-sm font-semibold text-white transition-colors hover:bg-white/10"
+            className="border border-white/20 bg-white/5 px-6 py-2 text-sm font-semibold text-white/90 transition-colors hover:border-white/35 hover:bg-white/10"
           >
             {t('authPages.register.navAction')}
           </Link>
@@ -79,17 +84,20 @@ const RegisterPage = () => {
       </header>
 
       <main className="relative z-10 flex flex-1 items-center justify-center px-4 py-2">
-        <div className="w-full max-w-[520px] border border-slate-100 bg-white px-8 py-6 shadow-lg">
+        <div className="w-full max-w-[540px] border border-white/15 bg-slate-950/72 px-7 py-7 shadow-[0_25px_80px_rgba(0,0,0,0.42)] backdrop-blur-md md:px-8">
           <div className="mb-4 text-center">
-            <h1 className="font-serif text-2xl font-bold leading-tight text-secondary-900">
+            <p className="text-[11px] font-bold uppercase tracking-[0.24em] text-primary-200/85">
+              {t('layout.workspace')}
+            </p>
+            <h1 className="mt-2 font-serif text-2xl font-bold leading-tight text-white">
               {t('authPages.register.title')}
             </h1>
-            <p className="mt-1.5 text-sm text-slate-500">
+            <p className="mt-1.5 text-sm text-slate-300">
               {t('authPages.register.description')}
             </p>
           </div>
 
-          <form className="flex flex-col gap-3" onSubmit={handleSubmit}>
+          <form className="auth-form-theme flex flex-col gap-3" onSubmit={handleSubmit}>
             {formError && (
               <Callout type="danger" title={t('authPages.register.errorTitle')}>
                 {formError}
@@ -149,18 +157,18 @@ const RegisterPage = () => {
             </Button>
 
             <div className="flex items-center gap-4">
-              <div className="h-px flex-1 bg-slate-200" />
-              <Caption className="text-[11px] font-medium uppercase tracking-[0.18em] text-slate-400">
+              <div className="h-px flex-1 bg-white/12" />
+              <Caption className="text-[11px] font-medium uppercase tracking-[0.18em] text-slate-400/85">
                 {t('authPages.divider')}
               </Caption>
-              <div className="h-px flex-1 bg-slate-200" />
+              <div className="h-px flex-1 bg-white/12" />
             </div>
 
-            <p className="text-center text-sm text-slate-400">
+            <p className="text-center text-sm text-slate-300/85">
               {t('authPages.register.footerPrompt')}{' '}
               <Link
                 to="/auth/login"
-                className="font-semibold text-primary-700 hover:text-primary-800"
+                className="font-semibold text-primary-200 transition-colors hover:text-primary-100"
               >
                 {t('authPages.register.footerAction')}
               </Link>
@@ -170,7 +178,7 @@ const RegisterPage = () => {
       </main>
 
       <footer className="relative z-10 pb-3 text-center">
-        <Caption className="text-[11px] uppercase tracking-[0.18em] text-white/40">
+        <Caption className="text-[11px] uppercase tracking-[0.18em] text-white/50">
           {t('authPages.footerBrand')}
         </Caption>
       </footer>

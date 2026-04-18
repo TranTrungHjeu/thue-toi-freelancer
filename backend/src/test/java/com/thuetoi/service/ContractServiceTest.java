@@ -2,6 +2,7 @@ package com.thuetoi.service;
 
 import com.thuetoi.entity.Bid;
 import com.thuetoi.entity.Contract;
+import com.thuetoi.entity.Milestone;
 import com.thuetoi.entity.Project;
 import com.thuetoi.entity.User;
 import com.thuetoi.exception.BusinessException;
@@ -197,6 +198,31 @@ class ContractServiceTest {
     }
 
     @Test
+    void addMilestoneRejectsTerminalStatusOnCreate() {
+        Contract contract = contract(70L, 10L, 1L, 2L, "in_progress");
+
+        when(contractAccessService.requireCustomerContract(70L, 1L)).thenReturn(contract);
+
+        assertThatThrownBy(() -> contractService.addMilestone(
+            70L,
+            1L,
+            "Phase 1",
+            BigDecimal.valueOf(1500000),
+            LocalDateTime.now(),
+            "completed"
+        ))
+            .isInstanceOf(BusinessException.class)
+            .satisfies(throwable -> {
+                BusinessException ex = (BusinessException) throwable;
+                assertThat(ex.getCode()).isEqualTo("ERR_SYS_02");
+                assertThat(ex.getStatus()).isEqualTo(HttpStatus.BAD_REQUEST);
+            });
+
+        verify(milestoneRepository, never()).save(any());
+        verify(notificationService, never()).createNotificationForUser(any(), any(), any(), any(), any());
+    }
+
+    @Test
     void addMilestoneRejectsFinishedContract() {
         Contract contract = contract(70L, 10L, 1L, 2L, "completed");
 
@@ -273,6 +299,26 @@ class ContractServiceTest {
         verify(projectRepository, never()).save(any(Project.class));
     }
 
+    @Test
+    void updateMilestoneStatusRejectsChangesForFinishedMilestone() {
+        Contract contract = contract(70L, 10L, 1L, 2L, "in_progress");
+        Milestone milestone = milestone(301L, 70L, "Phase 1", BigDecimal.valueOf(1500000), "completed");
+
+        when(milestoneRepository.findById(301L)).thenReturn(Optional.of(milestone));
+        when(contractAccessService.requireCustomerContract(70L, 1L)).thenReturn(contract);
+
+        assertThatThrownBy(() -> contractService.updateMilestoneStatus(301L, 1L, "cancelled"))
+            .isInstanceOf(BusinessException.class)
+            .satisfies(throwable -> {
+                BusinessException ex = (BusinessException) throwable;
+                assertThat(ex.getCode()).isEqualTo("ERR_SYS_02");
+                assertThat(ex.getStatus()).isEqualTo(HttpStatus.BAD_REQUEST);
+            });
+
+        verify(milestoneRepository, never()).save(any());
+        verify(transactionService, never()).createTransaction(any(), any(), any(), any());
+    }
+
     private User user(Long id, String role) {
         User user = new User();
         user.setId(id);
@@ -302,6 +348,16 @@ class ContractServiceTest {
         contract.setProgress(0);
         contract.setStartDate(LocalDateTime.of(2026, 3, 24, 12, 0));
         return contract;
+    }
+
+    private Milestone milestone(Long id, Long contractId, String title, BigDecimal amount, String status) {
+        Milestone milestone = new Milestone();
+        milestone.setId(id);
+        milestone.setContractId(contractId);
+        milestone.setTitle(title);
+        milestone.setAmount(amount);
+        milestone.setStatus(status);
+        return milestone;
     }
 
     private Bid bid(Long id, Project project, User freelancer, BigDecimal price, String status) {

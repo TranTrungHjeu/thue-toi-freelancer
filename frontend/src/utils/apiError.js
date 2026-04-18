@@ -20,8 +20,11 @@ const CODE_MESSAGE_OVERRIDES = {
   ERR_BID_01: 'errors.code.ERR_BID_01',
   ERR_CONTRACT_01: 'errors.code.ERR_CONTRACT_01',
   ERR_CONTRACT_02: 'errors.code.ERR_CONTRACT_02',
+  ERR_MILESTONE_01: 'errors.code.ERR_MILESTONE_01',
   ERR_NOTIFICATION_01: 'errors.code.ERR_NOTIFICATION_01',
   ERR_SYS_01: 'errors.code.ERR_SYS_01',
+  ERR_SYS_02: 'errors.code.ERR_SYS_02',
+  ERR_SYS_03: 'errors.code.ERR_SYS_03',
 };
 
 const RAW_MESSAGE_OVERRIDES = {

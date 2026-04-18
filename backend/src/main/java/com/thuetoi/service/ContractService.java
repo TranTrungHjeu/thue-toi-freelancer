@@ -52,6 +52,9 @@ public class ContractService {
     @Autowired
     private TransactionService transactionService;
 
+    @Autowired
+    private ContractRealtimePublisher contractRealtimePublisher;
+
     /**
      * Lấy tất cả hợp đồng mà user hiện tại được phép xem.
      */
@@ -119,6 +122,7 @@ public class ContractService {
         contract.setStartDate(LocalDateTime.now());
 
         Contract createdContract = contractRepository.save(contract);
+        publishContractEvent(createdContract.getId(), "contract.created", createdContract);
         notificationService.createNotificationForUser(
             freelancer.getId(),
             "contract",
@@ -158,7 +162,7 @@ public class ContractService {
         milestone.setTitle(title.trim());
         milestone.setAmount(amount);
         milestone.setDueDate(dueDate);
-        milestone.setStatus(normalizeMilestoneStatus(status).getValue());
+        milestone.setStatus(normalizeMilestoneCreateStatus(status).getValue());
         Milestone createdMilestone = milestoneRepository.save(milestone);
         notificationService.createNotificationForUser(
             contract.getFreelancerId(),
@@ -167,6 +171,7 @@ public class ContractService {
             "Khách hàng vừa thêm milestone \"" + createdMilestone.getTitle() + "\" cho contract #" + contractId + ".",
             "/workspace/contracts"
         );
+        publishContractEvent(contractId, "milestone.created", createdMilestone);
         return createdMilestone;
     }
 
@@ -221,6 +226,7 @@ public class ContractService {
             transactionService.createTransaction(contractId, amount, "contract_completion", "completed");
         }
 
+        publishContractEvent(contractId, "contract.status_updated", updatedContract);
         return updatedContract;
     }
 
@@ -276,6 +282,14 @@ public class ContractService {
             .orElseThrow(() -> new BusinessException("ERR_SYS_02", "Trạng thái milestone không hợp lệ", HttpStatus.BAD_REQUEST));
     }
 
+    private MilestoneStatus normalizeMilestoneCreateStatus(String status) {
+        MilestoneStatus normalizedStatus = normalizeMilestoneStatus(status);
+        if (normalizedStatus != MilestoneStatus.PENDING) {
+            throw new BusinessException("ERR_SYS_02", "Milestone mới chỉ được khởi tạo ở trạng thái pending", HttpStatus.BAD_REQUEST);
+        }
+        return normalizedStatus;
+    }
+
     private void syncProjectStatus(Long projectId, ContractStatus contractStatus) {
         projectRepository.findById(projectId).ifPresent(project -> {
             ProjectStatus projectStatus = ProjectStatus.fromValue(contractStatus.getValue())
@@ -293,16 +307,16 @@ public class ContractService {
         Milestone milestone = milestoneRepository.findById(milestoneId)
             .orElseThrow(() -> new BusinessException("ERR_MILESTONE_01", "Không tìm thấy milestone", HttpStatus.NOT_FOUND));
 
-        Contract contract = contractRepository.findById(milestone.getContractId())
-            .orElseThrow(() -> new BusinessException("ERR_CONTRACT_01", "Không tìm thấy hợp đồng", HttpStatus.NOT_FOUND));
-
-        contractAccessService.requireAccessibleContract(contract.getId(), currentUserId);
+        Contract contract = contractAccessService.requireCustomerContract(milestone.getContractId(), currentUserId);
 
         MilestoneStatus current = normalizeMilestoneStatus(milestone.getStatus());
         MilestoneStatus normalized = normalizeMilestoneStatus(status);
 
         if (current == normalized) {
             return milestone;
+        }
+        if (current != MilestoneStatus.PENDING) {
+            throw new BusinessException("ERR_SYS_02", "Milestone đã ở trạng thái kết thúc không thể cập nhật lại", HttpStatus.BAD_REQUEST);
         }
 
         milestone.setStatus(normalized.getValue());
@@ -320,6 +334,19 @@ public class ContractService {
             );
         }
 
+        publishContractEvent(contract.getId(), "milestone.status_updated", updatedMilestone);
         return updatedMilestone;
+    }
+
+    private void publishContractEvent(Long contractId, String type, Object payload) {
+        if (contractRealtimePublisher == null) {
+            return;
+        }
+        contractRealtimePublisher.publish(contractId, type, payload);
+    }
+
+    public List<com.thuetoi.entity.TransactionHistory> getTransactionsByContract(Long contractId, Long currentUserId) {
+        contractAccessService.requireAccessibleContract(contractId, currentUserId);
+        return transactionService.getTransactionsByContract(contractId);
     }
 }

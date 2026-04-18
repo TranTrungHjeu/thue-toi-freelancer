@@ -20,13 +20,16 @@ public class TransactionService {
     @Autowired
     private TransactionHistoryRepository transactionHistoryRepository;
 
+    @Autowired
+    private ContractRealtimePublisher contractRealtimePublisher;
+
     /**
      * Tạo transaction mới
      */
     @Transactional
     public TransactionHistory createTransaction(Long contractId, BigDecimal amount, String method, String status) {
         if (amount == null || amount.compareTo(BigDecimal.ZERO) <= 0) {
-            throw new BusinessException("ERR_TRANSACTION_01", "Số tiền giao dịch phải lớn hơn 0", HttpStatus.BAD_REQUEST);
+            throw new BusinessException("ERR_SYS_02", "Số tiền giao dịch phải lớn hơn 0", HttpStatus.BAD_REQUEST);
         }
 
         TransactionHistory transaction = new TransactionHistory();
@@ -34,8 +37,9 @@ public class TransactionService {
         transaction.setAmount(amount);
         transaction.setMethod(method);
         transaction.setStatus(status != null ? status.toLowerCase() : "pending");
-
-        return transactionHistoryRepository.save(transaction);
+        TransactionHistory savedTransaction = transactionHistoryRepository.save(transaction);
+        contractRealtimePublisher.publish(contractId, "transaction.created", savedTransaction);
+        return savedTransaction;
     }
 
     /**
