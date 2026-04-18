@@ -152,7 +152,7 @@ class BidServiceTest {
         bid.setId(id);
         bid.setProject(project);
         bid.setFreelancer(freelancer);
-        bid.setPrice(1_500_000.0);
+        bid.setPrice(BigDecimal.valueOf(1500000));
         bid.setStatus(status);
         return bid;
     }

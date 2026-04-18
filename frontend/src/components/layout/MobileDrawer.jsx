@@ -37,7 +37,7 @@ const MobileDrawer = ({
             animate={{ x: 0 }}
             exit={{ x: '-100%' }}
             transition={{ type: 'spring', damping: 25, stiffness: 200 }}
-            className="fixed bottom-0 left-0 top-0 z-[160] flex w-[280px] flex-col border-r border-slate-200 bg-white lg:hidden"
+            className="fixed bottom-0 left-0 top-0 z-[160] flex w-[280px] flex-col border-r border-slate-200 bg-white/95 shadow-[8px_0_32px_rgba(15,23,42,0.12)] lg:hidden"
             style={{ borderRadius: '0px' }}
           >
             <div className="flex items-center justify-between border-b border-slate-100 p-6">
@@ -45,6 +45,15 @@ const MobileDrawer = ({
               <button onClick={onClose} className="p-2 transition-colors hover:bg-slate-100">
                 <Xmark className="h-5 w-5 text-slate-500" />
               </button>
+            </div>
+
+            <div className="px-6 py-4">
+              <div className="border border-slate-200 bg-slate-50 px-4 py-3">
+                <div className="text-[11px] font-bold uppercase tracking-[0.18em] text-slate-500">
+                  {t('layout.workspace')}
+                </div>
+                <div className="mt-1 text-sm font-semibold text-secondary-900">Thuê Tôi</div>
+              </div>
             </div>
 
             <div className="flex-1 overflow-y-auto py-4">

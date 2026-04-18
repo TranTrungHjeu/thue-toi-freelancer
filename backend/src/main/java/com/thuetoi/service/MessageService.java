@@ -21,6 +21,9 @@ public class MessageService {
     @Autowired
     private ContractAccessService contractAccessService;
 
+    @Autowired
+    private ContractRealtimePublisher contractRealtimePublisher;
+
     public Message sendMessage(Long currentUserId, MessageRequest request) {
         Contract contract = contractAccessService.requireAccessibleContract(request.getContractId(), currentUserId);
         if (!ContractStatus.IN_PROGRESS.matches(contract.getStatus())) {
@@ -44,7 +47,13 @@ public class MessageService {
         message.setMessageType(messageType.getValue());
         message.setContent(normalizedContent);
         message.setAttachments(normalizedAttachments);
-        return messageRepository.save(message);
+        Message savedMessage = messageRepository.save(message);
+
+        if (contractRealtimePublisher != null) {
+            contractRealtimePublisher.publish(request.getContractId(), "message.created", savedMessage);
+        }
+
+        return savedMessage;
     }
 
     public List<Message> getMessagesByContract(Long contractId, Long currentUserId) {

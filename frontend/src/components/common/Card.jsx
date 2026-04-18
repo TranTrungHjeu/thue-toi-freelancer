@@ -6,8 +6,8 @@ import React from 'react';
  */
 const Card = ({ children, className = '', ...props }) => {
   return (
-    <div 
-      className={`sharp-card ${className}`}
+    <div
+      className={`sharp-card shadow-sm transition-shadow duration-200 hover:shadow-md ${className}`}
       {...props}
     >
       {children}

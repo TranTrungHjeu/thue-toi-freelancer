@@ -43,7 +43,8 @@ const MainLayout = () => {
   ];
 
   return (
-    <div className="min-h-screen bg-gray-50 flex flex-col">
+    <div className="relative min-h-screen flex flex-col overflow-hidden bg-[radial-gradient(circle_at_top_left,_rgba(34,197,94,0.12),_transparent_28%),linear-gradient(180deg,#f8fafc_0%,#eff6ff_45%,#f8fafc_100%)]">
+      <div className="pointer-events-none absolute inset-x-0 top-0 h-32 bg-gradient-to-b from-primary-100/50 to-transparent" />
       <Header user={user} onOpenMenu={() => setIsDrawerOpen(true)} />
 
       <MobileDrawer
@@ -54,7 +55,7 @@ const MainLayout = () => {
         onLogout={logout}
       />
 
-      <div className="flex flex-1 pt-16 pb-16 lg:pb-0">
+      <div className="relative z-10 flex flex-1 pt-16 pb-16 lg:pb-0">
         <div className="hidden lg:block">
           <Sidebar navigation={navigation} currentPath={location.pathname} onLogout={logout} />
         </div>

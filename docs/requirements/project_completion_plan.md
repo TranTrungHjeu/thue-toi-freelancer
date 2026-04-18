@@ -2,6 +2,8 @@
 
 Tài liệu này chốt kế hoạch triển khai giai đoạn hoàn thiện dự án **Thuê Tôi Freelancer Platform** theo hướng logic, bám nghiệp vụ, bám docs hiện có và phù hợp với quy trình team trong repo.
 
+Lưu ý ngày `2026-04-18`: tài liệu này nên được xem là `roadmap + ghi chú tiến độ`, không phải nguồn sự thật duy nhất về trạng thái repo. Khi cần chốt hiện trạng thực tế, phải đối chiếu thêm controller/service hiện tại, `docs/api/official_endpoint_contract.md`, checklist QA và wiring frontend đang dùng.
+
 ## 1. Mục tiêu hoàn thiện
 
 Mục tiêu của giai đoạn này không chỉ là "có thêm code", mà là đưa dự án tới trạng thái có thể:
@@ -22,42 +24,36 @@ Mọi quyết định triển khai phải ưu tiên các tài liệu sau:
 - `docs/architecture/ui_standard.md`: chuẩn UI/UX Strict Sharpness, mobile-first và tái sử dụng component.
 - `docs/CONVENTIONS.md`: chuẩn naming cho DB, API, Java và React.
 - `docs/TEAM_GUIDE.md`: Git workflow, branch naming, local verification trước khi mở PR.
-- `docs/database/schema.sql`: schema nghiệp vụ hiện tại đang là nguồn tham chiếu DB chính.
+- `docs/database/schema.sql`: schema tham chiếu ở tầng docs; khi triển khai cần đối chiếu thêm migration Flyway hiện hành.
 
 ## 3. Đánh giá hiện trạng repo
 
 ### 3.1. Backend
 
-- Đã có controller/service/repository/entity cho các module chính: `auth`, `project`, `bid`, `contract`, `milestone`, `message`, `review`, `notification`.
-- Luồng auth đã có đủ register, OTP verify, resend OTP, login, refresh, logout, profile.
-- Luồng `project -> bid -> contract -> milestone` đã có nền tảng nghiệp vụ và đã bắt đầu bám rule.
-- Test backend hiện mới tập trung ở một phần service (`ContractService`, `MessageService`, `ReviewService`), chưa phủ toàn bộ auth/project/bid/notification.
-- API hiện vẫn đang trả entity trực tiếp ở nhiều endpoint, dễ phát sinh lệch contract giữa backend và frontend về sau.
-- `docs/api/README.md` vẫn chưa có OpenAPI/Postman chính thức, nên rủi ro lệch API contract còn cao.
+- Đã có controller/service/repository/entity cho các module chính: `auth`, `project`, `bid`, `contract`, `milestone`, `message`, `review`, `notification`, `transaction`, admin.
+- Nhiều luồng cốt lõi đã có nền tảng tốt ở service layer, nhưng mức "khép kín thật" vẫn cần đối chiếu ở controller, security, frontend wiring và manual smoke test.
+- API dùng DTOs/ApiResponse, có nền tảng realtime WebSocket và transaction history.
+- Flyway, Docker và docs nền tảng đã có, nhưng không nên suy diễn là mọi flow đã xác nhận end-to-end chỉ từ sự hiện diện của code.
 
 ### 3.2. Frontend
 
 - Đã có landing, auth pages, workspace dashboard, projects, contracts, notifications, profile và component gallery.
-- `npm run lint` đang pass.
-- `npm run build` đang pass.
-- Frontend đã gọi dữ liệu thật cho auth, project, bid, contract, notification.
-- Chưa có đủ màn hình nghiệp vụ cho `message`, `review`, và các thao tác contract/milestone ở mức hoàn thiện.
-- API client frontend hiện chưa phủ hết toàn bộ endpoint backend đang có.
+- Frontend đã nối dữ liệu thật cho nhiều luồng chính, nhưng mức hoàn thiện giữa các màn không đồng đều.
+- Không nên mặc định coi `lint/build/test` là đang pass nếu chưa rerun lại trên máy hoặc CI hiện tại.
+- Cần tiếp tục đối chiếu giữa API client, page behavior, realtime subscription và docs chính thức sau mỗi thay đổi.
 
 ### 3.3. Tài liệu và quy trình
 
-- Docs nền tảng khá tốt, nhưng docs API chính thức và kế hoạch thi công chi tiết vẫn còn thiếu.
+- Docs nền tảng khá tốt, nhưng một số tài liệu vẫn có thể pha trộn giữa roadmap, claim trạng thái và mô tả implementation.
 - Local verification theo `TEAM_GUIDE` đang thiếu baseline backend trên máy hiện tại nếu không dùng Maven/Docker.
 
-### 4. Trạng thái hiện tại (April 2026)
+### 3.4. Trạng thái hiện tại (April 2026)
 
-- Backend: Types standardized to BigDecimal/LocalDateTime, Skill entity added, file storage configured, all core services/controllers updated and compiling. Docker build succeeds.
-- Frontend: i18n with full vi/en support in messages/tooling/workspace, lint/build pass, sharp UI enforced.
-- Tests: Backend tests partially updated (some skipped in Docker), frontend clean.
-- Docs: All legacy terms removed, rules/UI/file_storage updated and aligned.
-- Overall: 95% complete per plan. Ready for full QA per demo_runbook.md and manual checklist. 
-
-Next: Run full verification, update tests, final PR to develop.
+- Backend: core marketplace modules hiện diện và nhiều rule quan trọng đã được thể hiện trong service layer; vẫn cần manual scenarios và runtime verification để xác nhận end-to-end.
+- Frontend: có đủ màn hình phục vụ demo/học thuật, nhưng từng flow vẫn cần được xác nhận lại sau thay đổi fullstack.
+- Tests & verification: chỉ được coi là đạt khi rerun thật trên môi trường hiện tại; không dùng file này như bằng chứng pass thay cho output thực.
+- Docs: có độ phủ tốt hơn trước, nhưng luôn phải ưu tiên đối chiếu API contract và code hiện tại khi có khác biệt.
+- Overall: phù hợp để tiếp tục hoàn thiện và review học thuật; chưa nên gọi là `production-ready` chỉ dựa trên static review hoặc claim trong tài liệu.
 
 ## 4. Định nghĩa hoàn thành tổng thể
 
@@ -114,11 +110,12 @@ Việc cần làm:
 
 ### Phase 1 - Hoàn thiện Backend (Entities, Types, Interfaces)
 
-- Thêm entity cho `Skill`, `UserSkill`/`UsersSkills`, `ProjectSkill`, `TransactionHistory`.
+- Thêm entity cho `Skill`, `UserSkill`/`UsersSkills`, `ProjectSkill`, `TransactionHistory` (đã extend BaseEntity).
 - Standardize date to `LocalDateTime`, money to `BigDecimal`.
 - Tạo service interfaces per CONVENTIONS.md (UserService, ProjectServiceImpl etc.).
 - Enhance validation with @Valid and central error handling per error_codes.md.
 - Implement file storage per file_storage.md (update paths from gigs to projects/uploads).
+- **Improvement**: TransactionHistory + realtime WebSocket + skill search + Flyway/Swagger (đã implement và commit).
 
 ### Phase 2 - Frontend i18n & UI Completion
 

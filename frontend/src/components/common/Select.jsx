@@ -4,27 +4,29 @@ const Select = ({ label, error, options = [], className = '', ...props }) => {
   return (
     <div className={`flex flex-col gap-1.5 ${className}`}>
       {label && (
-        <label className="text-sm font-semibold text-secondary-900 font-sans">
+        <label className="ui-label">
           {label}
         </label>
       )}
-      <select
-        className={`
-          min-h-11 border-2 px-4 py-2 bg-white
-          focus:border-primary-500 focus:ring-0 outline-none
-          transition-colors font-sans
-          ${error ? 'border-error' : 'border-slate-300'}
-        `}
-        {...props}
-      >
-        {options.map((option) => (
-          <option key={option.value} value={option.value}>
-            {option.label}
-          </option>
-        ))}
-      </select>
+      <div className="ui-select-wrap">
+        <select
+          className={`ui-field ui-select ${error ? 'ui-field-error' : ''}`}
+          {...props}
+        >
+          {options.map((option) => (
+            <option key={option.value} value={option.value}>
+              {option.label}
+            </option>
+          ))}
+        </select>
+        <span className="ui-select-icon" aria-hidden="true">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <path d="M6 9L12 15L18 9" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
+          </svg>
+        </span>
+      </div>
       {error && (
-        <span className="text-xs text-error font-sans italic">
+        <span className="ui-error-text">
           {error}
         </span>
       )}

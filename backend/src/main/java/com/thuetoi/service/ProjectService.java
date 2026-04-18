@@ -35,11 +35,34 @@ public class ProjectService {
     @Autowired
     private UserRepository userRepository;
 
+    @Autowired
+    private SkillService skillService;
+
     /**
      * Tạo dự án mới
      */
     @Transactional
-    public Project createProject(Long userId, String title, String description, BigDecimal budgetMin, BigDecimal budgetMax, LocalDateTime deadline) {
+    public Project createProject(
+        Long userId,
+        String title,
+        String description,
+        BigDecimal budgetMin,
+        BigDecimal budgetMax,
+        LocalDateTime deadline
+    ) {
+        return createProject(userId, title, description, budgetMin, budgetMax, deadline, null);
+    }
+
+    @Transactional
+    public Project createProject(
+        Long userId,
+        String title,
+        String description,
+        BigDecimal budgetMin,
+        BigDecimal budgetMax,
+        LocalDateTime deadline,
+        List<String> skills
+    ) {
         User user = getRequiredUser(userId);
         ensureCustomer(user);
         validateProjectPayload(title, budgetMin != null ? budgetMin.doubleValue() : null, budgetMax != null ? budgetMax.doubleValue() : null);
@@ -52,6 +75,7 @@ public class ProjectService {
         project.setBudgetMax(budgetMax);
         project.setDeadline(deadline);
         project.setStatus(ProjectStatus.OPEN.getValue());
+        project.setSkills(resolveSkills(skills));
         return projectRepository.save(project);
     }
 
@@ -82,7 +106,31 @@ public class ProjectService {
      * Cập nhật dự án
      */
     @Transactional
-    public Project updateProject(Long id, Long userId, String title, String description, BigDecimal budgetMin, BigDecimal budgetMax, LocalDateTime deadline, String status) {
+    public Project updateProject(
+        Long id,
+        Long userId,
+        String title,
+        String description,
+        BigDecimal budgetMin,
+        BigDecimal budgetMax,
+        LocalDateTime deadline,
+        String status
+    ) {
+        return updateProject(id, userId, title, description, budgetMin, budgetMax, deadline, status, null);
+    }
+
+    @Transactional
+    public Project updateProject(
+        Long id,
+        Long userId,
+        String title,
+        String description,
+        BigDecimal budgetMin,
+        BigDecimal budgetMax,
+        LocalDateTime deadline,
+        String status,
+        List<String> skills
+    ) {
         Project project = getOwnedProject(id, userId);
         validateProjectPayload(title, budgetMin != null ? budgetMin.doubleValue() : null, budgetMax != null ? budgetMax.doubleValue() : null);
 
@@ -92,6 +140,9 @@ public class ProjectService {
         project.setBudgetMax(budgetMax);
         project.setDeadline(deadline);
         project.setStatus(normalizeStatus(status, project.getStatus()));
+        if (skills != null) {
+            project.setSkills(resolveSkills(skills));
+        }
         return projectRepository.save(project);
     }
 
@@ -124,6 +175,13 @@ public class ProjectService {
         if (!"customer".equals(role)) {
             throw new BusinessException("ERR_AUTH_04", "Chỉ customer mới có thể quản lý dự án", HttpStatus.FORBIDDEN);
         }
+    }
+
+    private java.util.Set<com.thuetoi.entity.Skill> resolveSkills(List<String> skills) {
+        if (skills == null || skills.isEmpty() || skillService == null) {
+            return new java.util.HashSet<>();
+        }
+        return skillService.resolveSkills(skills);
     }
 
     private void validateProjectPayload(String title, Double budgetMin, Double budgetMax) {
@@ -164,4 +222,36 @@ public class ProjectService {
         }
         return normalizedStatus.getValue();
     }
+
+    /**
+     * Tìm kiếm project theo kỹ năng (skill-based search)
+     */
+    public List<Project> searchProjectsBySkills(List<String> skillNames, String status) {
+        String normalizedStatus = normalizeOptionalStatus(status);
+        if (skillNames == null || skillNames.isEmpty()) {
+            return getProjectsByStatus(normalizedStatus != null ? normalizedStatus : ProjectStatus.OPEN.getValue());
+        }
+        List<String> normalizedSkills = skillNames.stream()
+            .map(s -> s.trim().toLowerCase())
+            .filter(s -> !s.isEmpty())
+            .distinct()
+            .toList();
+        if (normalizedSkills.isEmpty()) {
+            return getProjectsByStatus(normalizedStatus != null ? normalizedStatus : ProjectStatus.OPEN.getValue());
+        }
+        return projectRepository.searchDistinctBySkillNamesAndOptionalStatus(
+            normalizedSkills,
+            normalizedStatus != null ? normalizedStatus : ProjectStatus.OPEN.getValue()
+        );
+    }
+
+    private String normalizeOptionalStatus(String status) {
+        if (status == null || status.trim().isEmpty()) {
+            return null;
+        }
+        return ProjectStatus.fromValue(status)
+            .orElseThrow(() -> new BusinessException("ERR_SYS_02", "Trạng thái dự án không hợp lệ", HttpStatus.BAD_REQUEST))
+            .getValue();
+    }
 }
+

@@ -5,6 +5,7 @@ import com.thuetoi.dto.request.RegisterRequest;
 import com.thuetoi.dto.request.ResendVerificationRequest;
 import com.thuetoi.dto.request.VerifyOtpRequest;
 import com.thuetoi.dto.response.ApiResponse;
+import com.thuetoi.dto.response.OtpVerificationStatusResponse;
 import com.thuetoi.dto.response.AuthTokenResponse;
 import com.thuetoi.dto.response.AuthUserResponse;
 import com.thuetoi.exception.BusinessException;
@@ -106,6 +107,14 @@ public class AuthController {
     public ApiResponse<Void> verifyEmailOtp(@Valid @RequestBody VerifyOtpRequest request) {
         otpService.verifyEmailOtp(request.getEmail(), request.getOtp());
         return ApiResponse.success("Xác thực email thành công.", null);
+    }
+
+    @GetMapping("/verification-otp-status")
+    public ApiResponse<OtpVerificationStatusResponse> getVerificationOtpStatus(@RequestParam String email) {
+        return ApiResponse.success(
+            "Lấy trạng thái OTP xác thực email thành công.",
+            otpService.getVerificationOtpStatus(email)
+        );
     }
 
     private Long extractCurrentUserId(Principal principal) {
