@@ -2,7 +2,7 @@ import axios from 'axios';
 import { createApiError } from '../utils/apiError';
 
 const ACCESS_TOKEN_STORAGE_KEY = 'thuetoi_access_token';
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8080/api';
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || '/api';
 
 export const getAccessToken = () => localStorage.getItem(ACCESS_TOKEN_STORAGE_KEY);
 
