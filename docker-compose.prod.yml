@@ -21,7 +21,7 @@ services:
       retries: 10
 
   backend:
-    image: ghcr.io/${GHCR_OWNER}/thuetoi-backend:${IMAGE_TAG:-latest}
+    image: ${REGISTRY_IMAGE_BASE}/thuetoi-backend:${IMAGE_TAG:-latest}
     container_name: thuetoi-backend-prod
     restart: unless-stopped
     depends_on:
@@ -47,7 +47,7 @@ services:
       - backend_uploads:/app/uploads
 
   frontend:
-    image: ghcr.io/${GHCR_OWNER}/thuetoi-frontend:${IMAGE_TAG:-latest}
+    image: ${REGISTRY_IMAGE_BASE}/thuetoi-frontend:${IMAGE_TAG:-latest}
     container_name: thuetoi-frontend-prod
     restart: unless-stopped
     depends_on:

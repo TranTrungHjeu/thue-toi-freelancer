@@ -5,6 +5,7 @@ import Badge from '../components/common/Badge';
 import Input from '../components/common/Input';
 import Textarea from '../components/common/Textarea';
 import TagInput from '../components/common/TagInput';
+import InlineErrorBlock from '../components/common/InlineErrorBlock';
 import InfoPanel from '../components/common/InfoPanel';
 import { H1, H2, Text, Caption } from '../components/common/Typography';
 import { useAuth } from '../hooks/useAuth';
@@ -13,6 +14,7 @@ import { useI18n } from '../hooks/useI18n';
 import authApi from '../api/authApi';
 import marketplaceApi from '../api/marketplaceApi';
 import { formatDateTime, formatRole } from '../utils/formatters';
+import { splitApiFormError } from '../utils/formError';
 
 const initialProfileForm = {
   fullName: '',
@@ -31,6 +33,7 @@ const getProfilePageCopy = (locale) => {
       refreshing: 'Reloading profile...',
       editorCaption: 'Editable profile',
       editorTitle: 'Update public-facing information',
+      editorErrorTitle: 'Could not save profile details',
       nameLabel: 'Full name',
       avatarLabel: 'Avatar URL',
       summaryLabel: 'Profile description',
@@ -53,7 +56,7 @@ const getProfilePageCopy = (locale) => {
       createdAt: 'Created at',
       updatedAt: 'Last updated',
       saveSuccess: 'Profile updated successfully.',
-      saveError: 'Could not update the profile.',
+      saveError: 'Could not save the profile form.',
     };
   }
 
@@ -65,6 +68,7 @@ const getProfilePageCopy = (locale) => {
     refreshing: 'Đang tải lại hồ sơ...',
     editorCaption: 'Hồ sơ có thể chỉnh sửa',
     editorTitle: 'Cập nhật thông tin hiển thị công khai',
+    editorErrorTitle: 'Không thể lưu biểu mẫu hồ sơ',
     nameLabel: 'Họ tên',
     avatarLabel: 'Đường dẫn ảnh đại diện',
     summaryLabel: 'Mô tả hồ sơ',
@@ -87,7 +91,7 @@ const getProfilePageCopy = (locale) => {
     createdAt: 'Tạo lúc',
     updatedAt: 'Cập nhật gần nhất',
     saveSuccess: 'Đã cập nhật hồ sơ thành công.',
-    saveError: 'Không thể cập nhật hồ sơ.',
+    saveError: 'Không thể lưu biểu mẫu hồ sơ.',
   };
 };
 
@@ -106,6 +110,8 @@ const ProfilePage = () => {
   const [loadingSkillCatalog, setLoadingSkillCatalog] = useState(false);
   const [refreshingProfile, setRefreshingProfile] = useState(false);
   const [submitting, setSubmitting] = useState(false);
+  const [fieldErrors, setFieldErrors] = useState({});
+  const [formError, setFormError] = useState('');
 
   useEffect(() => {
     setProfileForm({
@@ -155,6 +161,8 @@ const ProfilePage = () => {
       ...previous,
       [field]: event.target.value,
     }));
+    setFieldErrors((previous) => ({ ...previous, [field]: '' }));
+    setFormError('');
   };
 
   const addSuggestedSkill = (skillName) => {
@@ -171,6 +179,8 @@ const ProfilePage = () => {
   const handleSubmitProfile = async (event) => {
     event.preventDefault();
     setSubmitting(true);
+    setFieldErrors({});
+    setFormError('');
     try {
       await authApi.updateMyProfile({
         fullName: profileForm.fullName,
@@ -181,7 +191,9 @@ const ProfilePage = () => {
       await refreshProfile();
       addToast(copy.saveSuccess, 'success');
     } catch (error) {
-      addToast(error?.message || copy.saveError, 'error');
+      const { fieldErrors: nextFieldErrors, formError: nextFormError } = splitApiFormError(error, copy.saveError);
+      setFieldErrors(nextFieldErrors);
+      setFormError(nextFormError);
     } finally {
       setSubmitting(false);
     }
@@ -217,20 +229,28 @@ const ProfilePage = () => {
             {copy.editorTitle}
           </H2>
           <form className="mt-5 flex flex-col gap-4" onSubmit={handleSubmitProfile}>
+            {formError && (
+              <InlineErrorBlock title={copy.editorErrorTitle}>
+                {formError}
+              </InlineErrorBlock>
+            )}
             <Input
               label={copy.nameLabel}
               value={profileForm.fullName}
               onChange={handleFieldChange('fullName')}
+              error={fieldErrors.fullName}
             />
             <Input
               label={copy.avatarLabel}
               value={profileForm.avatarUrl}
               onChange={handleFieldChange('avatarUrl')}
+              error={fieldErrors.avatarUrl}
             />
             <Textarea
               label={copy.summaryLabel}
               value={profileForm.profileDescription}
               onChange={handleFieldChange('profileDescription')}
+              error={fieldErrors.profileDescription}
             />
             <TagInput
               label={copy.skillsLabel}
@@ -240,7 +260,12 @@ const ProfilePage = () => {
               allowedTags={skillCatalog}
               disabled={loadingSkillCatalog || submitting}
               onInvalidTag={handleInvalidSkill}
-              onChange={(skills) => setProfileForm((previous) => ({ ...previous, skills }))}
+              onChange={(skills) => {
+                setProfileForm((previous) => ({ ...previous, skills }));
+                setFieldErrors((previous) => ({ ...previous, skills: '' }));
+                setFormError('');
+              }}
+              error={fieldErrors.skills}
             />
             {loadingSkillCatalog && (
               <Text className="text-sm text-slate-500">{copy.loadingSkills}</Text>

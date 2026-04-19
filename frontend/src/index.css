@@ -329,6 +329,26 @@
     @apply text-xs text-error font-sans italic;
   }
 
+  .ui-inline-error-block {
+    @apply flex items-start gap-3 border border-red-200/90 bg-red-50/80 px-3 py-2.5;
+  }
+
+  .ui-inline-error-icon {
+    @apply mt-0.5 h-4 w-4 shrink-0 text-red-600;
+  }
+
+  .ui-inline-error-content {
+    @apply min-w-0;
+  }
+
+  .ui-inline-error-title {
+    @apply text-[11px] font-semibold uppercase tracking-[0.14em] text-red-700;
+  }
+
+  .ui-inline-error-message {
+    @apply mt-0.5 text-sm leading-relaxed text-red-700;
+  }
+
   .ui-field {
     @apply min-h-11 border-2 border-slate-300 bg-white px-4 py-2 font-sans text-slate-900 outline-none transition-all duration-200;
   }
@@ -423,6 +443,22 @@
 
   .auth-form-theme .ui-error-text {
     @apply text-red-300 not-italic;
+  }
+
+  .auth-form-theme .ui-inline-error-block {
+    @apply border-red-500/35 bg-red-950/45;
+  }
+
+  .auth-form-theme .ui-inline-error-icon {
+    @apply text-red-300;
+  }
+
+  .auth-form-theme .ui-inline-error-title {
+    @apply text-red-200;
+  }
+
+  .auth-form-theme .ui-inline-error-message {
+    @apply text-red-200/95;
   }
 
   .auth-form-theme .ui-field {
