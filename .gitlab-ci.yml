@@ -1,0 +1,138 @@
+stages:
+  - test
+  - build
+  - deploy
+
+workflow:
+  rules:
+    - if: '$CI_PIPELINE_SOURCE == "merge_request_event" && ($CI_MERGE_REQUEST_TARGET_BRANCH_NAME == "develop" || $CI_MERGE_REQUEST_TARGET_BRANCH_NAME == "main")'
+    - if: '$CI_PIPELINE_SOURCE == "push" && ($CI_COMMIT_BRANCH == "develop" || $CI_COMMIT_BRANCH == "main")'
+    - when: never
+
+default:
+  interruptible: true
+
+variables:
+  MAVEN_OPTS: "-Dmaven.repo.local=.m2/repository"
+  DOCKER_HOST: tcp://docker:2375
+  DOCKER_DRIVER: overlay2
+  DOCKER_TLS_CERTDIR: ""
+
+backend_test:
+  stage: test
+  image: maven:3.9.6-eclipse-temurin-21
+  cache:
+    key: maven-cache
+    paths:
+      - backend/.m2/repository
+  script:
+    - cd backend
+    - mvn test
+
+frontend_test:
+  stage: test
+  image: node:20
+  cache:
+    key:
+      files:
+        - frontend/package-lock.json
+    paths:
+      - frontend/.npm
+  script:
+    - cd frontend
+    - npm ci --cache .npm --prefer-offline
+    - npm run lint
+    - npm run build
+
+.build_image_template:
+  stage: build
+  image: docker:27
+  services:
+    - docker:27-dind
+  before_script:
+    - echo "$CI_REGISTRY_PASSWORD" | docker login "$CI_REGISTRY" -u "$CI_REGISTRY_USER" --password-stdin
+  rules:
+    - if: '$CI_PIPELINE_SOURCE == "push" && $CI_COMMIT_BRANCH == "main"'
+
+build_backend_image:
+  extends: .build_image_template
+  needs:
+    - backend_test
+    - frontend_test
+  script:
+    - docker build -f backend/Dockerfile -t "$CI_REGISTRY_IMAGE/thuetoi-backend:$CI_COMMIT_SHA" -t "$CI_REGISTRY_IMAGE/thuetoi-backend:latest" backend
+    - docker push "$CI_REGISTRY_IMAGE/thuetoi-backend:$CI_COMMIT_SHA"
+    - docker push "$CI_REGISTRY_IMAGE/thuetoi-backend:latest"
+
+build_frontend_image:
+  extends: .build_image_template
+  needs:
+    - backend_test
+    - frontend_test
+  script:
+    - docker build -f frontend/Dockerfile.prod -t "$CI_REGISTRY_IMAGE/thuetoi-frontend:$CI_COMMIT_SHA" -t "$CI_REGISTRY_IMAGE/thuetoi-frontend:latest" frontend
+    - docker push "$CI_REGISTRY_IMAGE/thuetoi-frontend:$CI_COMMIT_SHA"
+    - docker push "$CI_REGISTRY_IMAGE/thuetoi-frontend:latest"
+
+deploy_prod:
+  stage: deploy
+  image: alpine:3.20
+  needs:
+    - build_backend_image
+    - build_frontend_image
+  rules:
+    - if: '$CI_PIPELINE_SOURCE == "push" && $CI_COMMIT_BRANCH == "main"'
+  environment:
+    name: production
+    url: $PROD_BASE_URL
+  before_script:
+    - apk add --no-cache openssh-client bash curl
+    - mkdir -p ~/.ssh
+    - chmod 700 ~/.ssh
+    - printf '%s\n' "$PROD_SSH_KEY" | tr -d '\r' > ~/.ssh/id_ed25519
+    - chmod 600 ~/.ssh/id_ed25519
+    - ssh-keyscan -p "$PROD_SSH_PORT" -H "$PROD_SSH_HOST" >> ~/.ssh/known_hosts
+  script:
+    - ssh -p "$PROD_SSH_PORT" "$PROD_SSH_USER@$PROD_SSH_HOST" "mkdir -p /opt/thuetoi"
+    - scp -P "$PROD_SSH_PORT" docker-compose.prod.yml "$PROD_SSH_USER@$PROD_SSH_HOST:/opt/thuetoi/docker-compose.prod.yml"
+    - scp -P "$PROD_SSH_PORT" deploy/deploy-prod.sh "$PROD_SSH_USER@$PROD_SSH_HOST:/opt/thuetoi/deploy-prod.sh"
+    - IMAGE_TAG_B64="$(printf '%s' "$CI_COMMIT_SHA" | base64 | tr -d '\n')"
+    - REGISTRY_HOST_B64="$(printf '%s' "$CI_REGISTRY" | base64 | tr -d '\n')"
+    - REGISTRY_IMAGE_BASE_B64="$(printf '%s' "$CI_REGISTRY_IMAGE" | base64 | tr -d '\n')"
+    - REGISTRY_USERNAME_B64="$(printf '%s' "$REGISTRY_DEPLOY_USERNAME" | base64 | tr -d '\n')"
+    - REGISTRY_PASSWORD_B64="$(printf '%s' "$REGISTRY_DEPLOY_PASSWORD" | base64 | tr -d '\n')"
+    - |
+      cat <<EOF | ssh -p "$PROD_SSH_PORT" "$PROD_SSH_USER@$PROD_SSH_HOST" bash
+      set -euo pipefail
+      chmod +x /opt/thuetoi/deploy-prod.sh
+      touch /opt/thuetoi/.env.prod
+      python3 - <<'PY'
+      import base64
+      from pathlib import Path
+
+      env_path = Path("/opt/thuetoi/.env.prod")
+      existing = {}
+
+      if env_path.exists():
+          for raw_line in env_path.read_text().splitlines():
+              if not raw_line or raw_line.startswith("#") or "=" not in raw_line:
+                  continue
+              key, value = raw_line.split("=", 1)
+              existing[key] = value
+
+      existing.update({
+          "IMAGE_TAG": base64.b64decode("${IMAGE_TAG_B64}").decode(),
+          "REGISTRY_HOST": base64.b64decode("${REGISTRY_HOST_B64}").decode(),
+          "REGISTRY_IMAGE_BASE": base64.b64decode("${REGISTRY_IMAGE_BASE_B64}").decode(),
+          "REGISTRY_USERNAME": base64.b64decode("${REGISTRY_USERNAME_B64}").decode(),
+          "REGISTRY_PASSWORD": base64.b64decode("${REGISTRY_PASSWORD_B64}").decode(),
+      })
+
+      env_path.write_text(
+          "\\n".join(f"{key}={value}" for key, value in existing.items()) + "\\n"
+      )
+      PY
+      /opt/thuetoi/deploy-prod.sh
+      EOF
+    - curl --fail --silent --show-error --retry 10 --retry-delay 5 "$PROD_BASE_URL/"
+    - curl --fail --silent --show-error --retry 10 --retry-delay 5 "$PROD_BASE_URL/api/v1/health"

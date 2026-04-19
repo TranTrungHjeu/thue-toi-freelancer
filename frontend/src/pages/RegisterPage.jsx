@@ -4,12 +4,14 @@ import Input from '../components/common/Input';
 import Select from '../components/common/Select';
 import Textarea from '../components/common/Textarea';
 import Button from '../components/common/Button';
-import Callout from '../components/common/Callout';
+import Spinner from '../components/common/Spinner';
+import InlineErrorBlock from '../components/common/InlineErrorBlock';
 import LanguageSwitcher from '../components/common/LanguageSwitcher';
 import { Caption } from '../components/common/Typography';
 import authApi from '../api/authApi';
 import { useToast } from '../hooks/useToast';
 import { useI18n } from '../hooks/useI18n';
+import { splitApiFormError } from '../utils/formError';
 
 const initialFormState = {
   fullName: '',
@@ -50,9 +52,9 @@ const RegisterPage = () => {
       addToast(t('toasts.auth.registerSuccess'), 'success');
       navigate(`/auth/verify-email?email=${encodeURIComponent(form.email)}`);
     } catch (error) {
-      setFieldErrors(error?.errors || {});
-      setFormError(error?.message || t('toasts.auth.registerFormError'));
-      addToast(error?.message || t('toasts.auth.registerError'), 'error');
+      const { fieldErrors: nextFieldErrors, formError: nextFormError } = splitApiFormError(error, t('toasts.auth.registerFormError'));
+      setFieldErrors(nextFieldErrors);
+      setFormError(nextFormError);
     } finally {
       setSubmitting(false);
     }
@@ -99,15 +101,16 @@ const RegisterPage = () => {
 
           <form className="auth-form-theme flex flex-col gap-3" onSubmit={handleSubmit}>
             {formError && (
-              <Callout type="danger" title={t('authPages.register.errorTitle')}>
+              <InlineErrorBlock title={t('authPages.register.errorTitle')}>
                 {formError}
-              </Callout>
+              </InlineErrorBlock>
             )}
 
             <Input
               label={t('authPages.register.fullNameLabel')}
               placeholder={t('authPages.register.fullNamePlaceholder')}
               value={form.fullName}
+              disabled={submitting}
               onChange={handleChange('fullName')}
               error={fieldErrors.fullName}
               autoComplete="name"
@@ -119,6 +122,7 @@ const RegisterPage = () => {
                 type="email"
                 placeholder={t('authPages.register.emailPlaceholder')}
                 value={form.email}
+                disabled={submitting}
                 onChange={handleChange('email')}
                 error={fieldErrors.email}
                 autoComplete="email"
@@ -126,6 +130,7 @@ const RegisterPage = () => {
               <Select
                 label={t('authPages.register.roleLabel')}
                 value={form.role}
+                disabled={submitting}
                 onChange={handleChange('role')}
                 error={fieldErrors.role}
                 options={roleOptions}
@@ -137,6 +142,7 @@ const RegisterPage = () => {
               type="password"
               placeholder={t('authPages.register.passwordPlaceholder')}
               value={form.password}
+              disabled={submitting}
               onChange={handleChange('password')}
               error={fieldErrors.password}
               autoComplete="new-password"
@@ -146,6 +152,7 @@ const RegisterPage = () => {
               label={t('authPages.register.profileDescriptionLabel')}
               placeholder={t('authPages.register.profileDescriptionPlaceholder')}
               value={form.profileDescription}
+              disabled={submitting}
               onChange={handleChange('profileDescription')}
               error={fieldErrors.profileDescription}
               rows={2}
@@ -153,7 +160,12 @@ const RegisterPage = () => {
             />
 
             <Button type="submit" disabled={submitting} className="mt-1 w-full py-3.5 text-[15px]">
-              {submitting ? t('authPages.register.submitting') : t('authPages.register.submit')}
+              {submitting ? (
+                <>
+                  <Spinner size="sm" inline tone="current" className="text-white shrink-0" />
+                  {t('authPages.register.submitting')}
+                </>
+              ) : t('authPages.register.submit')}
             </Button>
 
             <div className="flex items-center gap-4">
@@ -168,7 +180,7 @@ const RegisterPage = () => {
               {t('authPages.register.footerPrompt')}{' '}
               <Link
                 to="/auth/login"
-                className="font-semibold text-primary-200 transition-colors hover:text-primary-100"
+                className={`font-semibold text-primary-200 transition-colors hover:text-primary-100 ${submitting ? 'pointer-events-none opacity-60' : ''}`}
               >
                 {t('authPages.register.footerAction')}
               </Link>

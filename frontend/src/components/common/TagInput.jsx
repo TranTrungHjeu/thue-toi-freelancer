@@ -4,6 +4,7 @@ import React, { useEffect, useState } from 'react';
 import { Caption } from './Typography';
 import Tag from './Tag';
 import { useI18n } from '../../hooks/useI18n';
+import { getFieldErrorMessage } from '../../utils/formError';
 
 /**
  * Advanced Tag Input for skills or categories.
@@ -18,9 +19,11 @@ const TagInput = ({
   allowedTags,
   onInvalidTag,
   disabled = false,
+  error,
   className = "" 
 }) => {
   const { locale } = useI18n();
+  const normalizedError = getFieldErrorMessage(error);
   const [tags, setTags] = useState(initialTags);
   const [inputValue, setInputValue] = useState("");
   const resolvedPlaceholder = placeholder || (locale === 'vi' ? 'Nhập và nhấn Enter...' : 'Type and press Enter...');
@@ -79,7 +82,7 @@ const TagInput = ({
   return (
     <div className={`flex flex-col gap-2 ${className}`}>
       {label && <Caption className="font-bold text-secondary-900 uppercase tracking-tighter">{label}</Caption>}
-      <div className={`flex flex-wrap gap-2 p-2 border-2 min-h-[48px] transition-colors ${disabled ? 'cursor-not-allowed border-slate-200 bg-slate-100' : 'border-slate-950 bg-white focus-within:border-primary-500'}`}>
+      <div className={`flex flex-wrap gap-2 p-2 border-2 min-h-[48px] transition-colors ${normalizedError ? 'border-error' : ''} ${disabled ? 'cursor-not-allowed border-slate-200 bg-slate-100' : 'border-slate-950 bg-white focus-within:border-primary-500'}`}>
         {tags.map((tag, idx) => (
           <Tag key={idx} onRemove={() => removeTag(tag)}>
             {tag}
@@ -95,6 +98,7 @@ const TagInput = ({
           className={`flex-1 min-w-[120px] outline-none text-sm font-medium py-1 ${disabled ? 'cursor-not-allowed bg-transparent text-slate-400' : ''}`}
         />
       </div>
+      {normalizedError && <span className="ui-error-text">{normalizedError}</span>}
       <Caption className="text-[10px] text-slate-400">{resolvedHelperText}</Caption>
     </div>
   );

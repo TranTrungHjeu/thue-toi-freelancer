@@ -1,15 +1,17 @@
 import React, { useRef } from 'react';
 import { PasteClipboard } from 'iconoir-react';
 import { useI18n } from '../../hooks/useI18n';
+import { getFieldErrorMessage } from '../../utils/formError';
 
 /**
  * Cụm nhập mã xác thực 6 ô, tự chuyển ô và hỗ trợ dán nhanh.
  * value: string (tối đa 6 ký tự số)
  * onChange: (newValue: string) => void
  */
-const OtpInput = ({ value = '', onChange, length = 6, label, pasteLabel }) => {
+const OtpInput = ({ value = '', onChange, length = 6, label, pasteLabel, error }) => {
   const inputRefs = useRef([]);
   const { locale } = useI18n();
+  const normalizedError = getFieldErrorMessage(error);
   const digits = Array.from({ length }, (_, i) => value[i] || '');
   const resolvedLabel = label || (locale === 'vi' ? 'Mã xác thực' : 'Verification code');
   const resolvedPasteLabel = pasteLabel || (locale === 'vi' ? 'Dán nhanh' : 'Quick paste');
@@ -96,10 +98,15 @@ const OtpInput = ({ value = '', onChange, length = 6, label, pasteLabel }) => {
             onKeyDown={(e) => handleKeyDown(index, e)}
             onPaste={handlePasteOnInput}
             onClick={(e) => e.target.select()}
-            className={`ui-field auth-otp-cell ${digit ? 'auth-otp-cell-filled' : ''}`}
+            className={`ui-field auth-otp-cell ${digit ? 'auth-otp-cell-filled' : ''} ${normalizedError ? 'ui-field-error' : ''}`}
           />
         ))}
       </div>
+      {normalizedError && (
+        <span className="ui-error-text">
+          {normalizedError}
+        </span>
+      )}
     </div>
   );
 };

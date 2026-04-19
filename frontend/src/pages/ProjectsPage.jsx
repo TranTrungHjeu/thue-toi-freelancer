@@ -5,6 +5,7 @@ import Input from '../components/common/Input';
 import Textarea from '../components/common/Textarea';
 import Badge from '../components/common/Badge';
 import Callout from '../components/common/Callout';
+import InlineErrorBlock from '../components/common/InlineErrorBlock';
 import SearchInput from '../components/common/SearchInput';
 import Select from '../components/common/Select';
 import TagInput from '../components/common/TagInput';
@@ -25,6 +26,7 @@ import {
   getBidStatusMeta,
   getProjectStatusMeta,
 } from '../utils/formatters';
+import { splitApiFormError } from '../utils/formError';
 
 const initialProjectForm = {
   title: '',
@@ -167,6 +169,10 @@ const ProjectsPage = () => {
   const [selectedProjectBids, setSelectedProjectBids] = useState([]);
   const [submittingProject, setSubmittingProject] = useState(false);
   const [submittingBid, setSubmittingBid] = useState(false);
+  const [projectFieldErrors, setProjectFieldErrors] = useState({});
+  const [projectFormError, setProjectFormError] = useState('');
+  const [bidFieldErrors, setBidFieldErrors] = useState({});
+  const [bidFormError, setBidFormError] = useState('');
   const [loadingProjectBids, setLoadingProjectBids] = useState(false);
   const visibleProjectBidsLoading = useMinimumLoadingState(loadingProjectBids, 500);
   const [editingProjectId, setEditingProjectId] = useState(null);
@@ -284,6 +290,8 @@ const ProjectsPage = () => {
       ...previous,
       [field]: event.target.value,
     }));
+    setProjectFieldErrors((previous) => ({ ...previous, [field]: '' }));
+    setProjectFormError('');
   };
 
   const handleBidFieldChange = (field) => (event) => {
@@ -291,11 +299,15 @@ const ProjectsPage = () => {
       ...previous,
       [field]: event.target.value,
     }));
+    setBidFieldErrors((previous) => ({ ...previous, [field]: '' }));
+    setBidFormError('');
   };
 
   const resetProjectComposer = () => {
     setProjectForm(initialProjectForm);
     setEditingProjectId(null);
+    setProjectFieldErrors({});
+    setProjectFormError('');
   };
 
   const startEditingProject = (project) => {
@@ -308,11 +320,15 @@ const ProjectsPage = () => {
       deadline: formatDateForInput(project.deadline),
       skills: normalizeSkillNames(project.skills),
     });
+    setProjectFieldErrors({});
+    setProjectFormError('');
   };
 
   const handleSubmitProject = async (event) => {
     event.preventDefault();
     setSubmittingProject(true);
+    setProjectFieldErrors({});
+    setProjectFormError('');
 
     const payload = {
       title: projectForm.title,
@@ -334,7 +350,9 @@ const ProjectsPage = () => {
       resetProjectComposer();
       await loadPageData();
     } catch (error) {
-      addToast(error?.message || t('toasts.projects.saveError'), 'error');
+      const { fieldErrors, formError } = splitApiFormError(error, t('toasts.projects.saveError'));
+      setProjectFieldErrors(fieldErrors);
+      setProjectFormError(formError);
     } finally {
       setSubmittingProject(false);
     }
@@ -412,6 +430,8 @@ const ProjectsPage = () => {
     }
 
     setSubmittingBid(true);
+    setBidFieldErrors({});
+    setBidFormError('');
     try {
       await marketplaceApi.createBid({
         projectId: selectedProject.id,
@@ -422,9 +442,13 @@ const ProjectsPage = () => {
       });
       addToast(t('toasts.projects.submitSuccess'), 'success');
       setBidForm(initialBidForm);
+      setBidFieldErrors({});
+      setBidFormError('');
       await loadPageData();
     } catch (error) {
-      addToast(error?.message || t('toasts.projects.submitError'), 'error');
+      const { fieldErrors, formError } = splitApiFormError(error, t('toasts.projects.submitError'));
+      setBidFieldErrors(fieldErrors);
+      setBidFormError(formError);
     } finally {
       setSubmittingBid(false);
     }
@@ -500,13 +524,18 @@ const ProjectsPage = () => {
               )}
 
               <form className="mt-5 flex flex-col gap-4" onSubmit={handleSubmitProject}>
-                <Input label={copy.customerComposer.titleLabel} placeholder={copy.customerComposer.titlePlaceholder} value={projectForm.title} onChange={handleProjectFieldChange('title')} />
-                <Textarea label={copy.customerComposer.descriptionLabel} placeholder={copy.customerComposer.descriptionPlaceholder} value={projectForm.description} onChange={handleProjectFieldChange('description')} />
+                {projectFormError && (
+                  <InlineErrorBlock title={copy.customerComposer.errorTitle}>
+                    {projectFormError}
+                  </InlineErrorBlock>
+                )}
+                <Input label={copy.customerComposer.titleLabel} placeholder={copy.customerComposer.titlePlaceholder} value={projectForm.title} onChange={handleProjectFieldChange('title')} error={projectFieldErrors.title} />
+                <Textarea label={copy.customerComposer.descriptionLabel} placeholder={copy.customerComposer.descriptionPlaceholder} value={projectForm.description} onChange={handleProjectFieldChange('description')} error={projectFieldErrors.description} />
                 <div className="grid gap-4 md:grid-cols-2">
-                  <Input label={copy.customerComposer.budgetMinLabel} type="number" min="0" value={projectForm.budgetMin} onChange={handleProjectFieldChange('budgetMin')} />
-                  <Input label={copy.customerComposer.budgetMaxLabel} type="number" min="0" value={projectForm.budgetMax} onChange={handleProjectFieldChange('budgetMax')} />
+                  <Input label={copy.customerComposer.budgetMinLabel} type="number" min="0" value={projectForm.budgetMin} onChange={handleProjectFieldChange('budgetMin')} error={projectFieldErrors.budgetMin} />
+                  <Input label={copy.customerComposer.budgetMaxLabel} type="number" min="0" value={projectForm.budgetMax} onChange={handleProjectFieldChange('budgetMax')} error={projectFieldErrors.budgetMax} />
                 </div>
-                <Input label={copy.customerComposer.deadlineLabel} type="date" value={projectForm.deadline} onChange={handleProjectFieldChange('deadline')} />
+                <Input label={copy.customerComposer.deadlineLabel} type="date" value={projectForm.deadline} onChange={handleProjectFieldChange('deadline')} error={projectFieldErrors.deadline} />
                 <TagInput
                   label={extraCopy.projectSkillsLabel}
                   placeholder={extraCopy.projectSkillsPlaceholder}
@@ -515,7 +544,12 @@ const ProjectsPage = () => {
                   allowedTags={skillCatalog}
                   disabled={loadingSkillCatalog || submittingProject}
                   onInvalidTag={handleInvalidSkill}
-                  onChange={(skills) => setProjectForm((previous) => ({ ...previous, skills }))}
+                  onChange={(skills) => {
+                    setProjectForm((previous) => ({ ...previous, skills }));
+                    setProjectFieldErrors((previous) => ({ ...previous, skills: '' }));
+                    setProjectFormError('');
+                  }}
+                  error={projectFieldErrors.skills}
                 />
                 {loadingSkillCatalog && (
                   <Text className="text-sm text-slate-500">{extraCopy.skillCatalogLoading}</Text>
@@ -856,9 +890,14 @@ const ProjectsPage = () => {
                 </Callout>
               ) : (
                 <form className="mt-5 flex flex-col gap-4" onSubmit={handleSubmitBid}>
-                  <Input label={copy.bidComposer.priceLabel} type="number" min="0" value={bidForm.price} onChange={handleBidFieldChange('price')} />
-                  <Input label={copy.bidComposer.estimatedLabel} placeholder={copy.bidComposer.estimatedPlaceholder} value={bidForm.estimatedTime} onChange={handleBidFieldChange('estimatedTime')} />
-                  <Textarea label={copy.bidComposer.messageLabel} placeholder={copy.bidComposer.messagePlaceholder} value={bidForm.message} onChange={handleBidFieldChange('message')} />
+                  {bidFormError && (
+                    <InlineErrorBlock title={copy.bidComposer.errorTitle}>
+                      {bidFormError}
+                    </InlineErrorBlock>
+                  )}
+                  <Input label={copy.bidComposer.priceLabel} type="number" min="0" value={bidForm.price} onChange={handleBidFieldChange('price')} error={bidFieldErrors.price} />
+                  <Input label={copy.bidComposer.estimatedLabel} placeholder={copy.bidComposer.estimatedPlaceholder} value={bidForm.estimatedTime} onChange={handleBidFieldChange('estimatedTime')} error={bidFieldErrors.estimatedTime} />
+                  <Textarea label={copy.bidComposer.messageLabel} placeholder={copy.bidComposer.messagePlaceholder} value={bidForm.message} onChange={handleBidFieldChange('message')} error={bidFieldErrors.message} />
                   <Button type="submit" disabled={submittingBid}>
                     {submittingBid ? copy.bidComposer.submitting : copy.bidComposer.submit}
                   </Button>

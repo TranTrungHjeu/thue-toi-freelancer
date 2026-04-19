@@ -2,12 +2,14 @@ import React, { useMemo, useState } from 'react';
 import { Link, useLocation, useNavigate, useSearchParams } from 'react-router-dom';
 import Input from '../components/common/Input';
 import Button from '../components/common/Button';
-import Callout from '../components/common/Callout';
+import Spinner from '../components/common/Spinner';
+import InlineErrorBlock from '../components/common/InlineErrorBlock';
 import LanguageSwitcher from '../components/common/LanguageSwitcher';
 import { Caption } from '../components/common/Typography';
 import { useToast } from '../hooks/useToast';
 import { useAuth } from '../hooks/useAuth';
 import { useI18n } from '../hooks/useI18n';
+import { splitApiFormError } from '../utils/formError';
 
 const LoginPage = () => {
   const [searchParams] = useSearchParams();
@@ -22,6 +24,7 @@ const LoginPage = () => {
 
   const [email, setEmail] = useState(initialEmail);
   const [password, setPassword] = useState('');
+  const [fieldErrors, setFieldErrors] = useState({});
   const [rememberMe, setRememberMe] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [formError, setFormError] = useState('');
@@ -29,6 +32,7 @@ const LoginPage = () => {
   const handleSubmit = async (event) => {
     event.preventDefault();
     setSubmitting(true);
+    setFieldErrors({});
     setFormError('');
 
     try {
@@ -41,8 +45,9 @@ const LoginPage = () => {
         navigate(`/auth/verify-email?email=${encodeURIComponent(email)}`);
         return;
       }
-      setFormError(error?.message || t('toasts.auth.loginFormError'));
-      addToast(error?.message || t('toasts.auth.loginError'), 'error');
+      const { fieldErrors: nextFieldErrors, formError: nextFormError } = splitApiFormError(error, t('toasts.auth.loginFormError'));
+      setFieldErrors(nextFieldErrors);
+      setFormError(nextFormError);
     } finally {
       setSubmitting(false);
     }
@@ -89,9 +94,9 @@ const LoginPage = () => {
 
           <form className="auth-form-theme flex flex-col gap-3.5" onSubmit={handleSubmit}>
             {formError && (
-              <Callout type="danger" title={t('authPages.login.errorTitle')}>
+              <InlineErrorBlock title={t('authPages.login.errorTitle')}>
                 {formError}
-              </Callout>
+              </InlineErrorBlock>
             )}
 
             <Input
@@ -99,7 +104,9 @@ const LoginPage = () => {
               type="email"
               placeholder={t('authPages.login.emailPlaceholder')}
               value={email}
+              disabled={submitting}
               onChange={(e) => setEmail(e.target.value)}
+              error={fieldErrors.email}
               autoComplete="email"
             />
 
@@ -108,7 +115,9 @@ const LoginPage = () => {
               type="password"
               placeholder={t('authPages.login.passwordPlaceholder')}
               value={password}
+              disabled={submitting}
               onChange={(e) => setPassword(e.target.value)}
+              error={fieldErrors.password}
               autoComplete="current-password"
             />
 
@@ -117,6 +126,7 @@ const LoginPage = () => {
                 <input
                   type="checkbox"
                   checked={rememberMe}
+                  disabled={submitting}
                   onChange={(e) => setRememberMe(e.target.checked)}
                   className="h-4 w-4 cursor-pointer border border-white/30 bg-transparent accent-primary-600"
                 />
@@ -124,14 +134,19 @@ const LoginPage = () => {
               </label>
               <Link
                 to={`/auth/verify-email?email=${encodeURIComponent(email)}`}
-                className="text-sm font-semibold text-primary-200 transition-colors hover:text-primary-100"
+                className={`text-sm font-semibold text-primary-200 transition-colors hover:text-primary-100 ${submitting ? 'pointer-events-none opacity-60' : ''}`}
               >
                 {t('authPages.login.unverifiedLink')}
               </Link>
             </div>
 
             <Button type="submit" disabled={submitting} className="mt-1 w-full py-3.5 text-[15px]">
-              {submitting ? t('authPages.login.submitting') : t('authPages.login.submit')}
+              {submitting ? (
+                <>
+                  <Spinner size="sm" inline tone="current" className="text-white shrink-0" />
+                  {t('authPages.login.submitting')}
+                </>
+              ) : t('authPages.login.submit')}
             </Button>
 
             <div className="flex items-center gap-4">
@@ -144,7 +159,7 @@ const LoginPage = () => {
 
             <Link
               to="/auth/register"
-              className="flex w-full items-center justify-center gap-2 border border-white/20 bg-white/5 px-6 py-3.5 text-sm font-medium text-slate-100 transition-colors hover:border-white/35 hover:bg-white/10"
+              className={`flex w-full items-center justify-center gap-2 border border-white/20 bg-white/5 px-6 py-3.5 text-sm font-medium text-slate-100 transition-colors hover:border-white/35 hover:bg-white/10 ${submitting ? 'pointer-events-none opacity-60' : ''}`}
             >
               {t('authPages.login.navAction')}
             </Link>
@@ -154,7 +169,7 @@ const LoginPage = () => {
             {t('authPages.login.footerPrompt')}{' '}
             <Link
               to="/auth/register"
-              className="font-semibold text-primary-200 transition-colors hover:text-primary-100"
+              className={`font-semibold text-primary-200 transition-colors hover:text-primary-100 ${submitting ? 'pointer-events-none opacity-60' : ''}`}
             >
               {t('authPages.login.footerAction')}
             </Link>

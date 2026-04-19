@@ -8,12 +8,14 @@ import Input from '../common/Input';
 import Select from '../common/Select';
 import Textarea from '../common/Textarea';
 import Button from '../common/Button';
-import Callout from '../common/Callout';
+import Spinner from '../common/Spinner';
+import InlineErrorBlock from '../common/InlineErrorBlock';
 import OtpInput from '../common/OtpInput';
 import authApi from '../../api/authApi';
 import { useAuth } from '../../hooks/useAuth';
 import { useToast } from '../../hooks/useToast';
 import { useI18n } from '../../hooks/useI18n';
+import { splitApiFormError } from '../../utils/formError';
 
 const RESEND_COOLDOWN_SECONDS = 60;
 const OTP_LENGTH = 6;
@@ -107,6 +109,7 @@ const AuthModal = ({
   const [panelDirection, setPanelDirection] = useState(1);
 
   const [loginForm, setLoginForm] = useState({ email: '', password: '' });
+  const [loginFieldErrors, setLoginFieldErrors] = useState({});
   const [loginSubmitting, setLoginSubmitting] = useState(false);
   const [loginError, setLoginError] = useState('');
 
@@ -116,6 +119,7 @@ const AuthModal = ({
   const [registerError, setRegisterError] = useState('');
 
   const [verifyForm, setVerifyForm] = useState({ email: '', otp: '' });
+  const [verifyFieldErrors, setVerifyFieldErrors] = useState({});
   const [verifySubmitting, setVerifySubmitting] = useState(false);
   const [verifyError, setVerifyError] = useState('');
   const [resendSubmitting, setResendSubmitting] = useState(false);
@@ -134,6 +138,7 @@ const AuthModal = ({
 
   const activeTabMode = mode === 'register' ? 'register' : 'login';
   const isVerifyMode = mode === 'verify';
+  const isPrimaryAuthSubmitting = loginSubmitting || registerSubmitting;
 
   useLayoutEffect(() => {
     if (!isOpen) {
@@ -151,9 +156,11 @@ const AuthModal = ({
     setVerifySubmitting(false);
     setResendSubmitting(false);
     setLoginError('');
+    setLoginFieldErrors({});
     setRegisterError('');
     setRegisterFieldErrors({});
     setVerifyError('');
+    setVerifyFieldErrors({});
     setResendCooldown(0);
     setOtpExpiresIn(0);
     setPendingCredential({ email: '', password: '' });
@@ -237,8 +244,11 @@ const AuthModal = ({
     setPanelDirection(getModeIndex(normalizedMode) >= getModeIndex(mode) ? 1 : -1);
     setMode(normalizedMode);
     setLoginError('');
+    setLoginFieldErrors({});
     setRegisterError('');
+    setRegisterFieldErrors({});
     setVerifyError('');
+    setVerifyFieldErrors({});
     lastAutoSubmittedOtpRef.current = '';
 
     if (normalizedMode === 'login') {
@@ -255,8 +265,11 @@ const AuthModal = ({
   }, [loginForm.email, mode, pendingCredential.email, registerForm.email, verifyForm.email]);
 
   const handleClose = useCallback(() => {
+    if (isPrimaryAuthSubmitting) {
+      return;
+    }
     onClose();
-  }, [onClose]);
+  }, [isPrimaryAuthSubmitting, onClose]);
 
   const syncOtpStatus = useCallback(async (email) => {
     if (!email) {
@@ -292,6 +305,7 @@ const AuthModal = ({
 
   const submitVerification = useCallback(async () => {
     setVerifySubmitting(true);
+    setVerifyFieldErrors({});
     setVerifyError('');
 
     try {
@@ -311,9 +325,9 @@ const AuthModal = ({
       setLoginForm((previous) => ({ ...previous, email: verifyForm.email, password: '' }));
       switchMode('login', { email: verifyForm.email });
     } catch (error) {
-      const message = error?.message || t('toasts.auth.verifyFormError');
-      setVerifyError(message);
-      addToast(message, 'error');
+      const { fieldErrors, formError } = splitApiFormError(error, t('toasts.auth.verifyFormError'));
+      setVerifyFieldErrors(fieldErrors);
+      setVerifyError(formError);
     } finally {
       setVerifySubmitting(false);
     }
@@ -343,6 +357,7 @@ const AuthModal = ({
   const handleLoginSubmit = async (event) => {
     event.preventDefault();
     setLoginSubmitting(true);
+    setLoginFieldErrors({});
     setLoginError('');
 
     try {
@@ -351,15 +366,16 @@ const AuthModal = ({
       if (error?.code === 'ERR_AUTH_07') {
         setPendingCredential({ email: loginForm.email, password: loginForm.password });
         setVerifyForm({ email: loginForm.email, otp: '' });
+        setVerifyFieldErrors({});
         setVerifyError('');
         switchMode('verify', { email: loginForm.email });
         void syncOtpStatus(loginForm.email);
         addToast(t('toasts.auth.unverifiedRedirect'), 'warning');
         return;
       }
-      const message = error?.message || t('toasts.auth.loginFormError');
-      setLoginError(message);
-      addToast(message, 'error');
+      const { fieldErrors, formError } = splitApiFormError(error, t('toasts.auth.loginFormError'));
+      setLoginFieldErrors(fieldErrors);
+      setLoginError(formError);
     } finally {
       setLoginSubmitting(false);
     }
@@ -381,11 +397,9 @@ const AuthModal = ({
       void syncOtpStatus(registerForm.email);
       addToast(t('toasts.auth.registerSuccess'), 'success');
     } catch (error) {
-      const fieldErrors = error?.errors || {};
-      const message = error?.message || t('toasts.auth.registerFormError');
+      const { fieldErrors, formError } = splitApiFormError(error, t('toasts.auth.registerFormError'));
       setRegisterFieldErrors(fieldErrors);
-      setRegisterError(message);
-      addToast(message, 'error');
+      setRegisterError(formError);
     } finally {
       setRegisterSubmitting(false);
     }
@@ -402,6 +416,7 @@ const AuthModal = ({
     }
 
     setResendSubmitting(true);
+    setVerifyFieldErrors({});
     setVerifyError('');
 
     try {
@@ -409,9 +424,9 @@ const AuthModal = ({
       await syncOtpStatus(verifyForm.email);
       addToast(t('toasts.auth.resendSuccess'), 'success');
     } catch (error) {
-      const message = error?.message || t('toasts.auth.resendFormError');
-      setVerifyError(message);
-      addToast(message, 'error');
+      const { fieldErrors, formError } = splitApiFormError(error, t('toasts.auth.resendFormError'));
+      setVerifyFieldErrors(fieldErrors);
+      setVerifyError(formError);
 
       if (error?.code === 'ERR_AUTH_10') {
         await syncOtpStatus(verifyForm.email);
@@ -463,7 +478,8 @@ const AuthModal = ({
                   <button
                     type="button"
                     onClick={handleClose}
-                    className="auth-modal-close"
+                    disabled={isPrimaryAuthSubmitting}
+                    className="auth-modal-close disabled:cursor-not-allowed disabled:opacity-60"
                   >
                     <X className="h-4 w-4" />
                   </button>
@@ -478,8 +494,9 @@ const AuthModal = ({
                           <button
                             key={tabMode}
                             type="button"
+                            disabled={isPrimaryAuthSubmitting}
                             onClick={() => switchMode(tabMode, { email: tabMode === 'login' ? (loginForm.email || verifyForm.email || registerForm.email) : (registerForm.email || loginForm.email || verifyForm.email) })}
-                            className="auth-modal-tab"
+                            className="auth-modal-tab disabled:cursor-not-allowed disabled:opacity-60"
                           >
                             {isActive && (
                               <motion.div
@@ -540,9 +557,9 @@ const AuthModal = ({
                   >
                     <form className="auth-modal-form" onSubmit={handleLoginSubmit}>
                   {loginError && (
-                    <Callout type="danger" title={t('authPages.login.errorTitle')}>
+                    <InlineErrorBlock title={t('authPages.login.errorTitle')}>
                       {loginError}
-                    </Callout>
+                    </InlineErrorBlock>
                   )}
 
                   <Input
@@ -550,7 +567,9 @@ const AuthModal = ({
                     type="email"
                     placeholder={t('authPages.login.emailPlaceholder')}
                     value={loginForm.email}
+                    disabled={loginSubmitting}
                     onChange={(event) => setLoginForm((prev) => ({ ...prev, email: event.target.value }))}
+                    error={loginFieldErrors.email}
                     autoComplete="email"
                   />
 
@@ -559,7 +578,9 @@ const AuthModal = ({
                     type="password"
                     placeholder={t('authPages.login.passwordPlaceholder')}
                     value={loginForm.password}
+                    disabled={loginSubmitting}
                     onChange={(event) => setLoginForm((prev) => ({ ...prev, password: event.target.value }))}
+                    error={loginFieldErrors.password}
                     autoComplete="current-password"
                   />
 
@@ -567,6 +588,7 @@ const AuthModal = ({
                     <button
                       type="button"
                       className="auth-modal-primary-link"
+                      disabled={loginSubmitting}
                       onClick={() => {
                         setVerifyForm((prev) => ({ ...prev, email: loginForm.email }));
                         switchMode('verify', { email: loginForm.email });
@@ -577,6 +599,7 @@ const AuthModal = ({
                     <button
                       type="button"
                       className="auth-modal-secondary-link"
+                      disabled={loginSubmitting}
                       onClick={() => switchMode('register', { email: loginForm.email })}
                     >
                       {t('authPages.login.navAction')}
@@ -584,7 +607,12 @@ const AuthModal = ({
                   </div>
 
                   <Button type="submit" disabled={loginSubmitting} className="mt-1 w-full py-3.5 text-[15px]">
-                    {loginSubmitting ? t('authPages.login.submitting') : t('authPages.login.submit')}
+                    {loginSubmitting ? (
+                      <>
+                        <Spinner size="sm" inline tone="current" className="text-white shrink-0" />
+                        {t('authPages.login.submitting')}
+                      </>
+                    ) : t('authPages.login.submit')}
                   </Button>
                     </form>
                   </MotionDiv>
@@ -602,15 +630,16 @@ const AuthModal = ({
                   >
                     <form className="auth-modal-form" onSubmit={handleRegisterSubmit}>
                   {registerError && (
-                    <Callout type="danger" title={t('authPages.register.errorTitle')}>
+                    <InlineErrorBlock title={t('authPages.register.errorTitle')}>
                       {registerError}
-                    </Callout>
+                    </InlineErrorBlock>
                   )}
 
                   <Input
                     label={t('authPages.register.fullNameLabel')}
                     placeholder={t('authPages.register.fullNamePlaceholder')}
                     value={registerForm.fullName}
+                    disabled={registerSubmitting}
                     onChange={(event) => setRegisterForm((prev) => ({ ...prev, fullName: event.target.value }))}
                     error={registerFieldErrors.fullName}
                     autoComplete="name"
@@ -622,6 +651,7 @@ const AuthModal = ({
                       type="email"
                       placeholder={t('authPages.register.emailPlaceholder')}
                       value={registerForm.email}
+                      disabled={registerSubmitting}
                       onChange={(event) => setRegisterForm((prev) => ({ ...prev, email: event.target.value }))}
                       error={registerFieldErrors.email}
                       autoComplete="email"
@@ -629,6 +659,7 @@ const AuthModal = ({
                     <Select
                       label={t('authPages.register.roleLabel')}
                       value={registerForm.role}
+                      disabled={registerSubmitting}
                       onChange={(event) => setRegisterForm((prev) => ({ ...prev, role: event.target.value }))}
                       error={registerFieldErrors.role}
                       options={roleOptions}
@@ -640,6 +671,7 @@ const AuthModal = ({
                     type="password"
                     placeholder={t('authPages.register.passwordPlaceholder')}
                     value={registerForm.password}
+                    disabled={registerSubmitting}
                     onChange={(event) => setRegisterForm((prev) => ({ ...prev, password: event.target.value }))}
                     error={registerFieldErrors.password}
                     autoComplete="new-password"
@@ -649,6 +681,7 @@ const AuthModal = ({
                     label={t('authPages.register.profileDescriptionLabel')}
                     placeholder={t('authPages.register.profileDescriptionPlaceholder')}
                     value={registerForm.profileDescription}
+                    disabled={registerSubmitting}
                     onChange={(event) => setRegisterForm((prev) => ({ ...prev, profileDescription: event.target.value }))}
                     error={registerFieldErrors.profileDescription}
                     rows={2}
@@ -656,7 +689,12 @@ const AuthModal = ({
                   />
 
                   <Button type="submit" disabled={registerSubmitting} className="mt-1 w-full py-3.5 text-[15px]">
-                    {registerSubmitting ? t('authPages.register.submitting') : t('authPages.register.submit')}
+                    {registerSubmitting ? (
+                      <>
+                        <Spinner size="sm" inline tone="current" className="text-white shrink-0" />
+                        {t('authPages.register.submitting')}
+                      </>
+                    ) : t('authPages.register.submit')}
                   </Button>
                     </form>
                   </MotionDiv>
@@ -674,9 +712,9 @@ const AuthModal = ({
                   >
                     <form className="auth-modal-form" onSubmit={handleVerifySubmit}>
                   {verifyError && (
-                    <Callout type="danger" title={t('authPages.verify.errorTitle')}>
+                    <InlineErrorBlock title={t('authPages.verify.errorTitle')}>
                       {verifyError}
-                    </Callout>
+                    </InlineErrorBlock>
                   )}
 
                   <Input
@@ -684,6 +722,7 @@ const AuthModal = ({
                     type="email"
                     placeholder={t('authPages.verify.emailPlaceholder')}
                     value={verifyForm.email}
+                    error={verifyFieldErrors.email}
                     onChange={(event) => {
                       lastAutoSubmittedOtpRef.current = '';
                       setVerifyForm((prev) => ({ ...prev, email: event.target.value }));
@@ -693,6 +732,7 @@ const AuthModal = ({
 
                   <OtpInput
                     value={verifyForm.otp}
+                    error={verifyFieldErrors.otp}
                     onChange={(otp) => {
                       if (`${otp || ''}`.trim().length < OTP_LENGTH) {
                         lastAutoSubmittedOtpRef.current = '';

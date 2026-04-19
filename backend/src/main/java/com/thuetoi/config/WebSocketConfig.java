@@ -16,9 +16,14 @@ import org.springframework.web.socket.config.annotation.WebSocketMessageBrokerCo
 public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
 
     private final WebSocketAuthChannelInterceptor webSocketAuthChannelInterceptor;
+    private final AllowedOriginProperties allowedOriginProperties;
 
-    public WebSocketConfig(WebSocketAuthChannelInterceptor webSocketAuthChannelInterceptor) {
+    public WebSocketConfig(
+        WebSocketAuthChannelInterceptor webSocketAuthChannelInterceptor,
+        AllowedOriginProperties allowedOriginProperties
+    ) {
         this.webSocketAuthChannelInterceptor = webSocketAuthChannelInterceptor;
+        this.allowedOriginProperties = allowedOriginProperties;
     }
 
     @Override
@@ -32,9 +37,8 @@ public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
 
     @Override
     public void registerStompEndpoints(StompEndpointRegistry registry) {
-        // Endpoint cho WebSocket connection từ frontend
         registry.addEndpoint("/ws")
-                .setAllowedOrigins("http://localhost:5173", "http://localhost:5174")
+                .setAllowedOrigins(allowedOriginProperties.asArray())
                 .withSockJS();
     }
 

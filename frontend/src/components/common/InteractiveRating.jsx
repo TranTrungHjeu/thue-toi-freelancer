@@ -3,6 +3,7 @@
 import React, { useState } from 'react';
 import { Star, StarSolid } from 'iconoir-react';
 import { Caption } from './Typography';
+import { getFieldErrorMessage } from '../../utils/formError';
 
 /**
  * Interactive Rating component for reviews.
@@ -13,8 +14,10 @@ const InteractiveRating = ({
   max = 5, 
   initialRating = 0, 
   onChange,
+  error,
   className = "" 
 }) => {
+  const normalizedError = getFieldErrorMessage(error);
   const [rating, setRating] = useState(initialRating);
   const [hover, setHover] = useState(0);
 
@@ -49,6 +52,7 @@ const InteractiveRating = ({
         })}
         <span className="ml-2 text-lg font-bold text-secondary-900">{rating}.0</span>
       </div>
+      {normalizedError && <span className="ui-error-text">{normalizedError}</span>}
     </div>
   );
 };
