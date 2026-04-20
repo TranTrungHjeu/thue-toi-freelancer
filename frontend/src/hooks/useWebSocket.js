@@ -5,9 +5,11 @@ import { useAuth } from "./useAuth";
 import { getAccessToken } from "../api/axiosClient";
 
 const API_BASE_URL =
-  import.meta.env.VITE_API_BASE_URL || "http://localhost:8080/api";
+  import.meta.env.VITE_API_BASE_URL || "/api";
 const DEFAULT_WS_BASE_URL = API_BASE_URL.replace(/\/api\/?$/, "");
-const WS_BASE_URL = import.meta.env.VITE_WS_BASE_URL || DEFAULT_WS_BASE_URL;
+const WS_BASE_URL = (
+  import.meta.env.VITE_WS_BASE_URL || DEFAULT_WS_BASE_URL
+).replace(/\/$/, "");
 const NOTIFICATION_TOPIC_PREFIX = "/user/queue/notifications";
 
 const parseMessagePayload = (body) => {
