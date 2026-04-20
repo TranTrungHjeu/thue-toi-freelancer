@@ -15,8 +15,13 @@ import java.util.Optional;
  */
 @Repository
 public interface ProjectRepository extends JpaRepository<Project, Long> {
+    long countByStatus(String status);
+
     @EntityGraph(attributePaths = {"skills", "user.skills"})
     List<Project> findByStatus(String status);
+
+    @EntityGraph(attributePaths = {"skills", "user.skills"})
+    List<Project> findAllByOrderByCreatedAtDesc();
 
     List<Project> findByUserId(Long userId);
 
