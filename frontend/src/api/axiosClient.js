@@ -52,8 +52,18 @@ axiosClient.interceptors.request.use(
 
 axiosClient.interceptors.response.use(
     (response) => {
+        // Trường hợp login/refresh: response data chứa accessToken
         if (response.data?.data?.accessToken) {
             setAccessToken(response.data.data.accessToken);
+        }
+        // Token rotation khi đổi mật khẩu: backend trả JWT mới thẳng vào data
+        // Nhận biết qua URL chứa /me/password và data là chuỗi JWT (bắt đầu bằng eyJ)
+        if (
+            response.config?.url?.includes('/me/password') &&
+            typeof response.data?.data === 'string' &&
+            response.data.data.startsWith('eyJ')
+        ) {
+            setAccessToken(response.data.data);
         }
         if (response.config?.url?.includes('/v1/auth/logout')) {
             clearAccessToken();

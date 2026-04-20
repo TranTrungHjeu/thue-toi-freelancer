@@ -51,12 +51,8 @@ const UserDropdown = ({ user }) => {
       <AnimatePresence>
         {isOpen && (
           <div className="absolute right-0 z-50 mt-2 w-64 border border-slate-200 bg-white p-2 shadow-2xl">
-            <div className="mb-2 border-b border-slate-100 px-3 py-4">
-              <span className="block text-sm font-bold text-secondary-900">{user?.email}</span>
-              <Caption>ID: #{user?.id || '---'}</Caption>
-            </div>
-
-            <div className="flex flex-col gap-1">
+            {/* Đã loại bỏ phần hiển thị ID và Email theo yêu cầu */}
+            <div className="flex flex-col gap-1 mt-1">
               {menuItems.map((item) => (
                 <Link
                   key={item.path}

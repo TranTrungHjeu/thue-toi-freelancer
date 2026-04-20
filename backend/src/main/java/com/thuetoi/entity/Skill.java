@@ -1,5 +1,6 @@
 package com.thuetoi.entity;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
@@ -22,9 +23,11 @@ public class Skill extends BaseEntity {
     @Column(columnDefinition = "TEXT")
     private String description;
 
+    @JsonIgnore
     @ManyToMany(mappedBy = "skills")
     private Set<User> users = new HashSet<>();
 
+    @JsonIgnore
     @ManyToMany(mappedBy = "skills")
     private Set<Project> projects = new HashSet<>();
 }
