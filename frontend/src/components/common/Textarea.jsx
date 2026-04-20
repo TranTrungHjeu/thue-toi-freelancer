@@ -1,6 +1,9 @@
 import React from 'react';
+import { getFieldErrorMessage } from '../../utils/formError';
 
 const Textarea = ({ label, error, className = '', ...props }) => {
+  const normalizedError = getFieldErrorMessage(error);
+
   return (
     <div className={`flex flex-col gap-1.5 ${className}`}>
       {label && (
@@ -9,12 +12,12 @@ const Textarea = ({ label, error, className = '', ...props }) => {
         </label>
       )}
       <textarea
-        className={`ui-field ui-textarea ${error ? 'ui-field-error' : ''}`}
+        className={`ui-field ui-textarea ${normalizedError ? 'ui-field-error' : ''}`}
         {...props}
       />
-      {error && (
+      {normalizedError && (
         <span className="ui-error-text">
-          {error}
+          {normalizedError}
         </span>
       )}
     </div>

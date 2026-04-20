@@ -3,6 +3,7 @@ import Card from '../components/common/Card';
 import Button from '../components/common/Button';
 import Badge from '../components/common/Badge';
 import Callout from '../components/common/Callout';
+import InlineErrorBlock from '../components/common/InlineErrorBlock';
 import Input from '../components/common/Input';
 import Textarea from '../components/common/Textarea';
 import StatMetricCard from '../components/common/StatMetricCard';
@@ -22,6 +23,7 @@ import {
   getContractStatusMeta,
   getMilestoneStatusMeta,
 } from '../utils/formatters';
+import { splitApiFormError } from '../utils/formError';
 
 const initialMilestoneForm = { title: '', amount: '', dueDate: '' };
 const initialMessageForm = { messageType: 'text', content: '', attachments: '' };
@@ -157,6 +159,12 @@ const ContractsPage = () => {
   const [submittingMilestone, setSubmittingMilestone] = useState(false);
   const [submittingMessage, setSubmittingMessage] = useState(false);
   const [submittingReview, setSubmittingReview] = useState(false);
+  const [milestoneFieldErrors, setMilestoneFieldErrors] = useState({});
+  const [milestoneFormError, setMilestoneFormError] = useState('');
+  const [messageFieldErrors, setMessageFieldErrors] = useState({});
+  const [messageFormError, setMessageFormError] = useState('');
+  const [reviewFieldErrors, setReviewFieldErrors] = useState({});
+  const [reviewFormError, setReviewFormError] = useState('');
   const [activeContractAction, setActiveContractAction] = useState(null);
   const [milestoneActionId, setMilestoneActionId] = useState(null);
   const selectedContractIdRef = useRef(null);
@@ -313,11 +321,21 @@ const ContractsPage = () => {
     loadPage();
   }, [addToast, loadContracts, t, user?.id]);
 
-  const resetMilestoneForm = () => setMilestoneForm(initialMilestoneForm);
-  const resetMessageForm = () => setMessageForm(initialMessageForm);
+  const resetMilestoneForm = () => {
+    setMilestoneForm(initialMilestoneForm);
+    setMilestoneFieldErrors({});
+    setMilestoneFormError('');
+  };
+  const resetMessageForm = () => {
+    setMessageForm(initialMessageForm);
+    setMessageFieldErrors({});
+    setMessageFormError('');
+  };
   const resetReviewComposer = () => {
     setReviewForm(initialReviewForm);
     setReviewComposerKey((previous) => previous + 1);
+    setReviewFieldErrors({});
+    setReviewFormError('');
   };
 
   const handleSelectContract = async (contract) => {
@@ -357,6 +375,8 @@ const ContractsPage = () => {
     event.preventDefault();
     if (!selectedContract) return;
     setSubmittingMilestone(true);
+    setMilestoneFieldErrors({});
+    setMilestoneFormError('');
     try {
       await marketplaceApi.createMilestone(selectedContract.id, {
         title: milestoneForm.title,
@@ -367,7 +387,9 @@ const ContractsPage = () => {
       resetMilestoneForm();
       await refreshSelectedContractData(selectedContract.id);
     } catch (error) {
-      addToast(error?.message || t('toasts.contracts.milestoneError'), 'error');
+      const { fieldErrors, formError } = splitApiFormError(error, t('toasts.contracts.milestoneError'));
+      setMilestoneFieldErrors(fieldErrors);
+      setMilestoneFormError(formError);
     } finally {
       setSubmittingMilestone(false);
     }
@@ -396,6 +418,8 @@ const ContractsPage = () => {
     event.preventDefault();
     if (!selectedContract) return;
     setSubmittingMessage(true);
+    setMessageFieldErrors({});
+    setMessageFormError('');
     try {
       await marketplaceApi.sendMessage({
         contractId: selectedContract.id,
@@ -407,7 +431,9 @@ const ContractsPage = () => {
       resetMessageForm();
       await loadMessages(selectedContract.id);
     } catch (error) {
-      addToast(error?.message || t('toasts.contracts.messageError'), 'error');
+      const { fieldErrors, formError } = splitApiFormError(error, t('toasts.contracts.messageError'));
+      setMessageFieldErrors(fieldErrors);
+      setMessageFormError(formError);
     } finally {
       setSubmittingMessage(false);
     }
@@ -417,6 +443,8 @@ const ContractsPage = () => {
     event.preventDefault();
     if (!selectedContract) return;
     setSubmittingReview(true);
+    setReviewFieldErrors({});
+    setReviewFormError('');
     try {
       await marketplaceApi.createReview({
         contractId: selectedContract.id,
@@ -427,7 +455,9 @@ const ContractsPage = () => {
       resetReviewComposer();
       await loadReviews(selectedContract.id);
     } catch (error) {
-      addToast(error?.message || t('toasts.contracts.reviewError'), 'error');
+      const { fieldErrors, formError } = splitApiFormError(error, t('toasts.contracts.reviewError'));
+      setReviewFieldErrors(fieldErrors);
+      setReviewFormError(formError);
     } finally {
       setSubmittingReview(false);
     }
@@ -532,10 +562,15 @@ const ContractsPage = () => {
                   {canCreateMilestone && (
                     <InfoPanel className="mt-5">
                       <form className="flex flex-col gap-4" onSubmit={handleCreateMilestone}>
-                        <Input label={copy.milestones.titleLabel} value={milestoneForm.title} onChange={(event) => setMilestoneForm((previous) => ({ ...previous, title: event.target.value }))} />
+                        {milestoneFormError && (
+                          <InlineErrorBlock title={copy.milestones.errorTitle}>
+                            {milestoneFormError}
+                          </InlineErrorBlock>
+                        )}
+                        <Input label={copy.milestones.titleLabel} value={milestoneForm.title} onChange={(event) => setMilestoneForm((previous) => ({ ...previous, title: event.target.value }))} error={milestoneFieldErrors.title} />
                         <div className="grid gap-4 md:grid-cols-2">
-                          <Input label={copy.milestones.valueLabel} type="number" min="0" value={milestoneForm.amount} onChange={(event) => setMilestoneForm((previous) => ({ ...previous, amount: event.target.value }))} />
-                          <Input label={copy.milestones.dueDateLabel} type="date" value={milestoneForm.dueDate} onChange={(event) => setMilestoneForm((previous) => ({ ...previous, dueDate: event.target.value }))} />
+                          <Input label={copy.milestones.valueLabel} type="number" min="0" value={milestoneForm.amount} onChange={(event) => setMilestoneForm((previous) => ({ ...previous, amount: event.target.value }))} error={milestoneFieldErrors.amount} />
+                          <Input label={copy.milestones.dueDateLabel} type="date" value={milestoneForm.dueDate} onChange={(event) => setMilestoneForm((previous) => ({ ...previous, dueDate: event.target.value }))} error={milestoneFieldErrors.dueDate} />
                         </div>
                         <Button type="submit" disabled={submittingMilestone}>{submittingMilestone ? copy.milestones.submitting : copy.milestones.submit}</Button>
                       </form>
@@ -627,17 +662,30 @@ const ContractsPage = () => {
                   {canSendMessage ? (
                     <div className="mt-5 flex flex-col gap-4">
                       <div className="flex flex-wrap gap-3">
-                        <Button type="button" variant={messageForm.messageType === 'text' ? 'primary' : 'ghost'} onClick={() => setMessageForm({ messageType: 'text', content: '', attachments: '' })}>{copy.messages.textType}</Button>
-                        <Button type="button" variant={messageForm.messageType === 'file' ? 'primary' : 'ghost'} onClick={() => setMessageForm({ messageType: 'file', content: '', attachments: '' })}>{copy.messages.fileType}</Button>
+                        <Button type="button" variant={messageForm.messageType === 'text' ? 'primary' : 'ghost'} onClick={() => {
+                          setMessageForm({ messageType: 'text', content: '', attachments: '' });
+                          setMessageFieldErrors({});
+                          setMessageFormError('');
+                        }}>{copy.messages.textType}</Button>
+                        <Button type="button" variant={messageForm.messageType === 'file' ? 'primary' : 'ghost'} onClick={() => {
+                          setMessageForm({ messageType: 'file', content: '', attachments: '' });
+                          setMessageFieldErrors({});
+                          setMessageFormError('');
+                        }}>{copy.messages.fileType}</Button>
                       </div>
                       <InfoPanel>
                         <form className="flex flex-col gap-4" onSubmit={handleSendMessage}>
+                          {messageFormError && (
+                            <InlineErrorBlock title={copy.messages.errorTitle}>
+                              {messageFormError}
+                            </InlineErrorBlock>
+                          )}
                           {messageForm.messageType === 'text' ? (
-                            <Textarea label={copy.messages.contentLabel} value={messageForm.content} onChange={(event) => setMessageForm((previous) => ({ ...previous, content: event.target.value }))} />
+                            <Textarea label={copy.messages.contentLabel} value={messageForm.content} onChange={(event) => setMessageForm((previous) => ({ ...previous, content: event.target.value }))} error={messageFieldErrors.content} />
                           ) : (
                             <>
-                              <Input label={copy.messages.attachmentLabel} value={messageForm.attachments} onChange={(event) => setMessageForm((previous) => ({ ...previous, attachments: event.target.value }))} />
-                              <Textarea label={copy.messages.attachmentNoteLabel} value={messageForm.content} onChange={(event) => setMessageForm((previous) => ({ ...previous, content: event.target.value }))} />
+                              <Input label={copy.messages.attachmentLabel} value={messageForm.attachments} onChange={(event) => setMessageForm((previous) => ({ ...previous, attachments: event.target.value }))} error={messageFieldErrors.attachments} />
+                              <Textarea label={copy.messages.attachmentNoteLabel} value={messageForm.content} onChange={(event) => setMessageForm((previous) => ({ ...previous, content: event.target.value }))} error={messageFieldErrors.content} />
                             </>
                           )}
                           <Button type="submit" disabled={submittingMessage}>{submittingMessage ? copy.messages.submitting : copy.messages.submit}</Button>
@@ -674,8 +722,13 @@ const ContractsPage = () => {
                   {selectedContract.status === 'completed' && canCreateReview && (
                     <InfoPanel className="mt-5">
                       <form className="flex flex-col gap-4" onSubmit={handleCreateReview}>
-                        <InteractiveRating key={`review-${selectedContract.id}-${reviewComposerKey}`} label={copy.reviews.ratingLabel} initialRating={reviewForm.rating} onChange={(rating) => setReviewForm((previous) => ({ ...previous, rating }))} />
-                        <Textarea label={copy.reviews.commentLabel} value={reviewForm.comment} onChange={(event) => setReviewForm((previous) => ({ ...previous, comment: event.target.value }))} />
+                        {reviewFormError && (
+                          <InlineErrorBlock title={copy.reviews.errorTitle}>
+                            {reviewFormError}
+                          </InlineErrorBlock>
+                        )}
+                        <InteractiveRating key={`review-${selectedContract.id}-${reviewComposerKey}`} label={copy.reviews.ratingLabel} initialRating={reviewForm.rating} onChange={(rating) => setReviewForm((previous) => ({ ...previous, rating }))} error={reviewFieldErrors.rating} />
+                        <Textarea label={copy.reviews.commentLabel} value={reviewForm.comment} onChange={(event) => setReviewForm((previous) => ({ ...previous, comment: event.target.value }))} error={reviewFieldErrors.comment} />
                         <Button type="submit" disabled={submittingReview}>{submittingReview ? copy.reviews.submitting : copy.reviews.submit}</Button>
                       </form>
                     </InfoPanel>

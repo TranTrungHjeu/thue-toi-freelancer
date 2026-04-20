@@ -77,6 +77,7 @@ export const workspaceMessages = {
         captionUpdate: "Cập nhật dự án",
         titleCreate: "Đăng dự án mới",
         titleUpdate: "Chỉnh sửa dự án hiện tại",
+        errorTitle: "Không thể lưu biểu mẫu dự án",
         cancelEdit: "Hủy chỉnh sửa",
         updateModeTitle: "Đang ở chế độ cập nhật",
         updateModeDescription:
@@ -143,6 +144,7 @@ export const workspaceMessages = {
         caption: "Soạn báo giá",
         titleDefault: "Chọn một dự án để gửi báo giá",
         titleSelected: "Gửi báo giá cho: {title}",
+        errorTitle: "Không thể gửi biểu mẫu báo giá",
         emptyTitle: "Chưa chọn dự án",
         emptyDescription:
           "Chọn một dự án ở cột bên trái, rồi nhập giá, thời gian và nội dung đề xuất.",
@@ -239,6 +241,7 @@ export const workspaceMessages = {
       milestones: {
         caption: "Mốc thanh toán",
         title: "Mốc thực hiện của hợp đồng",
+        errorTitle: "Không thể lưu biểu mẫu mốc thanh toán",
         titleLabel: "Tiêu đề mốc",
         valueLabel: "Giá trị",
         dueDateLabel: "Hạn hoàn thành",
@@ -260,6 +263,7 @@ export const workspaceMessages = {
       messages: {
         caption: "Trao đổi",
         title: "Trao đổi trong hợp đồng",
+        errorTitle: "Không thể gửi biểu mẫu tin nhắn",
         textType: "Tin nhắn văn bản",
         fileType: "Gửi tệp đính kèm",
         contentLabel: "Nội dung tin nhắn",
@@ -280,6 +284,7 @@ export const workspaceMessages = {
       reviews: {
         caption: "Đánh giá",
         title: "Đánh giá sau hợp đồng",
+        errorTitle: "Không thể gửi biểu mẫu đánh giá",
         lockedTitle: "Chỉ mở sau khi hoàn thành",
         lockedDescription:
           "Chỉ hợp đồng đã hoàn thành mới cho phép gửi đánh giá.",
@@ -379,6 +384,7 @@ export const workspaceMessages = {
         captionUpdate: "Update project",
         titleCreate: "Post a new project",
         titleUpdate: "Edit current project",
+        errorTitle: "Could not save project details",
         cancelEdit: "Cancel editing",
         updateModeTitle: "Update mode active",
         updateModeDescription:
@@ -446,6 +452,7 @@ export const workspaceMessages = {
         caption: "Compose bid",
         titleDefault: "Select a project to submit a bid",
         titleSelected: "Submit a bid for: {title}",
+        errorTitle: "Could not submit this bid",
         emptyTitle: "No project selected",
         emptyDescription:
           "Choose a project from the left column, then enter your price, timeline, and proposal.",
@@ -542,6 +549,7 @@ export const workspaceMessages = {
       milestones: {
         caption: "Milestones",
         title: "Contract milestones",
+        errorTitle: "Could not save this milestone",
         titleLabel: "Milestone title",
         valueLabel: "Value",
         dueDateLabel: "Due date",
@@ -563,6 +571,7 @@ export const workspaceMessages = {
       messages: {
         caption: "Conversation",
         title: "Contract conversation",
+        errorTitle: "Could not send this message",
         textType: "Text message",
         fileType: "Send attachment",
         contentLabel: "Message content",
@@ -583,6 +592,7 @@ export const workspaceMessages = {
       reviews: {
         caption: "Reviews",
         title: "Post-contract reviews",
+        errorTitle: "Could not submit this review",
         lockedTitle: "Available only after completion",
         lockedDescription: "Only completed contracts allow reviews.",
         sentAt: "Sent at: {value}",

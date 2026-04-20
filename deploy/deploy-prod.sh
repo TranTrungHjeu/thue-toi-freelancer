@@ -23,15 +23,16 @@ if [[ ! -f "${COMPOSE_FILE}" ]]; then
     exit 1
 fi
 
-GHCR_USERNAME="$(read_env_value GHCR_USERNAME)"
-GHCR_TOKEN_READ="$(read_env_value GHCR_TOKEN_READ)"
+REGISTRY_HOST="$(read_env_value REGISTRY_HOST)"
+REGISTRY_USERNAME="$(read_env_value REGISTRY_USERNAME)"
+REGISTRY_PASSWORD="$(read_env_value REGISTRY_PASSWORD)"
 
-if [[ -z "${GHCR_USERNAME}" || -z "${GHCR_TOKEN_READ}" ]]; then
-    echo "GHCR_USERNAME and GHCR_TOKEN_READ must be set in ${ENV_FILE}" >&2
+if [[ -z "${REGISTRY_HOST}" || -z "${REGISTRY_USERNAME}" || -z "${REGISTRY_PASSWORD}" ]]; then
+    echo "REGISTRY_HOST, REGISTRY_USERNAME and REGISTRY_PASSWORD must be set in ${ENV_FILE}" >&2
     exit 1
 fi
 
-echo "${GHCR_TOKEN_READ}" | docker login ghcr.io -u "${GHCR_USERNAME}" --password-stdin
+echo "${REGISTRY_PASSWORD}" | docker login "${REGISTRY_HOST}" -u "${REGISTRY_USERNAME}" --password-stdin
 docker compose --env-file "${ENV_FILE}" -f "${COMPOSE_FILE}" pull
 docker compose --env-file "${ENV_FILE}" -f "${COMPOSE_FILE}" up -d --remove-orphans
 

@@ -1,4 +1,5 @@
 import React from 'react';
+import { getFieldErrorMessage } from '../../utils/formError';
 
 /**
  * Thành phần ô nhập liệu dùng chung, hỗ trợ nhãn và hiển thị lỗi.
@@ -6,6 +7,7 @@ import React from 'react';
  */
 const Input = ({ label, error, className = '', type, ...props }) => {
   const isDateInput = type === 'date';
+  const normalizedError = getFieldErrorMessage(error);
 
   return (
     <div className={`flex flex-col gap-1.5 ${className}`}>
@@ -16,12 +18,12 @@ const Input = ({ label, error, className = '', type, ...props }) => {
       )}
       <input
         type={type}
-        className={`ui-field ${isDateInput ? 'ui-field-date' : ''} ${error ? 'ui-field-error' : ''}`}
+        className={`ui-field ${isDateInput ? 'ui-field-date' : ''} ${normalizedError ? 'ui-field-error' : ''}`}
         {...props}
       />
-      {error && (
+      {normalizedError && (
         <span className="ui-error-text">
-          {error}
+          {normalizedError}
         </span>
       )}
     </div>

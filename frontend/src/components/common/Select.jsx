@@ -1,6 +1,9 @@
 import React from 'react';
+import { getFieldErrorMessage } from '../../utils/formError';
 
 const Select = ({ label, error, options = [], className = '', ...props }) => {
+  const normalizedError = getFieldErrorMessage(error);
+
   return (
     <div className={`flex flex-col gap-1.5 ${className}`}>
       {label && (
@@ -10,7 +13,7 @@ const Select = ({ label, error, options = [], className = '', ...props }) => {
       )}
       <div className="ui-select-wrap">
         <select
-          className={`ui-field ui-select ${error ? 'ui-field-error' : ''}`}
+          className={`ui-field ui-select ${normalizedError ? 'ui-field-error' : ''}`}
           {...props}
         >
           {options.map((option) => (
@@ -25,9 +28,9 @@ const Select = ({ label, error, options = [], className = '', ...props }) => {
           </svg>
         </span>
       </div>
-      {error && (
+      {normalizedError && (
         <span className="ui-error-text">
-          {error}
+          {normalizedError}
         </span>
       )}
     </div>

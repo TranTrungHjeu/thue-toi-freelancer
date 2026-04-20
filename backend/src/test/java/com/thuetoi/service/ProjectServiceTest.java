@@ -40,9 +40,23 @@ class ProjectServiceTest {
     void createProjectSetsOpenStatusForCustomer() {
         User customer = user(5L, "customer");
         LocalDateTime deadline = LocalDateTime.now().plusDays(7);
+        Project persistedProject = new Project();
+        persistedProject.setId(12L);
+        persistedProject.setUser(customer);
+        persistedProject.setTitle("Xay dung landing page");
+        persistedProject.setDescription("Can freelancer fullstack");
+        persistedProject.setBudgetMin(BigDecimal.valueOf(1000000));
+        persistedProject.setBudgetMax(BigDecimal.valueOf(2000000));
+        persistedProject.setDeadline(deadline);
+        persistedProject.setStatus("open");
 
         when(userRepository.findById(5L)).thenReturn(Optional.of(customer));
-        when(projectRepository.save(any(Project.class))).thenAnswer(invocation -> invocation.getArgument(0));
+        when(projectRepository.save(any(Project.class))).thenAnswer(invocation -> {
+            Project savedProject = invocation.getArgument(0);
+            savedProject.setId(12L);
+            return savedProject;
+        });
+        when(projectRepository.findById(12L)).thenReturn(Optional.of(persistedProject));
 
         Project project = projectService.createProject(
             5L,

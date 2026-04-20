@@ -13,7 +13,7 @@ import java.util.Set;
 @Entity
 @Table(name = "skills")
 @Data
-@EqualsAndHashCode(callSuper = false)
+@EqualsAndHashCode(callSuper = false, exclude = {"users", "projects"})
 public class Skill extends BaseEntity {
 
     @Column(nullable = false, unique = true, length = 100)

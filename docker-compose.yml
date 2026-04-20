@@ -59,6 +59,7 @@ services:
       # Cờ cấu hình giúp Vite hot-reload qua ranh giới Windows/Docker
       - CHOKIDAR_USEPOLLING=true
       - WATCHPACK_POLLING=true
+      - VITE_DEV_BACKEND_TARGET=http://backend:8080
     volumes:
       # Chỉ mount các thư mục mã nguồn để hot-reload
       # Tránh mount cả root nếu không node_modules sẽ bị ghi đè bởi host
