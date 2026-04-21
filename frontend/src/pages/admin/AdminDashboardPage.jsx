@@ -4,15 +4,13 @@ import {
   PageSearch, 
   ViewGrid, 
   Wallet, 
-  StatsUpSquare, 
-  StatsDownSquare,
+  StatsUpSquare,
   Activity,
   UserPlus,
   RefreshDouble,
   Flash,
   ShieldCheck
 } from 'iconoir-react';
-import { motion } from 'framer-motion';
 import StatCard from '../../components/common/StatCard';
 import { H1, H2, Text, Caption } from '../../components/common/Typography';
 import Card from '../../components/common/Card';
@@ -33,7 +31,7 @@ const AdminDashboardPage = () => {
         if (response.success) {
           setStats(response.data);
         }
-      } catch (error) {
+      } catch {
         addToast("Không thể tải thống kê hệ thống", "error");
       } finally {
         setLoading(false);
@@ -51,27 +49,9 @@ const AdminDashboardPage = () => {
     );
   }
 
-  const containerVariants = {
-    hidden: { opacity: 0 },
-    show: {
-      opacity: 1,
-      transition: {
-        staggerChildren: 0.1
-      }
-    }
-  };
-
-  const itemVariants = {
-    hidden: { opacity: 0, y: 20 },
-    show: { opacity: 1, y: 0 }
-  };
-
   return (
-    <motion.div 
+    <div 
       className="flex flex-col gap-8"
-      variants={containerVariants}
-      initial="hidden"
-      animate="show"
     >
       <header className="flex flex-col gap-2">
         <div className="flex items-center gap-3 mb-1">
@@ -137,11 +117,9 @@ const AdminDashboardPage = () => {
           
           <div className="flex items-end gap-2 h-48 px-2">
             {[35, 45, 60, 40, 75, 55, 90, 65, 80, 50, 70, 85].map((h, i) => (
-              <motion.div 
+              <div 
                 key={i}
-                initial={{ height: 0 }}
-                animate={{ height: `${h}%` }}
-                transition={{ duration: 0.8, delay: i * 0.05 }}
+                style={{ height: `${h}%` }}
                 className={`flex-1 min-w-[6px] ${i === 6 ? 'bg-primary-500' : 'bg-slate-100 hover:bg-primary-200'} transition-colors rounded-t-sm`}
               />
             ))}
@@ -191,7 +169,7 @@ const AdminDashboardPage = () => {
           </div>
         </Card>
       </div>
-    </motion.div>
+    </div>
   );
 };
 

@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useMemo } from 'react';
+import React, { useEffect, useState, useMemo, useCallback } from 'react';
 import { 
   Group, 
   Search, 
@@ -10,7 +10,6 @@ import {
   InfoCircle,
   MoreHoriz
 } from 'iconoir-react';
-import { motion, AnimatePresence } from 'framer-motion';
 import { H1, Text, Caption } from '../../components/common/Typography';
 import AdvancedTable from '../../components/common/AdvancedTable';
 import Badge from '../../components/common/Badge';
@@ -35,22 +34,22 @@ const AdminUsersPage = () => {
   const [reason, setReason] = useState('');
   const [submitting, setSubmitting] = useState(false);
 
-  const fetchUsers = async () => {
+  const fetchUsers = useCallback(async () => {
     try {
       const response = await adminApi.getAllUsers();
       if (response.success) {
         setUsers(response.data);
       }
-    } catch (error) {
+    } catch {
       addToast("Không thể tải danh sách người dùng", "error");
     } finally {
       setLoading(false);
     }
-  };
+  }, [addToast]);
 
   useEffect(() => {
     fetchUsers();
-  }, []);
+  }, [fetchUsers]);
 
   const handleToggleStatus = (user) => {
     setSelectedUser(user);
@@ -66,7 +65,7 @@ const AdminUsersPage = () => {
       addToast(`Đã ${selectedUser.isActive ? 'khóa' : 'mở khóa'} tài khoản thành công`, "success");
       setIsModalOpen(false);
       fetchUsers(); // Refresh list
-    } catch (error) {
+    } catch {
       addToast("Không thể cập nhật trạng thái người dùng", "error");
     } finally {
       setSubmitting(false);
@@ -185,18 +184,14 @@ const AdminUsersPage = () => {
           <Text className="mt-3 text-slate-400 font-bold text-[10px] uppercase tracking-widest animate-pulse">Đang truy xuất dữ liệu...</Text>
         </div>
       ) : (
-        <motion.div
-          initial={{ opacity: 0, y: 10 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="bg-white shadow-premium overflow-hidden border border-slate-100"
-        >
+        <div className="bg-white shadow-premium overflow-hidden border border-slate-100">
           <AdvancedTable 
             headers={headers} 
             data={filteredUsers} 
             pageSize={10}
             className="[&_table]:border-0"
           />
-        </motion.div>
+        </div>
       )}
 
       {/* Toggle Status Modal */}

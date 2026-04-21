@@ -1,11 +1,8 @@
 import React from 'react';
 import { NavLink } from 'react-router-dom';
 import { Caption } from '../common/Typography';
-import { useI18n } from '../../hooks/useI18n';
 
 const Sidebar = ({ navigation = [], currentPath = '' }) => {
-  const { t } = useI18n();
-
   return (
     <aside className="flex h-full w-64 flex-col overflow-y-auto border-r border-slate-200/80 bg-white/85 py-6 backdrop-blur-sm">
       <nav className="flex flex-1 flex-col gap-1 px-3">
