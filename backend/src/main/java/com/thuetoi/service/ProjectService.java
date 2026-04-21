@@ -76,7 +76,8 @@ public class ProjectService {
         project.setDeadline(deadline);
         project.setStatus(ProjectStatus.OPEN.getValue());
         project.setSkills(resolveSkills(skills));
-        return projectRepository.save(project);
+        Project savedProject = projectRepository.save(project);
+        return getProjectForResponse(savedProject.getId());
     }
 
     /**
@@ -143,7 +144,8 @@ public class ProjectService {
         if (skills != null) {
             project.setSkills(resolveSkills(skills));
         }
-        return projectRepository.save(project);
+        Project savedProject = projectRepository.save(project);
+        return getProjectForResponse(savedProject.getId());
     }
 
     /**
@@ -168,6 +170,11 @@ public class ProjectService {
         }
         ensureCustomer(project.getUser());
         return project;
+    }
+
+    private Project getProjectForResponse(Long projectId) {
+        return projectRepository.findById(projectId)
+            .orElseThrow(() -> new BusinessException("ERR_PROJECT_01", "Không tìm thấy dự án", HttpStatus.NOT_FOUND));
     }
 
     private void ensureCustomer(User user) {

@@ -65,7 +65,7 @@ export const workspaceMessages = {
         titleCustomer: "Quản lý dự án và xử lý báo giá",
         titleFreelancer: "Tìm dự án phù hợp và gửi báo giá",
         description:
-          "Khách hàng quản lý dự án và báo giá, người tìm việc tìm cơ hội và gửi đề xuất.",
+          "Người thuê quản lý dự án và báo giá, người tìm việc tìm cơ hội và gửi đề xuất.",
       },
       stats: {
         total: "Tổng số dự án",
@@ -131,8 +131,8 @@ export const workspaceMessages = {
         caption: "Thị trường dự án",
         title: "Dự án đang tuyển",
         owner: "Chủ dự án: {name}",
-        ownerFallback: "Khách hàng #{id}",
-        descriptionFallback: "Khách hàng chưa điền mô tả cho dự án này.",
+        ownerFallback: "Người thuê #{id}",
+        descriptionFallback: "Người thuê chưa điền mô tả cho dự án này.",
         budget: "Ngân sách: {value}",
         deadline: "Hạn: {date}",
         select: "Chọn dự án này",
@@ -175,7 +175,7 @@ export const workspaceMessages = {
       participants: {
         you: "Bạn",
         user: "Người dùng #{id}",
-        customer: "Khách hàng",
+        customer: "Người thuê",
         freelancer: "Người tìm việc",
       },
       messagePreview: {
@@ -223,7 +223,7 @@ export const workspaceMessages = {
       relatedInfo: {
         caption: "Thông tin liên quan",
         project: "Dự án: #{id}",
-        customer: "Khách hàng: #{id}",
+        customer: "Người thuê: #{id}",
         freelancer: "Người tìm việc: #{id}",
         start: "Bắt đầu: {value}",
         end: "Kết thúc: {value}",
@@ -250,15 +250,15 @@ export const workspaceMessages = {
         customerLockedTitle: "Không thể tạo mốc thanh toán",
         customerLockedDescription:
           "Chỉ hợp đồng đang thực hiện mới cho phép thêm mốc mới.",
-        freelancerLockedTitle: "Mốc do khách hàng quản lý",
+        freelancerLockedTitle: "Mốc do người thuê quản lý",
         freelancerLockedDescription:
-          "Bạn vẫn có thể theo dõi mốc của hợp đồng này, nhưng chỉ khách hàng mới thêm được.",
+          "Bạn vẫn có thể theo dõi mốc của hợp đồng này, nhưng chỉ người thuê mới thêm được.",
         loading: "Đang tải mốc thanh toán...",
         due: "Hạn: {value}",
         value: "Giá trị: {value}",
         emptyTitle: "Chưa có mốc thanh toán",
         emptyDescription:
-          "Hợp đồng này chưa có mốc nào. Khách hàng có thể thêm khi hợp đồng đang thực hiện.",
+          "Hợp đồng này chưa có mốc nào. Người thuê có thể thêm khi hợp đồng đang thực hiện.",
       },
       messages: {
         caption: "Trao đổi",

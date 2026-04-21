@@ -2,6 +2,7 @@ package com.thuetoi.entity;
 
 import jakarta.persistence.*;
 import lombok.Data;
+import lombok.EqualsAndHashCode;
 import org.hibernate.annotations.CreationTimestamp;
 
 import java.math.BigDecimal;
@@ -13,6 +14,7 @@ import java.time.LocalDateTime;
 @Entity
 @Table(name = "bids")
 @Data
+@EqualsAndHashCode(exclude = {"project", "freelancer"})
 public class Bid {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)

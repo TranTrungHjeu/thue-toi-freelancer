@@ -13,6 +13,9 @@ const ProjectsPage = lazy(() => import('../pages/ProjectsPage'));
 const ContractsPage = lazy(() => import('../pages/ContractsPage'));
 const NotificationsPage = lazy(() => import('../pages/NotificationsPage'));
 const ProfilePage = lazy(() => import('../pages/ProfilePage'));
+const AdminDashboardPage = lazy(() => import('../pages/admin/AdminDashboardPage'));
+const AdminUsersPage = lazy(() => import('../pages/admin/AdminUsersPage'));
+const AdminProjectsPage = lazy(() => import('../pages/admin/AdminProjectsPage'));
 const NotFoundPage = lazy(() => import('../pages/NotFoundPage'));
 
 const AppRoutes = () => (
@@ -34,6 +37,11 @@ const AppRoutes = () => (
         <Route path="/workspace/contracts" element={<ContractsPage />} />
         <Route path="/workspace/notifications" element={<NotificationsPage />} />
         <Route path="/workspace/profile" element={<ProfilePage />} />
+        
+        {/* Admin Routes */}
+        <Route path="/workspace/admin/dashboard" element={<AdminDashboardPage />} />
+        <Route path="/workspace/admin/users" element={<AdminUsersPage />} />
+        <Route path="/workspace/admin/projects" element={<AdminProjectsPage />} />
       </Route>
     </Route>
 

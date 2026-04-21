@@ -20,7 +20,9 @@ const Header = ({ user, onOpenMenu }) => {
           <Menu className="h-6 w-6 text-secondary-900" />
         </button>
         <Link to="/workspace" className="flex items-center gap-3">
-          <div className="bg-secondary-900 p-1.5 text-xl font-bold leading-none text-white shadow-sm ring-1 ring-slate-900/10">TT</div>
+          <div className="p-1 px-0 flex items-center justify-center">
+            <img src="/favicon.svg" alt="logo" className="h-8 w-8" />
+          </div>
           <div className="hidden sm:flex flex-col">
             <H2 className="!mb-0 text-xl tracking-tight uppercase">{t('app.brand')}</H2>
             <span className="text-[10px] font-bold uppercase tracking-[0.18em] text-slate-500">

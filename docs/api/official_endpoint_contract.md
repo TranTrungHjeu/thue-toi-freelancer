@@ -57,6 +57,8 @@ Authorization: Bearer <access_token>
 | `POST` | `/auth/logout`                  | Cookie | Không body                                                     | `null`              | Revoke refresh token hiện tại và xóa cookie                   |
 | `GET`  | `/auth/profile`                 | Có     | Không                                                          | `AuthUserResponse`  | Lấy profile từ JWT principal                                  |
 | `PUT`  | `/users/me/profile`             | Có     | `fullName?`, `profileDescription?`, `avatarUrl?`, `skills?[]`  | `AuthUserResponse`  | Cập nhật hồ sơ hiện tại; skills phải tồn tại trong catalog    |
+| `POST` | `/users/me/avatar`              | Có     | `file` (multipart/form-data)                                   | `AuthUserResponse`  | Tải lên avatar mới, hệ thống trả về URL và cập nhật cho user  |
+| `PUT`  | `/users/me/password`            | Có     | `oldPassword`, `newPassword`                                   | `null`              | Đổi mật khẩu; cần xác thực mật khẩu cũ trước khi đổi          |
 
 ### 2.1. `AuthTokenResponse`
 

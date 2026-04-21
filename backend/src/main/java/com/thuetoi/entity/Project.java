@@ -14,7 +14,7 @@ import java.util.Set;
 @Entity
 @Table(name = "projects")
 @Data
-@EqualsAndHashCode(callSuper = false)
+@EqualsAndHashCode(callSuper = false, exclude = {"user", "skills"})
 public class Project extends BaseEntity {
     @ManyToOne
     @JoinColumn(name = "user_id", nullable = false)

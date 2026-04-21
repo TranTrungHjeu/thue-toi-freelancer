@@ -85,7 +85,7 @@ public class BidService {
             "Freelancer \"" + resolveUserDisplayName(freelancer, "Freelancer") + "\" vừa gửi bid cho project \"" + project.getTitle() + "\".",
             "/workspace/projects"
         );
-        return createdBid;
+        return getRequiredBid(createdBid.getId());
     }
 
     /**
@@ -144,7 +144,8 @@ public class BidService {
                 throw new BusinessException("ERR_AUTH_04", "Freelancer chỉ có thể rút bid của mình", HttpStatus.FORBIDDEN);
             }
             bid.setStatus(BidStatus.WITHDRAWN.getValue());
-            return bidRepository.save(bid);
+            Bid updatedBid = bidRepository.save(bid);
+            return getRequiredBid(updatedBid.getId());
         }
 
         if (normalizedStatus != BidStatus.REJECTED) {
@@ -160,7 +161,7 @@ public class BidService {
             "Khách hàng đã từ chối bid của bạn cho project \"" + bid.getProject().getTitle() + "\".",
             "/workspace/projects"
         );
-        return updatedBid;
+        return getRequiredBid(updatedBid.getId());
     }
 
     /**

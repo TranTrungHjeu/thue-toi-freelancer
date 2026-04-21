@@ -41,7 +41,12 @@ const MobileDrawer = ({
             style={{ borderRadius: '0px' }}
           >
             <div className="flex items-center justify-between border-b border-slate-100 p-6">
-              <H2 className="mb-0 text-xl font-black tracking-tighter uppercase">{t('app.brand')}</H2>
+              <div className="flex items-center gap-3">
+                <div className="flex items-center justify-center">
+                  <img src="/favicon.svg" alt="logo" className="h-8 w-8" />
+                </div>
+                <H2 className="mb-0 text-xl font-black tracking-tighter uppercase">{t('app.brand')}</H2>
+              </div>
               <button onClick={onClose} className="p-2 transition-colors hover:bg-slate-100">
                 <Xmark className="h-5 w-5 text-slate-500" />
               </button>

@@ -14,9 +14,9 @@ export const messages = {
       en: "Tiếng Anh",
     },
     roles: {
-      customer: "Khách hàng",
+      customer: "Người thuê",
       freelancer: "Người tìm việc",
-      admin: "Quản trị viên",
+      admin: "Quản trị hệ thống",
       user: "Người dùng",
     },
     values: {
@@ -120,7 +120,7 @@ export const messages = {
       ],
       roleCards: [
         {
-          eyebrow: "Khách hàng",
+          eyebrow: "Người thuê",
           title: "Đăng dự án, chọn báo giá, theo dõi hợp đồng",
           bullets: [
             "Đăng dự án mới",
@@ -354,8 +354,8 @@ export const messages = {
         bidLower: "báo giá",
         milestoneUpper: "Mốc thanh toán",
         milestoneLower: "mốc thanh toán",
-        customerUpper: "Khách hàng",
-        customerLower: "khách hàng",
+        customerUpper: "Người thuê",
+        customerLower: "người thuê",
         freelancerUpper: "Người tìm việc",
         freelancerLower: "người tìm việc",
         fileUpper: "Tệp",

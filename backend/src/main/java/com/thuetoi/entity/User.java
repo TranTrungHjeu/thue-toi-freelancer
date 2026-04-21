@@ -16,7 +16,7 @@ import java.util.Set;
 @Entity
 @Table(name = "users")
 @Data
-@EqualsAndHashCode(callSuper = false)
+@EqualsAndHashCode(callSuper = false, exclude = {"skills"})
 public class User extends BaseEntity {
     @Column(nullable = false, unique = true)
     private String email;
