@@ -175,7 +175,7 @@ const normalizeSkillNames = (skills) =>
 const ProfilePage = () => {
   const { user, refreshProfile, logout } = useAuth();
   const { addToast } = useToast();
-  const { locale, t } = useI18n();
+  const { locale } = useI18n();
   const copy = useMemo(() => getProfilePageCopy(locale), [locale]);
   const navigate = useNavigate();
   
@@ -189,7 +189,6 @@ const ProfilePage = () => {
   
   const [skillCatalog, setSkillCatalog] = useState([]);
   const [loadingSkillCatalog, setLoadingSkillCatalog] = useState(false);
-  const [refreshingProfile, setRefreshingProfile] = useState(false);
   
   const [submitting, setSubmitting] = useState(false);
   const [avatarFile, setAvatarFile] = useState(null);
@@ -243,20 +242,6 @@ const ProfilePage = () => {
   useEffect(() => {
     loadSkillCatalog();
   }, [loadSkillCatalog]);
-
-  const handleRefreshProfile = async () => {
-    setRefreshingProfile(true);
-    try {
-      await refreshProfile();
-      setAvatarFile(null);
-      setAvatarPreview(null);
-      addToast(t('toasts.profile.refreshSuccess') || copy.refresh, 'success');
-    } catch (error) {
-      addToast(error?.message || t('toasts.profile.refreshError') || copy.saveError, 'error');
-    } finally {
-      setRefreshingProfile(false);
-    }
-  };
 
   const handleFieldChange = (field) => (event) => {
     setProfileForm((previous) => ({

@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useMemo } from 'react';
+import React, { useEffect, useState, useMemo, useCallback } from 'react';
 import { 
   ViewGrid, 
   Search, 
@@ -12,7 +12,6 @@ import {
   Eye,
   Settings
 } from 'iconoir-react';
-import { motion } from 'framer-motion';
 import { H1, Text, Caption } from '../../components/common/Typography';
 import AdvancedTable from '../../components/common/AdvancedTable';
 import Badge from '../../components/common/Badge';
@@ -31,22 +30,22 @@ const AdminProjectsPage = () => {
   const [filterStatus, setFilterStatus] = useState('all');
   const { addToast } = useToast();
 
-  const fetchProjects = async () => {
+  const fetchProjects = useCallback(async () => {
     try {
       const response = await adminApi.getAllProjects();
       if (response.success) {
         setProjects(response.data);
       }
-    } catch (error) {
+    } catch {
       addToast("Không thể tải danh sách dự án", "error");
     } finally {
       setLoading(false);
     }
-  };
+  }, [addToast]);
 
   useEffect(() => {
     fetchProjects();
-  }, []);
+  }, [fetchProjects]);
 
   const handleUpdateStatus = async (projectId, status) => {
     try {
@@ -55,7 +54,7 @@ const AdminProjectsPage = () => {
         addToast(`Cập nhật trạng thái dự án thành công`, "success");
         fetchProjects();
       }
-    } catch (error) {
+    } catch {
       addToast("Không thể cập nhật trạng thái dự án", "error");
     }
   };
@@ -209,18 +208,14 @@ const AdminProjectsPage = () => {
           <Text className="mt-3 text-slate-400 font-bold text-[10px] uppercase tracking-widest animate-pulse">Đang nạp dữ liệu dự án...</Text>
         </div>
       ) : (
-        <motion.div
-          initial={{ opacity: 0, y: 10 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="bg-white shadow-premium overflow-hidden border border-slate-100 mb-12"
-        >
+        <div className="bg-white shadow-premium overflow-hidden border border-slate-100 mb-12">
           <AdvancedTable 
             headers={headers} 
             data={filteredProjects} 
             pageSize={10}
             className="[&_table]:border-0"
           />
-        </motion.div>
+        </div>
       )}
 
       {/* Quick Summary Footer */}
