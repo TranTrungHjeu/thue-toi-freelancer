@@ -42,7 +42,7 @@ Nếu là lỗi validation, backend trả thêm trường `errors`:
 | `ERR_AUTH_01` | Người dùng chưa đăng nhập | `401` | Điều hướng về màn login hoặc thử refresh token |
 | `ERR_AUTH_02` | Sai email hoặc mật khẩu | `401` | Báo lỗi ngay tại form login |
 | `ERR_AUTH_03` | Tài khoản đã bị khóa | `403` | Hiện thông báo chặn truy cập |
-| `ERR_AUTH_04` | Không có quyền truy cập tài nguyên | `403` | Ẩn hoặc khóa hành động không được phép |
+| `ERR_AUTH_04` | Không có quyền truy cập tài nguyên | `403` | Ẩn hoặc khóa hành động không được phép; áp dụng cả cho admin method-security |
 | `ERR_AUTH_05` | Email đã tồn tại | `409` | Highlight trường email |
 | `ERR_AUTH_06` | Vai trò không hợp lệ | `400` | Chặn submit form đăng ký |
 | `ERR_AUTH_07` | Tài khoản chưa xác thực email | `403` | Điều hướng sang màn nhập OTP |
@@ -98,5 +98,6 @@ Nếu là lỗi validation, backend trả thêm trường `errors`:
 ## 3. Nguyên tắc Sử dụng
 
 - Backend phải luôn ưu tiên `BusinessException(code, message, status)` cho lỗi nghiệp vụ có chủ đích.
+- Các lỗi security/method-security như thiếu quyền admin phải được map về `ERR_AUTH_04`, không để rơi xuống `ERR_SYS_01`.
 - Frontend ưu tiên dùng `code` để quyết định hành vi, không dựa vào so sánh chuỗi `message`.
 - Message vẫn phải rõ ràng để hiển thị trực tiếp khi cần.

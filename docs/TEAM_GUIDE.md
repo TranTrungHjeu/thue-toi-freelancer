@@ -79,7 +79,7 @@ Tuyệt đối **KHÔNG code trực tiếp và push thẳng lên branch `main` h
   - Bắt buộc có ít nhất 1 approval trước khi merge.
 
 ### Xác Minh Local Trước Khi Mở PR
-Trong trường hợp team chưa dùng được GitHub Actions hoặc chưa bật CI do giới hạn billing, người mở PR phải tự chạy kiểm tra local trước khi gửi review:
+Trong trường hợp team chưa dùng được CI hoặc chưa bật pipeline do giới hạn hạ tầng/billing, người mở PR phải tự chạy kiểm tra local trước khi gửi review:
 
 - Frontend: `npm run lint`
 - Frontend: `npm run build`

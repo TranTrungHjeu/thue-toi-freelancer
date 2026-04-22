@@ -52,7 +52,8 @@ public class ProjectController {
             request.getDescription(),
             request.getBudgetMin(),
             request.getBudgetMax(),
-            request.getDeadline()
+            request.getDeadline(),
+            request.getSkills()
         );
         return ApiResponse.success("Tạo dự án thành công", marketplaceResponseMapper.toProjectResponse(project));
     }
@@ -64,6 +65,17 @@ public class ProjectController {
     public ApiResponse<List<ProjectResponse>> getProjectsByStatus(@PathVariable String status) {
         List<Project> projects = projectService.getProjectsByStatus(status);
         return ApiResponse.success("Lấy danh sách dự án theo trạng thái", marketplaceResponseMapper.toProjectResponses(projects));
+    }
+
+    /**
+     * Tìm kiếm project theo kỹ năng (skill-based search)
+     */
+    @GetMapping("/search")
+    public ApiResponse<List<ProjectResponse>> searchProjects(
+            @RequestParam(required = false) List<String> skills,
+            @RequestParam(required = false) String status) {
+        List<Project> projects = projectService.searchProjectsBySkills(skills, status);
+        return ApiResponse.success("Tìm kiếm project theo kỹ năng thành công", marketplaceResponseMapper.toProjectResponses(projects));
     }
 
     /**
@@ -113,7 +125,8 @@ public class ProjectController {
             request.getBudgetMin(),
             request.getBudgetMax(),
             request.getDeadline(),
-            request.getStatus()
+            request.getStatus(),
+            request.getSkills()
         );
         return ApiResponse.success("Cập nhật dự án thành công", marketplaceResponseMapper.toProjectResponse(project));
     }

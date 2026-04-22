@@ -1,14 +1,20 @@
 import React, { useRef } from 'react';
 import { PasteClipboard } from 'iconoir-react';
+import { useI18n } from '../../hooks/useI18n';
+import { getFieldErrorMessage } from '../../utils/formError';
 
 /**
  * Cụm nhập mã xác thực 6 ô, tự chuyển ô và hỗ trợ dán nhanh.
  * value: string (tối đa 6 ký tự số)
  * onChange: (newValue: string) => void
  */
-const OtpInput = ({ value = '', onChange, length = 6 }) => {
+const OtpInput = ({ value = '', onChange, length = 6, label, pasteLabel, error }) => {
   const inputRefs = useRef([]);
+  const { locale } = useI18n();
+  const normalizedError = getFieldErrorMessage(error);
   const digits = Array.from({ length }, (_, i) => value[i] || '');
+  const resolvedLabel = label || (locale === 'vi' ? 'Mã xác thực' : 'Verification code');
+  const resolvedPasteLabel = pasteLabel || (locale === 'vi' ? 'Dán nhanh' : 'Quick paste');
 
   const notify = (newDigits) => onChange(newDigits.join(''));
 
@@ -65,21 +71,21 @@ const OtpInput = ({ value = '', onChange, length = 6 }) => {
 
   return (
     <div className="flex flex-col gap-1.5">
-      <div className="flex items-center justify-between">
-        <label className="text-sm font-semibold text-secondary-900 font-sans">
-          Mã xác thực
+      <div className="auth-otp-header">
+        <label className="ui-label">
+          {resolvedLabel}
         </label>
         <button
           type="button"
           onClick={handlePasteButton}
-          className="flex items-center gap-1 text-xs font-semibold text-primary-700 hover:text-primary-800 transition-colors"
+          className="auth-otp-copy"
         >
           <PasteClipboard className="h-3.5 w-3.5" />
-          Dán nhanh
+          {resolvedPasteLabel}
         </button>
       </div>
 
-      <div className="flex gap-2">
+      <div className="auth-otp-grid">
         {digits.map((digit, index) => (
           <input
             key={index}
@@ -92,15 +98,15 @@ const OtpInput = ({ value = '', onChange, length = 6 }) => {
             onKeyDown={(e) => handleKeyDown(index, e)}
             onPaste={handlePasteOnInput}
             onClick={(e) => e.target.select()}
-            className={`
-              h-12 w-full border-2 bg-white text-center text-xl font-bold
-              text-secondary-900 font-sans outline-none transition-colors
-              focus:border-primary-500
-              ${digit ? 'border-primary-400' : 'border-slate-300'}
-            `}
+            className={`ui-field auth-otp-cell ${digit ? 'auth-otp-cell-filled' : ''} ${normalizedError ? 'ui-field-error' : ''}`}
           />
         ))}
       </div>
+      {normalizedError && (
+        <span className="ui-error-text">
+          {normalizedError}
+        </span>
+      )}
     </div>
   );
 };

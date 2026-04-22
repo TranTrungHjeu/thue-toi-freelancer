@@ -8,7 +8,6 @@ public record ContractResponse(
     Long projectId,
     Long freelancerId,
     Long customerId,
-    Long clientId,
     BigDecimal totalAmount,
     Integer progress,
     String status,

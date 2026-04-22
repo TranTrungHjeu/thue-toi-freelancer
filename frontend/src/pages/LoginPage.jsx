@@ -1,14 +1,15 @@
 import React, { useMemo, useState } from 'react';
 import { Link, useLocation, useNavigate, useSearchParams } from 'react-router-dom';
-import { PageSearch } from 'iconoir-react';
 import Input from '../components/common/Input';
 import Button from '../components/common/Button';
-import Callout from '../components/common/Callout';
+import Spinner from '../components/common/Spinner';
+import InlineErrorBlock from '../components/common/InlineErrorBlock';
 import LanguageSwitcher from '../components/common/LanguageSwitcher';
 import { Caption } from '../components/common/Typography';
 import { useToast } from '../hooks/useToast';
 import { useAuth } from '../hooks/useAuth';
 import { useI18n } from '../hooks/useI18n';
+import { splitApiFormError } from '../utils/formError';
 
 const LoginPage = () => {
   const [searchParams] = useSearchParams();
@@ -23,6 +24,7 @@ const LoginPage = () => {
 
   const [email, setEmail] = useState(initialEmail);
   const [password, setPassword] = useState('');
+  const [fieldErrors, setFieldErrors] = useState({});
   const [rememberMe, setRememberMe] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [formError, setFormError] = useState('');
@@ -30,6 +32,7 @@ const LoginPage = () => {
   const handleSubmit = async (event) => {
     event.preventDefault();
     setSubmitting(true);
+    setFieldErrors({});
     setFormError('');
 
     try {
@@ -42,21 +45,25 @@ const LoginPage = () => {
         navigate(`/auth/verify-email?email=${encodeURIComponent(email)}`);
         return;
       }
-      setFormError(error?.message || t('toasts.auth.loginFormError'));
-      addToast(error?.message || t('toasts.auth.loginError'), 'error');
+      const { fieldErrors: nextFieldErrors, formError: nextFormError } = splitApiFormError(error, t('toasts.auth.loginFormError'));
+      setFieldErrors(nextFieldErrors);
+      setFormError(nextFormError);
     } finally {
       setSubmitting(false);
     }
   };
 
   return (
-    <div className="relative flex min-h-screen flex-col">
+    <div className="relative flex min-h-screen flex-col overflow-hidden bg-black/30 text-white">
+      <div className="pointer-events-none absolute inset-0 -z-10 bg-[radial-gradient(circle_at_top,rgba(34,197,94,0.2),transparent_38%),linear-gradient(180deg,rgba(2,6,23,0.88),rgba(2,6,23,0.72))]" />
+      <div className="bg-noise pointer-events-none absolute inset-0 -z-10 opacity-[0.2]" />
+
       <header className="relative z-10 flex items-center justify-between px-8 py-4">
         <Link to="/" className="flex items-center gap-2.5">
-          <div className="border-2 border-white bg-white/10 px-2.5 py-1 text-xs font-black uppercase tracking-[0.22em] text-white backdrop-blur-sm">
+          <div className="border border-primary-400/50 bg-primary-500/12 px-2.5 py-1 text-xs font-black uppercase tracking-[0.22em] text-primary-200 backdrop-blur-sm">
             TT
           </div>
-          <span className="text-sm font-black uppercase tracking-[0.18em] text-white">
+          <span className="text-sm font-black uppercase tracking-[0.18em] text-primary-100">
             {t('app.brand')}
           </span>
         </Link>
@@ -64,7 +71,7 @@ const LoginPage = () => {
           <LanguageSwitcher />
           <Link
             to="/auth/register"
-            className="border border-white/60 px-6 py-2 text-sm font-semibold text-white transition-colors hover:bg-white/10"
+            className="border border-white/20 bg-white/5 px-6 py-2 text-sm font-semibold text-white/90 transition-colors hover:border-white/35 hover:bg-white/10"
           >
             {t('authPages.login.navAction')}
           </Link>
@@ -72,21 +79,24 @@ const LoginPage = () => {
       </header>
 
       <main className="relative z-10 flex flex-1 items-center justify-center px-4 py-2">
-        <div className="w-full max-w-[480px] border border-slate-100 bg-white px-10 py-8 shadow-lg">
+        <div className="w-full max-w-[500px] border border-white/15 bg-slate-950/72 px-8 py-8 shadow-[0_25px_80px_rgba(0,0,0,0.42)] backdrop-blur-md md:px-10">
           <div className="mb-5 text-center">
-            <h1 className="font-serif text-[2rem] font-bold leading-tight text-secondary-900">
+            <p className="text-[11px] font-bold uppercase tracking-[0.24em] text-primary-200/85">
+              {t('layout.workspace')}
+            </p>
+            <h1 className="mt-2 font-serif text-[2rem] font-bold leading-tight text-white">
               {t('authPages.login.title')}
             </h1>
-            <p className="mt-3 text-sm leading-relaxed text-slate-500">
+            <p className="mt-3 text-sm leading-relaxed text-slate-300">
               {t('authPages.login.description')}
             </p>
           </div>
 
-          <form className="flex flex-col gap-3.5" onSubmit={handleSubmit}>
+          <form className="auth-form-theme flex flex-col gap-3.5" onSubmit={handleSubmit}>
             {formError && (
-              <Callout type="danger" title={t('authPages.login.errorTitle')}>
+              <InlineErrorBlock title={t('authPages.login.errorTitle')}>
                 {formError}
-              </Callout>
+              </InlineErrorBlock>
             )}
 
             <Input
@@ -94,7 +104,9 @@ const LoginPage = () => {
               type="email"
               placeholder={t('authPages.login.emailPlaceholder')}
               value={email}
+              disabled={submitting}
               onChange={(e) => setEmail(e.target.value)}
+              error={fieldErrors.email}
               autoComplete="email"
             />
 
@@ -103,7 +115,9 @@ const LoginPage = () => {
               type="password"
               placeholder={t('authPages.login.passwordPlaceholder')}
               value={password}
+              disabled={submitting}
               onChange={(e) => setPassword(e.target.value)}
+              error={fieldErrors.password}
               autoComplete="current-password"
             />
 
@@ -112,46 +126,50 @@ const LoginPage = () => {
                 <input
                   type="checkbox"
                   checked={rememberMe}
+                  disabled={submitting}
                   onChange={(e) => setRememberMe(e.target.checked)}
-                  className="h-4 w-4 cursor-pointer border border-slate-300 accent-primary-600"
+                  className="h-4 w-4 cursor-pointer border border-white/30 bg-transparent accent-primary-600"
                 />
-                <span className="text-sm text-slate-500">{t('authPages.login.rememberMe')}</span>
+                <span className="text-sm text-slate-300">{t('authPages.login.rememberMe')}</span>
               </label>
               <Link
                 to={`/auth/verify-email?email=${encodeURIComponent(email)}`}
-                className="text-sm font-semibold text-primary-700 hover:text-primary-800"
+                className={`text-sm font-semibold text-primary-200 transition-colors hover:text-primary-100 ${submitting ? 'pointer-events-none opacity-60' : ''}`}
               >
                 {t('authPages.login.unverifiedLink')}
               </Link>
             </div>
 
             <Button type="submit" disabled={submitting} className="mt-1 w-full py-3.5 text-[15px]">
-              {submitting ? t('authPages.login.submitting') : t('authPages.login.submit')}
+              {submitting ? (
+                <>
+                  <Spinner size="sm" inline tone="current" className="text-white shrink-0" />
+                  {t('authPages.login.submitting')}
+                </>
+              ) : t('authPages.login.submit')}
             </Button>
 
             <div className="flex items-center gap-4">
-              <div className="h-px flex-1 bg-slate-200" />
-              <Caption className="text-[11px] font-medium uppercase tracking-[0.18em] text-slate-400">
+              <div className="h-px flex-1 bg-white/12" />
+              <Caption className="text-[11px] font-medium uppercase tracking-[0.18em] text-slate-400/85">
                 {t('authPages.divider')}
               </Caption>
-              <div className="h-px flex-1 bg-slate-200" />
+              <div className="h-px flex-1 bg-white/12" />
             </div>
 
-            <button
-              type="button"
-              onClick={() => navigate('/workspace')}
-              className="flex w-full items-center justify-center gap-2 border border-slate-200 bg-slate-50 px-6 py-3.5 text-sm font-medium text-slate-600 transition-colors hover:border-slate-300 hover:bg-slate-100"
+            <Link
+              to="/auth/register"
+              className={`flex w-full items-center justify-center gap-2 border border-white/20 bg-white/5 px-6 py-3.5 text-sm font-medium text-slate-100 transition-colors hover:border-white/35 hover:bg-white/10 ${submitting ? 'pointer-events-none opacity-60' : ''}`}
             >
-              <PageSearch className="h-5 w-5 text-primary-600" />
-              {t('authPages.login.workspaceShortcut')}
-            </button>
+              {t('authPages.login.navAction')}
+            </Link>
           </form>
 
-          <p className="mt-5 text-center text-sm text-slate-400">
+          <p className="mt-5 text-center text-sm text-slate-300/85">
             {t('authPages.login.footerPrompt')}{' '}
             <Link
               to="/auth/register"
-              className="font-semibold text-primary-700 hover:text-primary-800"
+              className={`font-semibold text-primary-200 transition-colors hover:text-primary-100 ${submitting ? 'pointer-events-none opacity-60' : ''}`}
             >
               {t('authPages.login.footerAction')}
             </Link>
@@ -160,7 +178,7 @@ const LoginPage = () => {
       </main>
 
       <footer className="relative z-10 pb-3 text-center">
-        <Caption className="text-[11px] uppercase tracking-[0.18em] text-white/40">
+        <Caption className="text-[11px] uppercase tracking-[0.18em] text-white/50">
           {t('authPages.footerBrand')}
         </Caption>
       </footer>

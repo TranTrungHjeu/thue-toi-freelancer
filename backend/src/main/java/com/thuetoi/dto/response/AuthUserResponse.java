@@ -1,6 +1,7 @@
 package com.thuetoi.dto.response;
 
 import java.time.LocalDateTime;
+import java.util.List;
 
 public class AuthUserResponse {
     private Long id;
@@ -9,6 +10,7 @@ public class AuthUserResponse {
     private String role;
     private String avatarUrl;
     private String profileDescription;
+    private List<String> skills;
     private Boolean isActive;
     private Boolean verified;
     private LocalDateTime createdAt;
@@ -18,12 +20,17 @@ public class AuthUserResponse {
     }
 
     public AuthUserResponse(Long id, String email, String fullName, String role, String avatarUrl, String profileDescription, Boolean isActive, Boolean verified, LocalDateTime createdAt, LocalDateTime updatedAt) {
+        this(id, email, fullName, role, avatarUrl, profileDescription, null, isActive, verified, createdAt, updatedAt);
+    }
+
+    public AuthUserResponse(Long id, String email, String fullName, String role, String avatarUrl, String profileDescription, List<String> skills, Boolean isActive, Boolean verified, LocalDateTime createdAt, LocalDateTime updatedAt) {
         this.id = id;
         this.email = email;
         this.fullName = fullName;
         this.role = role;
         this.avatarUrl = avatarUrl;
         this.profileDescription = profileDescription;
+        this.skills = skills;
         this.isActive = isActive;
         this.verified = verified;
         this.createdAt = createdAt;
@@ -84,6 +91,14 @@ public class AuthUserResponse {
 
     public void setProfileDescription(String profileDescription) {
         this.profileDescription = profileDescription;
+    }
+
+    public List<String> getSkills() {
+        return skills;
+    }
+
+    public void setSkills(List<String> skills) {
+        this.skills = skills;
     }
 
     public Boolean getVerified() {

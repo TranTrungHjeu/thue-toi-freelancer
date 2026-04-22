@@ -1,11 +1,14 @@
 package com.thuetoi.service;
 
 import com.thuetoi.entity.Notification;
+import com.thuetoi.entity.User;
 import com.thuetoi.enums.NotificationType;
 import com.thuetoi.exception.BusinessException;
 import com.thuetoi.repository.NotificationRepository;
+import com.thuetoi.repository.UserRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
+import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -15,6 +18,12 @@ import java.util.List;
 public class NotificationService {
     @Autowired
     private NotificationRepository notificationRepository;
+
+    @Autowired
+    private UserRepository userRepository;
+
+    @Autowired
+    private SimpMessagingTemplate messagingTemplate;
 
     /**
      * Lấy tất cả notification
@@ -37,7 +46,15 @@ public class NotificationService {
         if (notification.getIsRead() == null) {
             notification.setIsRead(false);
         }
-        return notificationRepository.save(notification);
+        Notification savedNotification = notificationRepository.save(notification);
+
+        // Broadcast realtime notification qua WebSocket
+        if (messagingTemplate != null) {
+            messagingTemplate.convertAndSendToUser(
+                String.valueOf(userId), "/queue/notifications", savedNotification);
+        }
+
+        return savedNotification;
     }
 
     @Transactional
@@ -58,6 +75,44 @@ public class NotificationService {
         }
         notification.setIsRead(true);
         return notificationRepository.save(notification);
+    }
+
+    @Transactional
+    public void markAllAsRead(Long userId) {
+        List<Notification> unread = notificationRepository.findByUserIdOrderByCreatedAtDesc(userId);
+        unread.forEach(n -> n.setIsRead(true));
+        notificationRepository.saveAll(unread);
+    }
+
+    @Transactional
+    public void broadcastNotification(String targetRole, String type, String title, String content, String link) {
+        List<User> targets;
+        if (targetRole == null || targetRole.trim().isEmpty() || targetRole.equalsIgnoreCase("all")) {
+            targets = userRepository.findAll();
+        } else {
+            targets = userRepository.findByRole(targetRole.toLowerCase().trim());
+        }
+
+        if (targets.isEmpty()) return;
+
+        String finalType = normalizeNotificationType(type).getValue();
+        List<Notification> notifications = targets.stream().map(u -> {
+            Notification n = new Notification();
+            n.setUserId(u.getId());
+            n.setType(finalType);
+            n.setTitle(title);
+            n.setContent(content);
+            n.setLink(link);
+            n.setIsRead(false);
+            return n;
+        }).toList();
+
+        notificationRepository.saveAll(notifications);
+
+        // Phát tín hiệu thông báo mới cho client nếu cần (có thể dùng topic /topic/global-notifications)
+        if (messagingTemplate != null) {
+            messagingTemplate.convertAndSend("/topic/global-notifications", "NEW_BROADCAST");
+        }
     }
 
     private String normalizeText(String value) {
