@@ -43,7 +43,7 @@ const ContractPreview = ({
             <span className="text-xs font-bold text-secondary-900">{clientName}</span>
           </div>
           <div className="flex justify-between">
-            <span className="text-xs font-bold uppercase text-slate-400">Bên B (Người tìm việc)</span>
+            <span className="text-xs font-bold uppercase text-slate-400">Bên B (Freelancer)</span>
             <span className="text-xs font-bold text-secondary-900">{freelancerName}</span>
           </div>
           <div className="flex justify-between border-t border-slate-100 pt-4">

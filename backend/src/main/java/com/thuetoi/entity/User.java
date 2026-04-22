@@ -1,11 +1,16 @@
 package com.thuetoi.entity;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import jakarta.persistence.Column;
+import jakarta.persistence.Entity;
+import jakarta.persistence.JoinColumn;
+import jakarta.persistence.JoinTable;
+import jakarta.persistence.ManyToMany;
+import jakarta.persistence.Table;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 
-import jakarta.persistence.*;
-import java.util.Date;
+import java.math.BigDecimal;
 import java.util.HashSet;
 import java.util.Set;
 
@@ -46,6 +51,9 @@ public class User extends BaseEntity {
         inverseJoinColumns = @JoinColumn(name = "skill_id")
     )
     private Set<Skill> skills = new HashSet<>();
+
+    @Column(precision = 19, scale = 2)
+    private BigDecimal balance = BigDecimal.ZERO;
 
     // Getter, Setter, Constructor
 }

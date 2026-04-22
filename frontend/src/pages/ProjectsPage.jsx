@@ -27,6 +27,8 @@ import {
   getProjectStatusMeta,
 } from '../utils/formatters';
 import { splitApiFormError } from '../utils/formError';
+import ReportModal from '../components/common/ReportModal';
+import { WarningTriangle } from 'iconoir-react';
 
 const initialProjectForm = {
   title: '',
@@ -181,6 +183,10 @@ const ProjectsPage = () => {
   const [marketplaceSearchTerm, setMarketplaceSearchTerm] = useState('');
   const [marketplaceStatus, setMarketplaceStatus] = useState('open');
   const [marketplaceSkills, setMarketplaceSkills] = useState([]);
+  
+  // Report Modal State
+  const [isReportModalOpen, setIsReportModalOpen] = useState(false);
+  const [projectToReport, setProjectToReport] = useState(null);
 
   const isCustomer = user?.role === 'customer';
 
@@ -652,6 +658,19 @@ const ProjectsPage = () => {
                             {isCancellingProject ? copy.customerList.cancelling : copy.customerList.cancel}
                           </Button>
                         )}
+                        {!isCustomer && (
+                          <Button 
+                            variant="ghost" 
+                            className="text-red-500 hover:bg-red-50"
+                            onClick={() => {
+                              setProjectToReport(project);
+                              setIsReportModalOpen(true);
+                            }}
+                          >
+                            <WarningTriangle className="w-4 h-4 mr-2" />
+                            {t('reportModal.submitBtn')}
+                          </Button>
+                        )}
                       </div>
                     </div>
                   );
@@ -959,6 +978,14 @@ const ProjectsPage = () => {
           </div>
         </section>
       )}
+      {/* Report Modal */}
+      <ReportModal 
+        isOpen={isReportModalOpen}
+        onClose={() => setIsReportModalOpen(false)}
+        targetType="PROJECT"
+        targetId={projectToReport?.id}
+        targetName={projectToReport?.title}
+      />
     </div>
   );
 };

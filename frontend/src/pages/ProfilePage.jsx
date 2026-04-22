@@ -193,6 +193,8 @@ const ProfilePage = () => {
   const [submitting, setSubmitting] = useState(false);
   const [avatarFile, setAvatarFile] = useState(null);
   const [avatarPreview, setAvatarPreview] = useState(null);
+  const [kycStatus, setKycStatus] = useState(null);
+  const [requestingKyc, setRequestingKyc] = useState(false);
   const [sendingOtp, setSendingOtp] = useState(false);
   const [sendingEmailOtp, setSendingEmailOtp] = useState(false);
   const [emailOtpSent, setEmailOtpSent] = useState(false);
@@ -206,6 +208,17 @@ const ProfilePage = () => {
   const [emailFieldErrors, setEmailFieldErrors] = useState({});
   const [emailFormError, setEmailFormError] = useState('');
 
+  const fetchKycStatus = useCallback(async () => {
+    try {
+      const res = await marketplaceApi.getKycStatus();
+      if (res.success) {
+        setKycStatus(res.data);
+      }
+    } catch (err) {
+      console.error("Could not fetch KYC status", err);
+    }
+  }, []);
+
   useEffect(() => {
     setProfileForm({
       fullName: user?.fullName || '',
@@ -214,7 +227,8 @@ const ProfilePage = () => {
     });
     setAvatarFile(null);
     setAvatarPreview(null);
-  }, [user]);
+    fetchKycStatus();
+  }, [user, fetchKycStatus]);
 
   useEffect(() => {
     if (tabContentRef.current && tabContentRef.current.children.length > 0) {
@@ -242,6 +256,19 @@ const ProfilePage = () => {
   useEffect(() => {
     loadSkillCatalog();
   }, [loadSkillCatalog]);
+
+  const handleRequestKyc = async () => {
+    setRequestingKyc(true);
+    try {
+      await marketplaceApi.requestKyc();
+      addToast('Yêu cầu xác thực đã được gửi.', 'success');
+      fetchKycStatus();
+    } catch (error) {
+      addToast(error?.response?.data?.message || "Không thể gửi yêu cầu", 'error');
+    } finally {
+      setRequestingKyc(false);
+    }
+  };
 
   const handleFieldChange = (field) => (event) => {
     setProfileForm((previous) => ({
@@ -297,7 +324,6 @@ const ProfilePage = () => {
       if (avatarFile) {
         const uploadRes = await authApi.uploadAvatar(avatarFile);
         finalAvatarUrl = uploadRes.data || uploadRes.data?.data || uploadRes.avatarUrl; 
-        // Axios unwraps to response.data, inside ApiResponse we returned String avatarUrl in data field
       }
 
       await authApi.updateMyProfile({
@@ -346,7 +372,6 @@ const ProfilePage = () => {
         newPassword: passwordForm.newPassword,
         otp: passwordForm.otp,
       });
-      // axiosClient interceptor tự lưu access token mới từ response body
       addToast(copy.passwordSuccess, 'success');
       setPasswordForm(initialPasswordForm);
     } catch (error) {
@@ -402,11 +427,10 @@ const ProfilePage = () => {
       addToast(copy.changeEmailSuccess, 'success');
       setEmailForm(initialEmailForm);
       setEmailOtpSent(false);
-      // Backend đã revoke toàn bộ session → buộc đăng xuất và về trang đăng nhập
       setTimeout(async () => {
         await logout();
         navigate('/login');
-      }, 1500); // Delay nhỏ để user thấy toast thành công
+      }, 1500);
     } catch (error) {
       const { fieldErrors: nextFieldErrors, formError: nextFormError } = splitApiFormError(error, copy.changeEmailError);
       setEmailFieldErrors(nextFieldErrors);
@@ -490,7 +514,6 @@ const ProfilePage = () => {
               </H2>
               
               <div className="mt-6 flex flex-col md:flex-row gap-8 items-start">
-                {/* Avatar Upload Column */}
                 <div className="flex flex-col items-center gap-4 w-full md:w-auto flex-shrink-0">
                   <Avatar 
                     src={getFullAvatarUrl(avatarPreview || user?.avatarUrl)} 
@@ -515,9 +538,40 @@ const ProfilePage = () => {
                   </Button>
                 </div>
 
-                {/* Form Column */}
                 <div className="w-full">
-                  <form className="flex flex-col gap-5" onSubmit={handleSubmitProfile}>
+                  <div className="flex-1">
+                    <div className="flex items-center gap-2">
+                      <div className="font-bold text-slate-400 text-xs uppercase tracking-widest">{formatRole(user.role, locale)}</div>
+                      {user.verified && (
+                        <Badge color="info" className="scale-75 origin-left">Verified Account</Badge>
+                      )}
+                    </div>
+                    <H1 className="mt-1 text-4xl">{user.fullName}</H1>
+                    <div className="mt-2 text-slate-500 font-medium">{user.email}</div>
+                    
+                    <div className="mt-6 flex flex-wrap gap-4 items-center">
+                      {!user.verified && (!kycStatus || kycStatus.status === 'REJECTED') && (
+                        <Button size="sm" variant="outline" onClick={handleRequestKyc} disabled={requestingKyc}>
+                          {requestingKyc ? "Đang gửi..." : "Yêu cầu xác thực tài khoản"}
+                        </Button>
+                      )}
+                      {kycStatus?.status === 'PENDING' && (
+                        <div className="flex items-center gap-2 text-primary-600 font-bold text-xs uppercase tracking-wider bg-primary-50 px-3 py-1.5">
+                           Đang chờ xác thực...
+                        </div>
+                      )}
+                      {kycStatus?.status === 'REJECTED' && (
+                        <div className="flex flex-col gap-1">
+                          <div className="flex items-center gap-2 text-red-500 font-bold text-xs uppercase tracking-wider">
+                             Xác thực bị từ chối
+                          </div>
+                          <div className="text-[10px] text-red-400 italic">Lý do: {kycStatus.note}</div>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+
+                  <form className="flex flex-col gap-5 mt-8" onSubmit={handleSubmitProfile}>
                     {formError && (
                       <InlineErrorBlock title={copy.editorErrorTitle}>
                         {formError}

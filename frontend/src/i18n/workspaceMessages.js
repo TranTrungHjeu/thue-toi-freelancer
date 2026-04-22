@@ -3,34 +3,34 @@ export const workspaceMessages = {
     workspaceDashboard: {
       stats: {
         customer: {
-          projects: "Dự án của bạn",
-          contracts: "Hợp đồng liên quan",
-          unreadNotifications: "Thông báo chưa đọc",
+          projects: "Dự án đang quản lý",
+          contracts: "Hợp đồng hiện hữu",
+          unreadNotifications: "Thông báo mới",
         },
         freelancer: {
-          openProjects: "Dự án đang tuyển",
-          myBids: "Báo giá của bạn",
-          contracts: "Hợp đồng liên quan",
+          openProjects: "Cơ hội việc làm",
+          myBids: "Hồ sơ dự thầu",
+          contracts: "Dự án đang làm",
         },
       },
       hero: {
-        caption: "Tổng quan",
-        title: "Chào mừng {name}, khu làm việc của bạn đã sẵn sàng.",
+        caption: "Bảng điều khiển",
+        title: "Chào {name}, bàn làm việc của bạn đã sẵn sàng.",
         description:
-          "Bạn đang đăng nhập với vai trò {role}. Mọi dữ liệu đều lấy trực tiếp từ hệ thống.",
+          "Bạn đang truy cập với tư cách là {role}. Dữ liệu được đồng bộ hóa theo thời gian thực.",
         customerAction: "Quản lý dự án",
-        freelancerAction: "Tìm dự án và gửi báo giá",
-        contractsAction: "Xem hợp đồng",
-        profileAction: "Hồ sơ của tôi",
+        freelancerAction: "Săn dự án ngay",
+        contractsAction: "Danh sách hợp đồng",
+        profileAction: "Cài đặt hồ sơ",
       },
       projectsSection: {
         customerCaption: "Dự án",
-        freelancerCaption: "Thị trường dự án",
-        customerTitle: "Dự án gần đây",
-        freelancerTitle: "Dự án đang tuyển",
-        viewAll: "Xem tất cả",
-        deadline: "Hạn cuối: {date}",
-        descriptionFallback: "Chưa có mô tả chi tiết cho dự án này.",
+        freelancerCaption: "Sàn dự án",
+        customerTitle: "Hoạt động gần đây",
+        freelancerTitle: "Dự án mới công bố",
+        viewAll: "Toàn bộ danh sách",
+        deadline: "Hạn chót: {date}",
+        descriptionFallback: "Chưa có mô tả cụ thể.",
         budget: "Ngân sách: {value}",
         emptyCustomerTitle: "Chưa có dự án",
         emptyCustomerDescription:
@@ -62,10 +62,10 @@ export const workspaceMessages = {
     projectsPage: {
       hero: {
         caption: "Dự án",
-        titleCustomer: "Quản lý dự án và xử lý báo giá",
-        titleFreelancer: "Tìm dự án phù hợp và gửi báo giá",
+        titleCustomer: "Điều phối dự án và Phê duyệt báo giá",
+        titleFreelancer: "Tìm kiếm cơ hội và Đệ trình báo giá",
         description:
-          "Người thuê quản lý dự án và báo giá, người tìm việc tìm cơ hội và gửi đề xuất.",
+          "Hệ thống trung tâm giúp Khách hàng quản lý tiến độ và Freelancer tối ưu hóa thu nhập.",
       },
       stats: {
         total: "Tổng số dự án",
@@ -73,27 +73,27 @@ export const workspaceMessages = {
         cancelled: "Dự án đã hủy",
       },
       customerComposer: {
-        captionCreate: "Tạo dự án",
-        captionUpdate: "Cập nhật dự án",
-        titleCreate: "Đăng dự án mới",
-        titleUpdate: "Chỉnh sửa dự án hiện tại",
-        errorTitle: "Không thể lưu biểu mẫu dự án",
-        cancelEdit: "Hủy chỉnh sửa",
-        updateModeTitle: "Đang ở chế độ cập nhật",
+        captionCreate: "Công bố dự án",
+        captionUpdate: "Hiệu chỉnh dự án",
+        titleCreate: "Công bố dự án mới",
+        titleUpdate: "Hiệu chỉnh dự án hiện tại",
+        errorTitle: "Không thể lưu thông tin dự án",
+        cancelEdit: "Hủy bỏ thay đổi",
+        updateModeTitle: "Chế độ hiệu chỉnh đang mở",
         updateModeDescription:
-          "Bạn đang sửa dự án. Lưu xong biểu mẫu sẽ quay về chế độ đăng mới.",
-        titleLabel: "Tiêu đề",
-        titlePlaceholder: "VD: Xây dựng trang giới thiệu sản phẩm",
-        descriptionLabel: "Mô tả dự án",
+          "Bạn đang thay đổi thông tin dự án. Sau khi lưu, hệ thống sẽ trở về giao diện đăng bài mặc định.",
+        titleLabel: "Tên dự án",
+        titlePlaceholder: "Ví dụ: Thiết kế giao diện di động cho app tài chính",
+        descriptionLabel: "Yêu cầu chi tiết",
         descriptionPlaceholder:
-          "Nêu rõ yêu cầu công việc, kết quả cần bàn giao, thời gian dự kiến và kỹ năng mong muốn.",
-        budgetMinLabel: "Ngân sách từ",
+          "Hãy mô tả cụ thể mục tiêu, phạm vi công việc, sản phẩm bàn giao và các tiêu chuẩn chuyên môn.",
+        budgetMinLabel: "Ngân sách dự kiến từ",
         budgetMaxLabel: "Đến",
-        deadlineLabel: "Hạn hoàn thành",
-        submitCreate: "Đăng dự án",
-        submitCreating: "Đang đăng dự án...",
-        submitUpdate: "Lưu thay đổi",
-        submitUpdating: "Đang cập nhật dự án...",
+        deadlineLabel: "Hạn đóng báo giá",
+        submitCreate: "Công bố ngay",
+        submitCreating: "Đang xử lý...",
+        submitUpdate: "Cập nhật ngay",
+        submitUpdating: "Đang lưu thay đổi...",
       },
       customerList: {
         caption: "Danh sách dự án",
@@ -113,11 +113,11 @@ export const workspaceMessages = {
         caption: "Báo giá theo dự án",
         title: "Báo giá cho: {title}",
         loading: "Đang tải danh sách báo giá...",
-        freelancerFallback: "Người tìm việc #{id}",
+        freelancerFallback: "Freelancer #{id}",
         proposedAt: "Đề xuất lúc: {value}",
         price: "Giá đề xuất: {value}",
         messageFallback:
-          "Người tìm việc chưa để lại nội dung kèm theo báo giá này.",
+          "Freelancer chưa để lại nội dung kèm theo báo giá này.",
         estimatedTime: "Thời gian dự kiến: {value}",
         estimatedFallback: "Đang cập nhật",
         accept: "Chấp nhận báo giá",
@@ -127,18 +127,18 @@ export const workspaceMessages = {
         emptyDescription:
           "Dự án này chưa nhận báo giá nào. Khi có quan tâm, khu vực này sẽ cập nhật.",
       },
-      marketplace: {
-        caption: "Thị trường dự án",
-        title: "Dự án đang tuyển",
-        owner: "Chủ dự án: {name}",
-        ownerFallback: "Người thuê #{id}",
-        descriptionFallback: "Người thuê chưa điền mô tả cho dự án này.",
+       marketplace: {
+        caption: "Sàn dự án",
+        title: "Dự án đang nhận báo giá",
+        owner: "Đối tác: {name}",
+        ownerFallback: "Khách hàng #{id}",
+        descriptionFallback: "Đối tác chưa cung cấp mô tả chi tiết.",
         budget: "Ngân sách: {value}",
-        deadline: "Hạn: {date}",
-        select: "Chọn dự án này",
-        emptyTitle: "Chưa có dự án",
+        deadline: "Thời hạn: {date}",
+        select: "Gửi báo giá ngay",
+        emptyTitle: "Chưa có dự án mới",
         emptyDescription:
-          "Hiện chưa có dự án phù hợp để bạn gửi báo giá. Hãy quay lại sau.",
+          "Sàn dự án hiện tại đang trống. Chúng tôi sẽ thông báo cho bạn khi có cơ hội mới.",
       },
       bidComposer: {
         caption: "Soạn báo giá",
@@ -175,8 +175,8 @@ export const workspaceMessages = {
       participants: {
         you: "Bạn",
         user: "Người dùng #{id}",
-        customer: "Người thuê",
-        freelancer: "Người tìm việc",
+        customer: "Khách hàng",
+        freelancer: "Freelancer",
       },
       messagePreview: {
         file: "Đã gửi một tệp đính kèm.",
@@ -184,9 +184,9 @@ export const workspaceMessages = {
       },
       hero: {
         caption: "Hợp đồng",
-        title: "Theo dõi hợp đồng, cộng tác và chốt kết quả bàn giao.",
+        title: "Điều phối hợp đồng, cộng tác và nghiệm thu kết quả.",
         description:
-          "Theo dõi mốc thanh toán, trao đổi trong lúc thực hiện và đánh giá khi hoàn tất.",
+          "Giám sát các mốc thanh toán, trao đổi trực tiếp và để lại đánh giá sau khi hoàn tất.",
       },
       stats: {
         total: "Tổng hợp đồng",
@@ -201,8 +201,8 @@ export const workspaceMessages = {
         projectNumber: "Dự án #{id}",
         value: "Giá trị: {value}",
         start: "Bắt đầu: {value}",
-        openDetail: "Mở khu làm việc hợp đồng",
-        viewingDetail: "Đang xem chi tiết",
+        openDetail: "Truy cập không gian hợp tác",
+        viewingDetail: "Đang kiểm tra...",
         emptyTitle: "Chưa có hợp đồng",
         emptyDescription:
           "Khi báo giá được chấp nhận và hợp đồng được tạo, nó sẽ hiển thị ở đây.",
@@ -218,25 +218,25 @@ export const workspaceMessages = {
       statusCard: {
         caption: "Trạng thái",
         value: "Giá trị hợp đồng: {value}",
-        progress: "Tiến độ hiện tại: {value}%",
+        progress: "Tiến độ bàn giao: {value}%",
       },
       relatedInfo: {
-        caption: "Thông tin liên quan",
-        project: "Dự án: #{id}",
-        customer: "Người thuê: #{id}",
-        freelancer: "Người tìm việc: #{id}",
-        start: "Bắt đầu: {value}",
-        end: "Kết thúc: {value}",
+        caption: "Thông tin pháp lý",
+        project: "Mã dự án: #{id}",
+        customer: "Khách hàng: #{id}",
+        freelancer: "Freelancer: #{id}",
+        start: "Ngày khởi tạo: {value}",
+        end: "Ngày đóng: {value}",
       },
       update: {
-        caption: "Cập nhật hợp đồng",
-        title: "Chốt trạng thái thực hiện",
+        caption: "Cập nhật tiến độ",
+        title: "Chốt kết quả thực hiện",
         description:
-          "Các bên có thể chuyển hợp đồng sang hoàn thành hoặc hủy khi còn đang thực hiện.",
-        complete: "Hoàn thành hợp đồng",
-        cancel: "Hủy hợp đồng",
+          "Cả hai bên có quyền chuyển hợp đồng sang trạng thái Hoàn tất hoặc Hủy bỏ nếu có phát sinh.",
+        complete: "Xác nhận hoàn tất",
+        cancel: "Chấm dứt hợp đồng",
         updating: "Đang cập nhật...",
-        ended: "Hợp đồng đã ở trạng thái kết thúc",
+        ended: "Hợp đồng đã đóng",
       },
       milestones: {
         caption: "Mốc thanh toán",
@@ -250,15 +250,15 @@ export const workspaceMessages = {
         customerLockedTitle: "Không thể tạo mốc thanh toán",
         customerLockedDescription:
           "Chỉ hợp đồng đang thực hiện mới cho phép thêm mốc mới.",
-        freelancerLockedTitle: "Mốc do người thuê quản lý",
+        freelancerLockedTitle: "Mốc do Khách hàng quản lý",
         freelancerLockedDescription:
-          "Bạn vẫn có thể theo dõi mốc của hợp đồng này, nhưng chỉ người thuê mới thêm được.",
+          "Bạn vẫn có thể theo dõi mốc của hợp đồng này, nhưng chỉ Khách hàng mới thêm được.",
         loading: "Đang tải mốc thanh toán...",
         due: "Hạn: {value}",
         value: "Giá trị: {value}",
         emptyTitle: "Chưa có mốc thanh toán",
         emptyDescription:
-          "Hợp đồng này chưa có mốc nào. Người thuê có thể thêm khi hợp đồng đang thực hiện.",
+          "Hợp đồng này chưa có mốc nào. Khách hàng có thể thêm khi hợp đồng đang thực hiện.",
       },
       messages: {
         caption: "Trao đổi",
@@ -372,7 +372,7 @@ export const workspaceMessages = {
         titleCustomer: "Manage projects and process bids",
         titleFreelancer: "Find suitable projects and submit bids",
         description:
-          "Clients manage projects and bids, while job seekers browse open projects and send proposals.",
+          "Customers manage projects and bids, while freelancers browse open projects and send proposals.",
       },
       stats: {
         total: "Total projects",
@@ -420,11 +420,11 @@ export const workspaceMessages = {
         caption: "Bids by project",
         title: "Bids for: {title}",
         loading: "Loading bids...",
-        freelancerFallback: "Job seeker #{id}",
+        freelancerFallback: "Freelancer #{id}",
         proposedAt: "Proposed at: {value}",
         price: "Bid amount: {value}",
         messageFallback:
-          "The job seeker did not leave any message with this bid.",
+          "The freelancer did not leave any message with this bid.",
         estimatedTime: "Estimated timeline: {value}",
         estimatedFallback: "Updating",
         accept: "Accept bid",
@@ -438,9 +438,9 @@ export const workspaceMessages = {
         caption: "Project marketplace",
         title: "Open projects",
         owner: "Project owner: {name}",
-        ownerFallback: "Client #{id}",
+        ownerFallback: "Customer #{id}",
         descriptionFallback:
-          "The client has not added a description for this project yet.",
+          "The customer has not added a description for this project yet.",
         budget: "Budget: {value}",
         deadline: "Deadline: {date}",
         select: "Select this project",
@@ -483,8 +483,8 @@ export const workspaceMessages = {
       participants: {
         you: "You",
         user: "User #{id}",
-        customer: "Client",
-        freelancer: "Job seeker",
+        customer: "Customer",
+        freelancer: "Freelancer",
       },
       messagePreview: {
         file: "Sent an attachment.",
@@ -531,8 +531,8 @@ export const workspaceMessages = {
       relatedInfo: {
         caption: "Related information",
         project: "Project: #{id}",
-        customer: "Client: #{id}",
-        freelancer: "Job seeker: #{id}",
+        customer: "Customer: #{id}",
+        freelancer: "Freelancer: #{id}",
         start: "Started: {value}",
         end: "Ended: {value}",
       },
@@ -558,15 +558,15 @@ export const workspaceMessages = {
         customerLockedTitle: "Cannot create milestones",
         customerLockedDescription:
           "Only in-progress contracts allow new milestones.",
-        freelancerLockedTitle: "Milestones are managed by the client",
+        freelancerLockedTitle: "Milestones are managed by the customer",
         freelancerLockedDescription:
-          "You can still track milestones, but only the client can add new ones.",
+          "You can still track milestones, but only the customer can add new ones.",
         loading: "Loading milestones...",
         due: "Due: {value}",
         value: "Value: {value}",
         emptyTitle: "No milestones yet",
         emptyDescription:
-          "This contract does not have any milestones yet. The client can add them while it is in progress.",
+          "This contract does not have any milestones yet. The customer can add them while it is in progress.",
       },
       messages: {
         caption: "Conversation",

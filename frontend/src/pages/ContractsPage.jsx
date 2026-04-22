@@ -24,6 +24,8 @@ import {
   getMilestoneStatusMeta,
 } from '../utils/formatters';
 import { splitApiFormError } from '../utils/formError';
+import ReportModal from '../components/common/ReportModal';
+import { WarningTriangle } from 'iconoir-react';
 
 const initialMilestoneForm = { title: '', amount: '', dueDate: '' };
 const initialMessageForm = { messageType: 'text', content: '', attachments: '' };
@@ -168,6 +170,10 @@ const ContractsPage = () => {
   const [activeContractAction, setActiveContractAction] = useState(null);
   const [milestoneActionId, setMilestoneActionId] = useState(null);
   const selectedContractIdRef = useRef(null);
+
+  // Report Modal State
+  const [isReportModalOpen, setIsReportModalOpen] = useState(false);
+  const [targetToReport, setTargetToReport] = useState(null);
 
   const selectedContract = useMemo(
     () => contracts.find((contract) => contract.id === selectedContractId) || null,
@@ -531,7 +537,24 @@ const ContractsPage = () => {
                     </div>
                   </InfoPanel>
                   <InfoPanel>
-                    <Caption className="text-[11px] uppercase tracking-[0.18em] text-slate-500">{copy.relatedInfo.caption}</Caption>
+                    <div className="flex justify-between items-start">
+                      <Caption className="text-[11px] uppercase tracking-[0.18em] text-slate-500">{copy.relatedInfo.caption}</Caption>
+                      <Button 
+                        variant="ghost" 
+                        size="sm" 
+                        className="text-red-500 hover:bg-red-50 -mt-1 -mr-2"
+                        onClick={() => {
+                          const targetUser = isCustomerOnSelectedContract 
+                            ? { id: selectedContract.freelancerId, name: `${t('roles.freelancer')} #${selectedContract.freelancerId}` }
+                            : { id: selectedContract.customerId, name: `${t('roles.customer')} #${selectedContract.customerId}` };
+                          setTargetToReport(targetUser);
+                          setIsReportModalOpen(true);
+                        }}
+                      >
+                        <WarningTriangle className="w-4 h-4 mr-1.5" />
+                        Báo cáo vi phạm
+                      </Button>
+                    </div>
                     <div className="mt-3 text-sm text-slate-700">{t('contractsPage.relatedInfo.project', { id: selectedContract.projectId })}</div>
                     <div className="mt-2 text-sm text-slate-700">{t('contractsPage.relatedInfo.customer', { id: selectedContract.customerId })}</div>
                     <div className="mt-2 text-sm text-slate-700">{t('contractsPage.relatedInfo.freelancer', { id: selectedContract.freelancerId })}</div>
@@ -757,6 +780,15 @@ const ContractsPage = () => {
           </Card>
         </div>
       </section>
+
+      {/* Report Modal */}
+      <ReportModal 
+        isOpen={isReportModalOpen}
+        onClose={() => setIsReportModalOpen(false)}
+        targetType="USER"
+        targetId={targetToReport?.id}
+        targetName={targetToReport?.name}
+      />
     </div>
   );
 };

@@ -57,7 +57,7 @@ const MobileDrawer = ({
                 <div className="text-[11px] font-bold uppercase tracking-[0.18em] text-slate-500">
                   {t('layout.workspace')}
                 </div>
-                <div className="mt-1 text-sm font-semibold text-secondary-900">Thuê Tôi</div>
+                <div className="mt-1 text-sm font-semibold text-secondary-900">{t('app.brand')}</div>
               </div>
             </div>
 

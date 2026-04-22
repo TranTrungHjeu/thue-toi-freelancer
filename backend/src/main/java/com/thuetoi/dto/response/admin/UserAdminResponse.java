@@ -5,6 +5,7 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.Set;
 
@@ -24,6 +25,7 @@ public class UserAdminResponse {
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
     private Set<String> skills;
+    private BigDecimal balance;
     
     // Summary stats for this user
     private long projectCount; // As customer
