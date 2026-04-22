@@ -1,34 +1,36 @@
 package com.thuetoi.service;
 
+import com.thuetoi.entity.KycRequest;
+import com.thuetoi.entity.Project;
+import com.thuetoi.entity.User;
+import com.thuetoi.entity.WithdrawalRequest;
+import com.thuetoi.exception.BusinessException;
+import com.thuetoi.repository.ContractRepository;
+import com.thuetoi.repository.KycRequestRepository;
+import com.thuetoi.repository.ProjectRepository;
+import com.thuetoi.repository.ReportRepository;
+import com.thuetoi.repository.SystemSettingRepository;
+import com.thuetoi.repository.UserRepository;
+import com.thuetoi.repository.WithdrawalRequestRepository;
+import com.thuetoi.service.NotificationService;
+
 import java.math.BigDecimal;
 import java.util.Optional;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.eq;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
-import static org.mockito.Mockito.never;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.http.HttpStatus;
 
-import java.math.BigDecimal;
-import java.util.Optional;
-
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
-import org.mockito.InjectMocks;
-import org.mockito.Mock;
 import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
 @SuppressWarnings("unused")
