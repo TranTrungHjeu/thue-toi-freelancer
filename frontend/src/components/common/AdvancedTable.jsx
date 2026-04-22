@@ -4,17 +4,22 @@ import React, { useState } from 'react';
 import { NavArrowLeft, NavArrowRight, SortDown, SortUp } from 'iconoir-react';
 import Button from './Button';
 import { Caption } from './Typography';
+import { useI18n } from '../../hooks/useI18n';
 
 /**
  * Advanced Table with Pagination and Sorting capability.
  * Strictly sharp, professional layout.
  */
 const AdvancedTable = ({ 
-  headers = [], 
+  headers = [],
   data = [], 
   pageSize = 5,
-  className = "" 
+  className = "",
+  selectedIds = [],
+  onSelectionChange = null,
+  rowIdKey = "id"
 }) => {
+  const { t } = useI18n();
   const [currentPage, setCurrentPage] = useState(1);
   const [sortConfig, setSortConfig] = useState(null);
 
@@ -49,12 +54,39 @@ const AdvancedTable = ({
     currentPage * pageSize
   );
 
+  const handleSelectAll = (e) => {
+    if (!onSelectionChange) return;
+    if (e.target.checked) {
+      onSelectionChange(paginatedData.map(item => item[rowIdKey]));
+    } else {
+      onSelectionChange([]);
+    }
+  };
+
+  const handleSelectRow = (id) => {
+    if (!onSelectionChange) return;
+    const newSelection = selectedIds.includes(id)
+      ? selectedIds.filter(item => item !== id)
+      : [...selectedIds, id];
+    onSelectionChange(newSelection);
+  };
+
   return (
     <div className={`flex flex-col gap-4 ${className}`}>
       <div className="overflow-x-auto border-2 border-slate-100">
         <table className="w-full text-left border-collapse bg-white">
           <thead className="bg-slate-50 border-b-2 border-slate-100">
             <tr>
+              {onSelectionChange && (
+                <th className="px-6 py-4 w-10">
+                  <input 
+                    type="checkbox" 
+                    className="w-4 h-4 rounded border-slate-300 text-primary-600 focus:ring-primary-500 cursor-pointer"
+                    onChange={handleSelectAll}
+                    checked={paginatedData.length > 0 && paginatedData.every(item => selectedIds.includes(item[rowIdKey]))}
+                  />
+                </th>
+              )}
               {headers.map((header) => (
                 <th 
                   key={header.key}
@@ -76,7 +108,23 @@ const AdvancedTable = ({
           </thead>
           <tbody>
             {paginatedData.map((row, idx) => (
-              <tr key={idx} className="border-b border-slate-50 hover:bg-slate-50/50 transition-colors">
+              <tr 
+                key={idx} 
+                className={`
+                  border-b border-slate-50 hover:bg-slate-50/50 transition-colors
+                  ${selectedIds.includes(row[rowIdKey]) ? '!bg-primary-50/50' : ''}
+                `}
+              >
+                {onSelectionChange && (
+                  <td className="px-6 py-4">
+                    <input 
+                      type="checkbox" 
+                      className="w-4 h-4 rounded border-slate-300 text-primary-600 focus:ring-primary-500 cursor-pointer"
+                      checked={selectedIds.includes(row[rowIdKey])}
+                      onChange={() => handleSelectRow(row[rowIdKey])}
+                    />
+                  </td>
+                )}
                 {headers.map((header) => (
                   <td key={header.key} className="px-6 py-4 text-sm text-secondary-900 font-medium">
                     {header.render ? header.render(row[header.key], row) : row[header.key]}
@@ -91,7 +139,11 @@ const AdvancedTable = ({
       {totalPages > 1 && (
         <div className="flex items-center justify-between px-2">
           <Caption className="font-bold">
-            Hiển thị {((currentPage - 1) * pageSize) + 1} - {Math.min(currentPage * pageSize, data.length)} của {data.length}
+            {t('common.pagination.showing', {
+              from: ((currentPage - 1) * pageSize) + 1,
+              to: Math.min(currentPage * pageSize, data.length),
+              total: data.length
+            })}
           </Caption>
           <div className="flex gap-1">
             <Button 

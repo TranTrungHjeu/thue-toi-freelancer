@@ -47,6 +47,13 @@ export const marketplaceApi = {
   createReview: (payload) => axiosClient.post('/v1/reviews', payload),
   getNotificationsMe: () => axiosClient.get('/v1/notifications/user/me'),
   markNotificationAsRead: (notificationId) => axiosClient.put(`/v1/notifications/${notificationId}/read`),
+
+  // --- Reports ---
+  submitReport: (payload) => axiosClient.post('/v1/reports', payload),
+
+  // --- KYC (User-side) ---
+  requestKyc: () => axiosClient.post('/v1/kyc/request'),
+  getKycStatus: () => axiosClient.get('/v1/kyc/my-status'),
 };
 
 export default marketplaceApi;

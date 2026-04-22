@@ -9,7 +9,7 @@ import { H2, Text, Caption } from '../common/Typography';
 import { Star, Wallet, CheckCircle } from 'iconoir-react';
 
 /**
- * Thẻ hồ sơ người tìm việc.
+ * Thẻ hồ sơ freelancer.
  * Thiết kế góc cạnh, hiển thị đánh giá, kỹ năng và mức phí.
  */
 const FreelancerCard = ({ 
@@ -50,7 +50,7 @@ const FreelancerCard = ({
       </div>
 
       <Text className="text-sm line-clamp-2 text-slate-600">
-        Chuyên gia với hơn 5 năm kinh nghiệm trong lĩnh vực này. Đã hoàn thành hơn 50 dự án lớn nhỏ với sự hài lòng tuyệt đối từ khách hàng.
+        Freelancer với hơn 5 năm kinh nghiệm trong lĩnh vực này. Đã hoàn thành hơn 50 dự án lớn nhỏ với sự hài lòng tuyệt đối từ Khách hàng.
       </Text>
 
       <div className="flex flex-wrap gap-2">

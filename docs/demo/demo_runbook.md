@@ -33,7 +33,7 @@ Demo cần chứng minh được 4 điểm:
    - role đang là `customer`
    - app dùng JWT access token và refresh cookie
 
-### Màn 2. Customer tạo project
+### Màn 2. Khách hàng tạo project
 
 1. Vào `Projects`.
 2. Tạo project mới với title dễ nhận biết, ví dụ `Demo landing page doanh nghiệp`.
@@ -46,10 +46,10 @@ Demo cần chứng minh được 4 điểm:
 2. Vào `Projects`, thấy project `open` vừa tạo.
 3. Gửi bid với giá, mô tả và thời gian dự kiến.
 4. Nhấn mạnh rule:
-   - chỉ freelancer được bid
+   - chỉ Freelancer được bid
    - bid mới tạo ở trạng thái `pending`
 
-### Màn 4. Customer chấp nhận bid và tạo contract
+### Màn 4. Khách hàng chấp nhận bid và tạo contract
 
 1. Quay lại `customer1@gmail.com`.
 2. Mở project vừa tạo, xem bid list.
@@ -58,14 +58,14 @@ Demo cần chứng minh được 4 điểm:
    - bid được chọn thành `accepted`
    - project thành `in_progress`
    - contract được tạo
-   - notification cho freelancer được phát sinh
+   - notification cho Freelancer được phát sinh
 
 ### Màn 5. Milestone và collaboration
 
 1. Vào `Contracts`, chọn contract mới.
 2. Tạo một milestone mới.
 3. Gửi một tin nhắn text trong contract.
-4. Chuyển sang freelancer để cho thấy:
+4. Chuyển sang Freelancer để cho thấy:
    - milestone đã xuất hiện
    - message đã đồng bộ
    - notification contract/milestone hiển thị ở `Notifications`

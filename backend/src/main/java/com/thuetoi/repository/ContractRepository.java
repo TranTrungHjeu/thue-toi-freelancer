@@ -4,6 +4,7 @@ import com.thuetoi.entity.Contract;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 
+import java.math.BigDecimal;
 import java.util.List;
 import java.util.Optional;
 
@@ -12,7 +13,7 @@ public interface ContractRepository extends JpaRepository<Contract, Long> {
     Optional<Contract> findByProjectId(Long projectId);
 
     @Query("SELECT COALESCE(SUM(c.totalAmount), 0) FROM Contract c WHERE c.status <> 'cancelled'")
-    double calculateTotalGmv();
+    BigDecimal calculateTotalGmv();
 
     long countByStatus(String status);
 }

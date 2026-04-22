@@ -69,6 +69,44 @@ public class SkillService {
         return resolvedSkills;
     }
 
+    public Skill createSkill(String name, String description) {
+        String normalized = normalizeSkillName(name);
+        if (normalized.isEmpty()) {
+            throw new BusinessException("ERR_SYS_02", "Tên kỹ năng không được để trống", HttpStatus.BAD_REQUEST);
+        }
+        if (skillRepository.findByNameIgnoreCase(normalized).isPresent()) {
+            throw new BusinessException("ERR_SYS_02", "Kỹ năng này đã tồn tại", HttpStatus.CONFLICT);
+        }
+
+        Skill skill = new Skill();
+        skill.setName(name.trim());
+        skill.setDescription(description);
+        return skillRepository.save(skill);
+    }
+
+    public Skill updateSkill(Long id, String name, String description) {
+        Skill skill = skillRepository.findById(id)
+            .orElseThrow(() -> new BusinessException("ERR_SYS_02", "Không tìm thấy kỹ năng", HttpStatus.NOT_FOUND));
+
+        String normalized = normalizeSkillName(name);
+        if (!normalized.isEmpty() && !normalized.equals(normalizeSkillName(skill.getName()))) {
+            if (skillRepository.findByNameIgnoreCase(normalized).isPresent()) {
+                throw new BusinessException("ERR_SYS_02", "Tên kỹ năng mới đã tồn tại", HttpStatus.CONFLICT);
+            }
+            skill.setName(name.trim());
+        }
+        skill.setDescription(description);
+        return skillRepository.save(skill);
+    }
+
+    public void deleteSkill(Long id) {
+        Skill skill = skillRepository.findById(id)
+            .orElseThrow(() -> new BusinessException("ERR_SYS_02", "Không tìm thấy kỹ năng", HttpStatus.NOT_FOUND));
+        
+        // Cần lưu ý: Nếu xóa skill, các bảng junction (projects_skills, users_skills) sẽ tự động bị ảnh hưởng tùy vào config JPA (thường là xóa các liên kết).
+        skillRepository.delete(skill);
+    }
+
     private String normalizeSkillName(String skillName) {
         return skillName == null ? "" : skillName.trim().toLowerCase(Locale.ROOT);
     }

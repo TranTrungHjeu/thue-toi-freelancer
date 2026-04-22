@@ -5,6 +5,7 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import java.math.BigDecimal;
 import java.util.Map;
 
 @Data
@@ -18,7 +19,7 @@ public class AdminStatsResponse {
     private long totalProjects;
     private long activeProjects;
     private long completedContracts;
-    private double totalGmv; // Gross Merchandise Volume
+    private BigDecimal totalGmv; // Gross Merchandise Volume
     private double matchingRate; // % projects with contracts
     
     // User growth trend for charts (e.g., Last 7 days)

@@ -6,14 +6,14 @@ export const toolingMessages = {
           {
             key: 'jobs',
             iconKey: 'jobs',
-            label: 'Tìm việc làm',
+            label: 'Tìm dự án',
             description: 'Khám phá danh sách các dự án mới nhất.',
           },
           {
             key: 'account',
             iconKey: 'account',
-            label: 'Cài đặt tài khoản',
-            description: 'Quản lý thông tin cá nhân và mật khẩu.',
+            label: 'Thiết lập tài khoản',
+            description: 'Quản lý thông tin cá nhân và bảo mật.',
           },
           {
             key: 'reports',
@@ -46,7 +46,7 @@ export const toolingMessages = {
             { label: 'Bảng', value: 'table' },
             { label: 'Lịch', value: 'calendar' },
           ],
-          ratingLabel: 'Đánh giá nhanh người tìm việc',
+          ratingLabel: 'Đánh giá Freelancer',
           summaryCaption: 'Thông tin tóm tắt',
           summaryItems: [
             { label: 'Ngân sách', value: '$3,500', iconKey: 'wallet' },
@@ -156,7 +156,7 @@ export const toolingMessages = {
         interaction: {
           title: '04. Tương tác và giao tiếp',
           searchCaption: 'Tìm kiếm và lọc',
-          searchPlaceholder: 'Thử tìm kiếm người tìm việc...',
+          searchPlaceholder: 'Tìm kiếm Freelancer / dự án...',
           chatCaption: 'Khung trò chuyện',
           chatMessages: [
             { message: 'Chào bạn, mình đã xem qua yêu cầu thiết kế của bạn. Rất mong được hợp tác!', time: '09:15' },
@@ -171,7 +171,7 @@ export const toolingMessages = {
         },
         content: {
           title: '05. Nội dung nâng cao',
-          freelancerCaption: 'Hồ sơ người tìm việc',
+          freelancerCaption: 'Hồ sơ Freelancer',
           freelancerCard: {
             name: 'Trần Trung Hiếu',
             title: 'Senior UI/UX Designer',
@@ -198,9 +198,9 @@ export const toolingMessages = {
           ],
           emptyCaption: 'Trạng thái không có kết quả',
           emptyState: {
-            title: 'Không tìm thấy người tìm việc nào',
-            description: 'Hãy thử bỏ bớt các tiêu chí lọc để thấy nhiều kết quả hơn.',
-            actionLabel: 'Xóa toàn bộ bộ lọc',
+            title: 'Không tìm thấy Freelancer phù hợp',
+            description: 'Hãy thử điều chỉnh bộ lọc để tiếp cận nhiều ứng viên hơn.',
+            actionLabel: 'Làm mới bộ lọc',
           },
         },
         foundations: {
@@ -400,7 +400,7 @@ export const toolingMessages = {
             { label: 'Table', value: 'table' },
             { label: 'Calendar', value: 'calendar' },
           ],
-          ratingLabel: 'Quick rating for job seeker',
+          ratingLabel: 'Quick rating for freelancer',
           summaryCaption: 'Summary information',
           summaryItems: [
             { label: 'Budget', value: '$3,500', iconKey: 'wallet' },
@@ -510,7 +510,7 @@ export const toolingMessages = {
         interaction: {
           title: '04. Interaction and communication',
           searchCaption: 'Search and filter',
-          searchPlaceholder: 'Try searching for a job seeker...',
+          searchPlaceholder: 'Try searching for a freelancer...',
           chatCaption: 'Chat surface',
           chatMessages: [
             { message: 'Hi, I reviewed your design brief and would love to work with you.', time: '09:15' },
@@ -525,7 +525,7 @@ export const toolingMessages = {
         },
         content: {
           title: '05. Advanced content',
-          freelancerCaption: 'Job seeker profile',
+          freelancerCaption: 'Freelancer profile',
           freelancerCard: {
             name: 'Tran Trung Hieu',
             title: 'Senior UI/UX Designer',
@@ -552,7 +552,7 @@ export const toolingMessages = {
           ],
           emptyCaption: 'No-result state',
           emptyState: {
-            title: 'No job seekers found',
+            title: 'No freelancers found',
             description: 'Try removing some filters to see more results.',
             actionLabel: 'Clear all filters',
           },
@@ -691,7 +691,7 @@ export const toolingMessages = {
         processCaption: 'Interaction flow',
         steps: ['Request', 'Bid', 'Delivery', 'Done'],
         tableIntro: 'Example data table aligned with the system design:',
-        tableHeaders: ['Project', 'Client', 'Budget'],
+        tableHeaders: ['Project', 'Customer', 'Budget'],
         tableRows: [
           { name: 'Landing page design', client: 'Anh Minh', budget: '$500' },
           { name: 'Spring API build', client: 'Chi Linh', budget: '$1.200' },
