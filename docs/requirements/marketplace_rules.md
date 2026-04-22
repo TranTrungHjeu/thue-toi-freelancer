@@ -8,6 +8,8 @@ Tài liệu này chốt các rule nghiệp vụ chính cho các module `project`
 - `project.status` hợp lệ gồm: `open`, `in_progress`, `completed`, `cancelled`.
 - `customer` không được tự cập nhật project sang `in_progress` hoặc `completed` bằng tay.
 - `in_progress` và `completed` được đồng bộ từ luồng hợp đồng.
+- Admin chỉ được moderation project về `open` hoặc `cancelled`.
+- Admin không được ép project sang `in_progress` hoặc `completed`, vì đây là trạng thái do contract flow quản lý.
 
 ## 2. Bid
 
@@ -17,12 +19,12 @@ Tài liệu này chốt các rule nghiệp vụ chính cho các module `project`
 - `bid.status` hợp lệ gồm: `pending`, `accepted`, `rejected`, `withdrawn`.
 - `accepted` chỉ được tạo ra từ endpoint chấp nhận bid của customer.
 - Freelancer chỉ được rút bid của chính mình (`withdrawn`) khi bid còn `pending`.
-- Customer chỉ được từ chối bid (`rejected`) khi bid còn `pending`.
+- Khách hàng chỉ được từ chối bid (`rejected`) khi bid còn `pending`.
 
 ## 3. Contract
 
 - Hợp đồng chỉ được tạo từ một `bid` hợp lệ của project.
-- Customer phải là chủ sở hữu project tương ứng.
+- Khách hàng phải là chủ sở hữu project tương ứng.
 - Một project chỉ có tối đa một hợp đồng.
 - Khi hợp đồng được tạo:
   - Bid được chọn chuyển sang `accepted`
@@ -67,3 +69,26 @@ Tài liệu này chốt các rule nghiệp vụ chính cho các module `project`
 - Thanh toán kích hoạt khi milestone hoàn thành hoặc contract completed.
 - Cần enforce rules ownership và trạng thái trước khi xử lý transaction.
 - Flyway V1 migration áp dụng schema đầy đủ.
+
+## 9. Reports
+
+- Chỉ user đã đăng nhập mới được gửi report.
+- `reporter_id` phải lấy từ JWT principal, client không được tự gửi.
+- `report.status` trong luồng admin chỉ chấp nhận `RESOLVED` hoặc `DISMISSED`.
+- Khi user submit report, API chỉ trả `success` envelope, không trả raw entity nội bộ.
+
+## 10. KYC
+
+- User chỉ được tạo yêu cầu KYC cho chính mình.
+- Admin chỉ được approve/reject các request đang ở trạng thái `PENDING`.
+- Khi approve KYC, trạng thái verified của user phải được đồng bộ.
+
+## 11. Admin & Security
+
+- Toàn bộ `/api/v1/admin/**` phải yêu cầu role `ADMIN` ở backend, không chỉ dựa vào frontend.
+- Backend phải bật method security để `@PreAuthorize` thực sự có hiệu lực.
+- Trường hợp không có quyền phải trả `ERR_AUTH_04` với HTTP `403`, không được rơi xuống lỗi hệ thống `500`.
+- Admin không được tự khóa/mở khóa chính mình.
+- Admin không được tự hạ quyền của chính mình.
+- Bulk admin actions không được bao gồm chính admin đang đăng nhập.
+- Frontend phải có route guard riêng cho admin, không chỉ kiểm tra `isAuthenticated`.

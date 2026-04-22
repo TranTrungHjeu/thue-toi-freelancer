@@ -11,6 +11,7 @@ import java.util.List;
  */
 @Repository
 public interface SkillRepository extends JpaRepository<Skill, Long> {
+    java.util.Optional<Skill> findByNameIgnoreCase(String name);
     Skill findByName(String name);
     boolean existsByName(String name);
     List<Skill> findAllByOrderByNameAsc();

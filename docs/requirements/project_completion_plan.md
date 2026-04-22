@@ -60,11 +60,11 @@ Mọi quyết định triển khai phải ưu tiên các tài liệu sau:
 Dự án chỉ được xem là "hoàn thiện" khi đồng thời đạt các điều kiện sau:
 
 - Auth flow chạy đúng: `register -> verify otp -> login -> refresh -> logout -> profile`.
-- Customer có thể tạo, quản lý project của mình đúng rule.
+- Khách hàng có thể tạo, quản lý project của mình đúng rule.
 - Freelancer có thể xem project mở, gửi bid, rút bid của chính mình đúng rule.
-- Customer có thể xem, từ chối hoặc chấp nhận bid đúng rule.
+- Khách hàng có thể xem, từ chối hoặc chấp nhận bid đúng rule.
 - Khi tạo contract từ bid, toàn bộ trạng thái `bid` và `project` được đồng bộ đúng rule.
-- Customer có thể tạo milestone khi contract đang `in_progress`.
+- Khách hàng có thể tạo milestone khi contract đang `in_progress`.
 - Hai participant có thể xem/gửi message khi contract đang `in_progress`.
 - Hai participant có thể tạo review khi contract đã `completed`, mỗi người tối đa một lần mỗi hợp đồng.
 - Notification hiển thị đúng user, đánh dấu đã đọc được.
@@ -172,19 +172,19 @@ Mục tiêu: hoàn chỉnh marketplace core trước khi đi vào hợp đồng.
 
 Việc cần làm:
 
-- Hoàn thiện CRUD project của customer.
-- Chặn tuyệt đối việc customer tự set `project.status` sang `in_progress` hoặc `completed`.
-- Hoàn thiện luồng freelancer xem project mở và gửi bid.
-- Hoàn thiện luồng freelancer rút bid `pending` của chính mình.
-- Hoàn thiện luồng customer từ chối bid `pending`.
-- Hoàn thiện luồng customer chấp nhận bid qua endpoint riêng.
+- Hoàn thiện CRUD project của Khách hàng.
+- Chặn tuyệt đối việc Khách hàng tự set `project.status` sang `in_progress` hoặc `completed`.
+- Hoàn thiện luồng Freelancer xem project mở và gửi bid.
+- Hoàn thiện luồng Freelancer rút bid `pending` của chính mình.
+- Hoàn thiện luồng Khách hàng từ chối bid `pending`.
+- Hoàn thiện luồng Khách hàng chấp nhận bid qua endpoint riêng.
 - Bổ sung test cho ownership, status transition và các case forbidden.
-- Hoàn thiện UI customer quản lý project và bid list.
-- Hoàn thiện UI freelancer xem project, gửi bid, xem lịch sử bid.
+- Hoàn thiện UI Khách hàng quản lý project và bid list.
+- Hoàn thiện UI Freelancer xem project, gửi bid, xem lịch sử bid.
 
 Tiêu chí xong phase:
 
-- Luồng `customer đăng project -> freelancer gửi bid -> customer xử lý bid` chạy end-to-end.
+- Luồng `Khách hàng đăng project -> Freelancer gửi bid -> Khách hàng xử lý bid` chạy end-to-end.
 
 ### Phase 3 - Hoàn thiện Contract và Milestone
 
@@ -199,7 +199,7 @@ Việc cần làm:
   - `project.status` chuyển `in_progress`
 - Hoàn thiện cập nhật `contract.status` sang `completed` hoặc `cancelled`.
 - Đồng bộ ngược `project.status` theo contract khi kết thúc.
-- Hoàn thiện tạo milestone chỉ cho customer của contract và chỉ khi contract đang `in_progress`.
+- Hoàn thiện tạo milestone chỉ cho Khách hàng của contract và chỉ khi contract đang `in_progress`.
 - Bổ sung test cho đồng bộ status project-contract-bid.
 - Hoàn thiện màn contract detail và milestone management ở frontend.
 
@@ -235,7 +235,7 @@ Mục tiêu: biến code thành sản phẩm có thể review và demo chuyên n
 Việc cần làm:
 
 - Hoàn thiện `docs/api` bằng OpenAPI hoặc Postman collection chính thức.
-- Viết checklist manual test theo 2 vai trò chính: customer và freelancer.
+- Viết checklist manual test theo 2 vai trò chính: Khách hàng và Freelancer.
 - Chạy đầy đủ local verification:
   - Frontend: `npm run lint`
   - Frontend: `npm run build`
@@ -282,7 +282,7 @@ Lý do:
 ### Frontend stream
 
 - Kết nối đúng API contract đã chốt.
-- Hoàn thiện role-based flow cho customer và freelancer.
+- Hoàn thiện role-based flow cho Khách hàng và Freelancer.
 - Bổ sung loading, empty, error, success states.
 - Bám `Strict Sharpness`, tái sử dụng component trong `components/common`.
 

@@ -44,6 +44,13 @@ Authorization: Bearer <access_token>
 - `NotificationResponse`: `id`, `userId`, `type`, `title`, `content`, `link`, `isRead`, `createdAt`
 - `SkillResponse`: `id`, `name`, `description`
 - `TransactionResponse`: `id`, `contractId`, `amount`, `method`, `status`, `createdAt`
+- `AdminUserSummaryResponse`: `id`, `fullName`, `email`, `role`, `avatarUrl`
+- `AdminProjectResponse`: `id`, `user`, `title`, `description`, `budgetMin`, `budgetMax`, `deadline`, `status`, `skills`, `createdAt`, `updatedAt`
+- `AdminKycResponse`: `id`, `user`, `status`, `note`, `createdAt`, `updatedAt`
+- `AdminReportResponse`: `id`, `reporter`, `targetType`, `targetId`, `reason`, `description`, `status`, `createdAt`, `updatedAt`
+- `AdminWithdrawalResponse`: `id`, `user`, `amount`, `bankInfo`, `status`, `note`, `processedBy`, `createdAt`, `updatedAt`
+- `AdminAuditLogResponse`: `id`, `adminEmail`, `action`, `entityType`, `entityId`, `detail`, `ipAddress`, `createdAt`
+- `SystemSettingAdminResponse`: `key`, `value`, `updatedAt`
 
 ## 2. Auth & profile
 
@@ -103,14 +110,14 @@ Authorization: Bearer <access_token>
 
 | Method | Path                              | Auth | Request                                                            | Data success    | Rule chính                                                                                    |
 | ------ | --------------------------------- | ---- | ------------------------------------------------------------------ | --------------- | --------------------------------------------------------------------------------------------- |
-| `GET`  | `/bids`                           | Có   | Không                                                              | `BidResponse[]` | Customer thấy bid vào project của mình, freelancer thấy bid của chính mình                    |
+| `GET`  | `/bids`                           | Có   | Không                                                              | `BidResponse[]` | Khách hàng thấy bid vào project của mình, Freelancer thấy bid của chính mình                  |
 | `POST` | `/bids`                           | Có   | `projectId`, `price`, `message?`, `estimatedTime?`, `attachments?` | `BidResponse`   | Chỉ `freelancer`, không bid project của chính mình, project phải `open`                       |
 | `GET`  | `/bids/project/{projectId}`       | Có   | Path `projectId`                                                   | `BidResponse[]` | Chỉ owner project được xem                                                                    |
-| `GET`  | `/bids/my`                        | Có   | Không                                                              | `BidResponse[]` | Bid của freelancer hiện tại                                                                   |
-| `GET`  | `/bids/freelancer/{freelancerId}` | Có   | Path `freelancerId`                                                | `BidResponse[]` | Chỉ cho chính freelancer đó                                                                   |
+| `GET`  | `/bids/my`                        | Có   | Không                                                              | `BidResponse[]` | Bid của Freelancer hiện tại                                                                   |
+| `GET`  | `/bids/freelancer/{freelancerId}` | Có   | Path `freelancerId`                                                | `BidResponse[]` | Chỉ cho chính Freelancer đó                                                                   |
 | `GET`  | `/bids/{id}`                      | Có   | Path `id`                                                          | `BidResponse`   | Chỉ owner bid hoặc owner project được xem                                                     |
-| `POST` | `/bids/{bidId}/accept`            | Có   | Path `bidId`                                                       | `BidResponse`   | Customer accept bid và tạo contract theo luồng chuẩn                                          |
-| `PUT`  | `/bids/{bidId}/status`            | Có   | `{ "status": "withdrawn" \| "rejected" }`                          | `BidResponse`   | Freelancer chỉ được `withdrawn`; customer chỉ được `rejected`; không accept bằng endpoint này |
+| `POST` | `/bids/{bidId}/accept`            | Có   | Path `bidId`                                                       | `BidResponse`   | Khách hàng chấp nhận bid và tạo contract theo luồng chuẩn                                     |
+| `PUT`  | `/bids/{bidId}/status`            | Có   | `{ "status": "withdrawn" \| "rejected" }`                          | `BidResponse`   | Freelancer chỉ được `withdrawn`; Khách hàng chỉ được `rejected`; không accept bằng endpoint này |
 
 ## 6. Contract & milestone
 
@@ -170,7 +177,63 @@ Quy tắc payload:
 | `GET`  | `/notifications/user/me`               | Có   | Không                                 | `NotificationResponse[]` | Alias tiện dụng cho user hiện tại                                  |
 | `PUT`  | `/notifications/{notificationId}/read` | Có   | Path `notificationId`                 | `NotificationResponse`   | Chỉ chủ notification được đánh dấu đã đọc                          |
 
-## 10. Transaction (Payments)
+## 10. Report & KYC
+
+| Method | Path              | Auth | Request                                              | Data success | Rule chính                                                                 |
+| ------ | ----------------- | ---- | ---------------------------------------------------- | ------------ | -------------------------------------------------------------------------- |
+| `POST` | `/reports`        | Có   | `targetType`, `targetId`, `reason`, `description?`   | `null`       | Chỉ user đã đăng nhập; backend tự gán `reporterId`, không trả raw entity   |
+| `POST` | `/kyc/request`    | Có   | Không                                                | `null`       | User chỉ gửi yêu cầu xác thực cho chính mình                               |
+| `GET`  | `/kyc/my-status`  | Có   | Không                                                | `KycStatus`  | Trả trạng thái KYC hiện tại của user                                       |
+
+Quy tắc payload:
+
+- `targetType` hiện dùng các giá trị như `PROJECT` hoặc `USER`
+- `reason` phải là enum/frontend catalog đang hỗ trợ: `spam`, `inappropriate`, `harassment`, `other`
+- Client không được gửi `reporterId`
+
+## 11. Admin
+
+Tất cả endpoint dưới `/admin/**` đều yêu cầu:
+
+- Access token hợp lệ
+- Quyền `admin`
+- Backend enforce bằng cả filter-chain lẫn `@EnableMethodSecurity`
+- Không có auth trả `401` (`ERR_AUTH_01` hoặc `ERR_AUTH_12`)
+- Sai quyền trả `403` (`ERR_AUTH_04`)
+
+| Method | Path                                   | Auth      | Request                                                            | Data success                   | Rule chính                                                                                           |
+| ------ | -------------------------------------- | --------- | ------------------------------------------------------------------ | ------------------------------ | ---------------------------------------------------------------------------------------------------- |
+| `GET`  | `/admin/stats`                         | Admin     | Không                                                              | `AdminStatsResponse`           | Dashboard tổng quan hệ thống                                                                          |
+| `GET`  | `/admin/health-detailed`               | Admin     | Không                                                              | `SystemHealthResponse`         | Theo dõi tài nguyên hệ thống                                                                          |
+| `GET`  | `/admin/users`                         | Admin     | Không                                                              | `UserAdminResponse[]`          | Danh sách toàn bộ user                                                                                |
+| `PUT`  | `/admin/users/{userId}/toggle-status`  | Admin     | Query `reason?`                                                    | `null`                         | Không được tự khóa/mở khóa chính mình                                                                 |
+| `POST` | `/admin/users/bulk-status`             | Admin     | `userIds[]`, `active`, `reason?`                                  | `null`                         | Không được áp dụng bulk action lên chính admin đang đăng nhập                                         |
+| `PUT`  | `/admin/users/{userId}/role`           | Admin     | Query `role`                                                       | `null`                         | Không được tự đổi role của chính mình                                                                 |
+| `GET`  | `/admin/projects`                      | Admin     | Không                                                              | `AdminProjectResponse[]`       | Dữ liệu admin dùng DTO riêng, gồm owner summary + skills dạng tên                                     |
+| `PUT`  | `/admin/projects/{projectId}/status`   | Admin     | Query `status`                                                     | `AdminProjectResponse`         | Admin chỉ được đưa project về `open` hoặc `cancelled`, không can thiệp `in_progress`/`completed`     |
+| `POST` | `/admin/projects/bulk-status`          | Admin     | `projectIds[]`, `status`                                           | `null`                         | Chỉ hỗ trợ status phù hợp với moderation flow                                                         |
+| `POST` | `/admin/skills`                        | Admin     | `name`, `description?`                                             | `SkillResponse`                | Không nhận raw entity từ client                                                                       |
+| `PUT`  | `/admin/skills/{id}`                   | Admin     | `name`, `description?`                                             | `SkillResponse`                | Cập nhật catalog skill chuẩn hóa                                                                      |
+| `DELETE` | `/admin/skills/{id}`                 | Admin     | Path `id`                                                          | `null`                         | Xóa skill khỏi catalog                                                                                |
+| `POST` | `/admin/broadcast`                     | Admin     | `targetRole`, `type`, `title`, `content`, `link?`                 | `null`                         | Gửi broadcast hệ thống                                                                                |
+| `GET`  | `/admin/kyc`                           | Admin     | Không                                                              | `AdminKycResponse[]`           | Dùng DTO đã join user summary                                                                         |
+| `PUT`  | `/admin/kyc/{id}/approve`              | Admin     | Không                                                              | `AdminKycResponse`             | Chỉ xử lý request đang `PENDING`                                                                      |
+| `PUT`  | `/admin/kyc/{id}/reject`               | Admin     | Query `reason`                                                     | `AdminKycResponse`             | Chỉ xử lý request đang `PENDING`                                                                      |
+| `GET`  | `/admin/reports`                       | Admin     | Không                                                              | `AdminReportResponse[]`        | Dùng DTO đã join reporter summary                                                                     |
+| `PUT`  | `/admin/reports/{id}/status`           | Admin     | Query `status`                                                     | `AdminReportResponse`          | Chỉ chấp nhận `RESOLVED` hoặc `DISMISSED`                                                             |
+| `GET`  | `/admin/withdrawals`                   | Admin     | Không                                                              | `AdminWithdrawalResponse[]`    | Dùng DTO đã join user summary                                                                         |
+| `POST` | `/admin/withdrawals/{id}/process`      | Admin     | Query `status`, `note?`                                            | `AdminWithdrawalResponse`      | Chỉ xử lý request `PENDING`; chỉ chấp nhận `APPROVED` hoặc `REJECTED`                                |
+| `GET`  | `/admin/settings`                      | Admin     | Không                                                              | `SystemSettingAdminResponse[]` | Dùng DTO admin riêng                                                                                  |
+| `POST` | `/admin/settings`                      | Admin     | `key`, `value`                                                     | `SystemSettingAdminResponse`   | Ghi nhận audit log cho thay đổi setting                                                               |
+| `GET`  | `/admin/logs`                          | Admin     | Không                                                              | `AdminAuditLogResponse[]`      | Nhật ký hệ thống/audit                                                                                |
+
+Lưu ý cho frontend:
+
+- Admin UI phải guard route theo role, không chỉ dựa vào `isAuthenticated`
+- Các màn admin `projects`, `kyc`, `reports`, `withdrawals` phải đọc từ nested DTO `user` / `reporter`, không suy diễn lại bằng fetch phụ
+- `/reports` trả `null` trong `data` khi submit thành công, không trả raw `Report`
+
+## 12. Transaction (Payments)
 
 - Public API hiện tại chỉ expose:
   - `GET /contracts/{contractId}/transactions`
@@ -181,7 +244,7 @@ Quy tắc payload:
 - `status` hiện dùng các giá trị như `pending`, `completed`, `failed`
 - Frontend không tự gọi endpoint tạo transaction
 
-## 11. WebSocket / Realtime (STOMP)
+## 13. WebSocket / Realtime (STOMP)
 
 - Endpoint: `/ws` (SockJS + STOMP).
 - STOMP `CONNECT` nên gửi header:
@@ -208,16 +271,16 @@ Authorization: Bearer <access_token>
 
 Update demo_runbook.md with realtime demo steps.
 
-### 9.1. Notification events đang phát sinh tự động
+### 13.1. Notification events đang phát sinh tự động
 
-- Có bid mới cho project của customer
-- Bid bị customer từ chối
+- Có bid mới cho project của Khách hàng
+- Bid bị Khách hàng từ chối
 - Bid không được chọn khi contract được tạo từ một bid khác
 - Freelancer được chọn và có contract mới
 - Freelancer có milestone mới
 - Participant còn lại được báo khi contract chuyển `completed` hoặc `cancelled`
 
-## 10. Error code cần bám ở frontend
+## 14. Error code cần bám ở frontend
 
 Các lỗi cần ưu tiên xử lý theo `code`, không hardcode chuỗi `message`.
 

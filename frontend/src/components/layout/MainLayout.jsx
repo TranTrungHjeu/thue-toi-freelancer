@@ -1,6 +1,6 @@
 import React, { useState, useMemo } from 'react';
 import { Outlet, useLocation } from 'react-router-dom';
-import { Bell, Home, Page, PageSearch, ProfileCircle, ViewGrid, Group, Settings, Reports } from 'iconoir-react';
+import { Bell, Home, Page, PageSearch, ProfileCircle, ViewGrid, Group, Settings, Reports, Coins, ShieldCheck, Megaphone, WarningTriangle, Database } from 'iconoir-react';
 import Header from './Header';
 import Sidebar from './Sidebar';
 import MobileDrawer from './MobileDrawer';
@@ -25,19 +25,29 @@ const MainLayout = () => {
     if (role === 'admin') {
       return [
         {
-          title: t('roles.admin'),
+          title: t('layout.adminSections.moderation'),
           items: [
-            { label: "Tổng quan hệ thống", to: '/workspace/admin/dashboard', icon: Home },
-            { label: "Quản lý người dùng", to: '/workspace/admin/users', icon: Group },
-            { label: "Quản lý dự án", to: '/workspace/admin/projects', icon: ViewGrid },
-            { label: "Thông báo hệ thống", to: '/workspace/notifications', icon: Bell },
+            { label: t('layout.navigation.adminDashboard'), to: '/workspace/admin/dashboard', icon: Home },
+            { label: t('layout.navigation.adminUsers'), to: '/workspace/admin/users', icon: Group },
+            { label: t('layout.navigation.adminProjects'), to: '/workspace/admin/projects', icon: ViewGrid },
+            { label: t('layout.navigation.adminKyc'), to: '/workspace/admin/kyc', icon: ShieldCheck },
+            { label: t('layout.navigation.adminReports'), to: '/workspace/admin/reports', icon: WarningTriangle },
           ],
         },
         {
-          title: t('layout.navigation.tools'),
+          title: t('layout.adminSections.finance'),
           items: [
-            { label: "Logs hệ thống", to: '/workspace/contracts', icon: Reports },
-            { label: "Cài đặt hệ thống", to: '/workspace/settings', icon: Settings },
+            { label: t('layout.navigation.adminFinance'), to: '/workspace/admin/finance', icon: Coins },
+            { label: t('layout.navigation.adminWithdrawals'), to: '/workspace/admin/withdrawals', icon: Reports },
+          ],
+        },
+        {
+          title: t('layout.adminSections.system'),
+          items: [
+            { label: t('layout.navigation.adminBroadcast'), to: '/workspace/admin/broadcast', icon: Megaphone },
+            { label: t('layout.navigation.adminSkills'), to: '/workspace/admin/skills', icon: Database },
+            { label: t('layout.navigation.adminSettings'), to: '/workspace/admin/settings', icon: Settings },
+            { label: t('layout.navigation.adminLogs'), to: '/workspace/admin/logs', icon: PageSearch },
           ],
         }
       ];
@@ -63,8 +73,8 @@ const MainLayout = () => {
         title: t('roles.freelancer'),
         items: [
           { label: t('layout.navigation.dashboard'), to: '/workspace', icon: Home },
-          { label: "Tìm việc làm", to: '/workspace/projects', icon: PageSearch },
-          { label: "Hợp đồng của tôi", to: '/workspace/contracts', icon: ViewGrid },
+          { label: t('layout.navigation.findJobs'), to: '/workspace/projects', icon: PageSearch },
+          { label: t('layout.navigation.myContracts'), to: '/workspace/contracts', icon: ViewGrid },
           ...commonWorkspaceItems,
         ],
       }
@@ -79,26 +89,26 @@ const MainLayout = () => {
     if (role === 'admin') {
       return [
         ...baseNav,
-        { label: "Dự án", to: '/workspace/admin/projects', icon: ViewGrid },
-        { label: "Người dùng", to: '/workspace/admin/users', icon: Group },
-        { label: "Thống kê", to: '/workspace/admin/dashboard', icon: Reports },
+        { label: t('layout.navigation.projects'), to: '/workspace/admin/projects', icon: ViewGrid },
+        { label: t('layout.navigation.adminUsers'), to: '/workspace/admin/users', icon: Group },
+        { label: t('layout.navigation.adminFinance'), to: '/workspace/admin/finance', icon: Reports },
       ];
     }
 
     if (role === 'customer') {
       return [
         ...baseNav,
-        { label: "Dự án", to: '/workspace/projects', icon: ViewGrid },
-        { label: "Thuê", to: '/workspace/contracts', icon: PageSearch },
-        { label: "Hồ sơ", to: '/workspace/profile', icon: ProfileCircle },
+        { label: t('layout.navigation.projects'), to: '/workspace/projects', icon: ViewGrid },
+        { label: t('layout.navigation.rent'), to: '/workspace/contracts', icon: PageSearch },
+        { label: t('layout.navigation.profile'), to: '/workspace/profile', icon: ProfileCircle },
       ];
     }
 
     return [
       ...baseNav,
-      { label: "Tìm việc", to: '/workspace/projects', icon: PageSearch },
-      { label: "Hợp đồng", to: '/workspace/contracts', icon: ViewGrid },
-      { label: "Hồ sơ", to: '/workspace/profile', icon: ProfileCircle },
+      { label: t('layout.navigation.findJobs'), to: '/workspace/projects', icon: PageSearch },
+      { label: t('layout.navigation.contracts'), to: '/workspace/contracts', icon: ViewGrid },
+      { label: t('layout.navigation.profile'), to: '/workspace/profile', icon: ProfileCircle },
     ];
   }, [role, t]);
 

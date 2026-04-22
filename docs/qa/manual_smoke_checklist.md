@@ -35,7 +35,7 @@ Lưu ý:
 4. Tùy chọn: tạo 1 tài khoản mới bằng email thật rồi verify OTP.
    - Kỳ vọng: đăng ký gửi OTP, verify thành công, login được.
 
-## 4. Customer flow
+## 4. Khách hàng flow
 
 1. Login bằng `customer1@gmail.com`.
 2. Vào `Projects`.
@@ -46,7 +46,7 @@ Lưu ý:
 5. Thử set status thủ công sang `in_progress` hoặc `completed` nếu UI/API cho phép.
    - Kỳ vọng: backend chặn với `ERR_SYS_02`.
 6. Mở `Notifications`.
-   - Kỳ vọng: danh sách notification của customer tải được, unread count hiển thị đúng.
+   - Kỳ vọng: danh sách notification của Khách hàng tải được, unread count hiển thị đúng.
 
 ## 5. Freelancer flow
 
@@ -56,16 +56,16 @@ Lưu ý:
    - Kỳ vọng: project hiển thị trong marketplace.
 4. Gửi bid mới cho project đó.
    - Kỳ vọng: bid tạo thành công với status `pending`.
-5. Mở `Notifications` hoặc quay lại customer để kiểm tra.
-   - Kỳ vọng: customer nhận notification `bid`.
-6. Với freelancer, vào danh sách bid của mình.
+5. Mở `Notifications` hoặc quay lại Khách hàng để kiểm tra.
+   - Kỳ vọng: Khách hàng nhận notification `bid`.
+6. Với Freelancer, vào danh sách bid của mình.
    - Kỳ vọng: thấy bid vừa tạo.
 
 ## 6. Accept bid -> contract -> milestone
 
 1. Login lại bằng `customer1@gmail.com`.
 2. Mở project vừa tạo, xem bid list.
-3. Chấp nhận bid của freelancer.
+3. Chấp nhận bid của Freelancer.
    - Kỳ vọng:
    - Bid được chọn chuyển `accepted`
    - Project chuyển `in_progress`
@@ -79,7 +79,7 @@ Lưu ý:
 
 ## 7. Collaboration flow
 
-1. Trong `Contracts`, ở contract `in_progress`, gửi 1 tin nhắn text bằng customer.
+1. Trong `Contracts`, ở contract `in_progress`, gửi 1 tin nhắn text bằng Khách hàng.
    - Kỳ vọng: message xuất hiện đúng `senderId`, không cần client gửi `senderId`.
 2. Login bằng `freelancer1@gmail.com`, mở cùng contract.
    - Kỳ vọng: thấy lịch sử message của contract.
