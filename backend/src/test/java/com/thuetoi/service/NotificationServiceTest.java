@@ -110,7 +110,7 @@ class NotificationServiceTest {
         notification.setType("bid");
 
         when(notificationRepository.searchUserNotifications(
-            eq(7L), anyString(), eq(true), eq(false), any(String.class), any(Pageable.class)))
+            eq(7L), anyString(), eq(true), eq(false), any(), any(Pageable.class)))
             .thenReturn(new PageImpl<>(List.of(notification)));
         when(notificationRepository.countByUserIdAndDeletedAtIsNullAndArchivedAtIsNull(7L)).thenReturn(12L);
         when(notificationRepository.countByUserIdAndIsReadFalseAndDeletedAtIsNullAndArchivedAtIsNull(7L)).thenReturn(5L);
