@@ -20,8 +20,8 @@ const NotificationBell = () => {
   const panelRef = useRef(null);
   const buttonRef = useRef(null);
 
-  const badge = unreadCount > 0 
-    ? (unreadCount > 99 ? '99+' : String(unreadCount)) 
+  const badge = unreadCount > 0
+    ? (unreadCount > 99 ? '99+' : String(unreadCount))
     : null;
 
   const recentNotifications = notifications.slice(0, 6);
@@ -76,15 +76,15 @@ const NotificationBell = () => {
 
   const panelVariants = {
     hidden: { opacity: 0, y: -8, scale: 0.98 },
-    visible: { 
-      opacity: 1, 
-      y: 0, 
+    visible: {
+      opacity: 1,
+      y: 0,
       scale: 1,
-      transition: { 
-        type: "spring", 
-        stiffness: 380, 
-        damping: 30 
-      } 
+      transition: {
+        type: "spring",
+        stiffness: 380,
+        damping: 30
+      }
     },
     exit: { opacity: 0, y: -8, scale: 0.98, transition: { duration: 0.18 } }
   };
