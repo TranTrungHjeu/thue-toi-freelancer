@@ -1,13 +1,10 @@
 package com.thuetoi.service;
 
-import com.thuetoi.dto.response.marketplace.NotificationPageResponse;
-import com.thuetoi.dto.response.marketplace.NotificationResponse;
-import com.thuetoi.entity.Notification;
-import com.thuetoi.entity.User;
-import com.thuetoi.enums.NotificationType;
-import com.thuetoi.exception.BusinessException;
-import com.thuetoi.repository.NotificationRepository;
-import com.thuetoi.repository.UserRepository;
+import java.time.Duration;
+import java.time.LocalDateTime;
+import java.util.List;
+import java.util.Optional;
+
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.data.domain.Page;
@@ -19,10 +16,14 @@ import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.time.Duration;
-import java.time.LocalDateTime;
-import java.util.List;
-import java.util.Optional;
+import com.thuetoi.dto.response.marketplace.NotificationPageResponse;
+import com.thuetoi.dto.response.marketplace.NotificationResponse;
+import com.thuetoi.entity.Notification;
+import com.thuetoi.entity.User;
+import com.thuetoi.enums.NotificationType;
+import com.thuetoi.exception.BusinessException;
+import com.thuetoi.repository.NotificationRepository;
+import com.thuetoi.repository.UserRepository;
 
 @Service
 public class NotificationService {

@@ -1,27 +1,5 @@
 package com.thuetoi.service;
 
-import com.thuetoi.entity.Notification;
-import com.thuetoi.entity.User;
-import com.thuetoi.exception.BusinessException;
-import com.thuetoi.dto.response.marketplace.NotificationPageResponse;
-import com.thuetoi.dto.response.marketplace.NotificationResponse;
-import com.thuetoi.repository.NotificationRepository;
-import com.thuetoi.repository.UserRepository;
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.ArgumentCaptor;
-import org.mockito.InjectMocks;
-import org.mockito.Mock;
-import org.mockito.junit.jupiter.MockitoExtension;
-import org.mockito.junit.jupiter.MockitoSettings;
-import org.mockito.quality.Strictness;
-import static org.mockito.ArgumentMatchers.anyString;
-import static org.mockito.Mockito.times;
-import org.springframework.data.domain.PageImpl;
-import org.springframework.data.domain.Pageable;
-import org.springframework.http.HttpStatus;
-import org.springframework.messaging.simp.SimpMessagingTemplate;
-
 import java.time.Duration;
 import java.time.LocalDateTime;
 import java.util.List;
@@ -29,11 +7,32 @@ import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
+import org.mockito.InjectMocks;
+import org.mockito.Mock;
 import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
+import org.mockito.junit.jupiter.MockitoExtension;
+import org.mockito.junit.jupiter.MockitoSettings;
+import org.mockito.quality.Strictness;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.Pageable;
+import org.springframework.http.HttpStatus;
+import org.springframework.messaging.simp.SimpMessagingTemplate;
+
+import com.thuetoi.dto.response.marketplace.NotificationPageResponse;
+import com.thuetoi.dto.response.marketplace.NotificationResponse;
+import com.thuetoi.entity.Notification;
+import com.thuetoi.entity.User;
+import com.thuetoi.exception.BusinessException;
+import com.thuetoi.repository.NotificationRepository;
+import com.thuetoi.repository.UserRepository;
 
 @ExtendWith(MockitoExtension.class)
 @MockitoSettings(strictness = Strictness.LENIENT)
@@ -111,7 +110,7 @@ class NotificationServiceTest {
         notification.setType("bid");
 
         when(notificationRepository.searchUserNotifications(
-            eq(7L), eq("bid"), eq(true), eq(false), any(String.class), any(Pageable.class)))
+            eq(7L), anyString(), eq(true), eq(false), any(String.class), any(Pageable.class)))
             .thenReturn(new PageImpl<>(List.of(notification)));
         when(notificationRepository.countByUserIdAndDeletedAtIsNullAndArchivedAtIsNull(7L)).thenReturn(12L);
         when(notificationRepository.countByUserIdAndIsReadFalseAndDeletedAtIsNullAndArchivedAtIsNull(7L)).thenReturn(5L);
