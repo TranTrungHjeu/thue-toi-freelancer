@@ -1,5 +1,21 @@
 package com.thuetoi.controller;
 
+import java.security.Principal;
+import java.util.List;
+
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
+import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.web.bind.annotation.DeleteMapping;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.RestController;
+
 import com.thuetoi.dto.request.admin.AdminBroadcastRequest;
 import com.thuetoi.dto.request.admin.BulkProjectStatusRequest;
 import com.thuetoi.dto.request.admin.BulkUserStatusRequest;
@@ -12,31 +28,27 @@ import com.thuetoi.dto.response.admin.AdminProjectResponse;
 import com.thuetoi.dto.response.admin.AdminReportResponse;
 import com.thuetoi.dto.response.admin.AdminStatsResponse;
 import com.thuetoi.dto.response.admin.AdminWithdrawalResponse;
-import com.thuetoi.dto.response.admin.SystemSettingAdminResponse;
+import com.thuetoi.dto.response.admin.NotificationDeliveryLogResponse;
 import com.thuetoi.dto.response.admin.SystemHealthResponse;
+import com.thuetoi.dto.response.admin.SystemSettingAdminResponse;
 import com.thuetoi.dto.response.admin.UserAdminResponse;
+import com.thuetoi.entity.Project;
+import com.thuetoi.entity.SystemSetting;
+import com.thuetoi.entity.User;
 import com.thuetoi.exception.BusinessException;
 import com.thuetoi.mapper.AdminResponseMapper;
 import com.thuetoi.mapper.MarketplaceResponseMapper;
 import com.thuetoi.repository.UserRepository;
+import com.thuetoi.security.CurrentUserProvider;
 import com.thuetoi.service.AdminService;
+import com.thuetoi.service.AuditLogService;
+import com.thuetoi.service.NotificationDeliveryLogService;
 import com.thuetoi.service.NotificationService;
 import com.thuetoi.service.SkillService;
-import com.thuetoi.service.AuditLogService;
 import com.thuetoi.service.SystemHealthService;
-import com.thuetoi.entity.Project;
-import com.thuetoi.entity.SystemSetting;
-import com.thuetoi.entity.User;
-import com.thuetoi.security.CurrentUserProvider;
-import jakarta.validation.Valid;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.http.HttpStatus;
-import org.springframework.security.access.prepost.PreAuthorize;
-import org.springframework.web.bind.annotation.*;
-import jakarta.servlet.http.HttpServletRequest;
 
-import java.security.Principal;
-import java.util.List;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.validation.Valid;
 
 /**
  * Controller Admin: Moderation endpoints for admin role
@@ -55,6 +67,9 @@ public class AdminController {
 
     @Autowired
     private NotificationService notificationService;
+
+    @Autowired
+    private NotificationDeliveryLogService notificationDeliveryLogService;
 
     @Autowired
     private UserRepository userRepository;
@@ -185,13 +200,15 @@ public class AdminController {
     // --- Broadcast ---
 
     @PostMapping("/broadcast")
-    public ApiResponse<Void> broadcast(@Valid @RequestBody AdminBroadcastRequest payload) {
+    public ApiResponse<Void> broadcast(@Valid @RequestBody AdminBroadcastRequest payload, Principal principal) {
+        User currentAdmin = requireCurrentAdmin(principal);
         notificationService.broadcastNotification(
             payload.getTargetRole(),
             payload.getType(),
             payload.getTitle(),
             payload.getContent(),
-            payload.getLink()
+            payload.getLink(),
+            currentAdmin.getId()
         );
         return ApiResponse.success("Phát sóng thông báo thành công", null);
     }
@@ -269,6 +286,11 @@ public class AdminController {
     @GetMapping("/logs")
     public ApiResponse<List<AdminAuditLogResponse>> getAuditLogs() {
         return ApiResponse.success("Nhật ký hệ thống", adminResponseMapper.toAuditLogResponses(auditLogService.getAllLogs()));
+    }
+
+    @GetMapping("/notifications/delivery-logs")
+    public ApiResponse<List<NotificationDeliveryLogResponse>> getNotificationDeliveryLogs() {
+        return ApiResponse.success("Nhật ký gửi thông báo", notificationDeliveryLogService.getRecentLogs());
     }
 
     private User requireCurrentAdmin(Principal principal) {

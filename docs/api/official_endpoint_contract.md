@@ -42,6 +42,8 @@ Authorization: Bearer <access_token>
 - `MessageResponse`: `id`, `contractId`, `senderId`, `messageType`, `content`, `attachments`, `sentAt`
 - `ReviewResponse`: `id`, `contractId`, `reviewerId`, `rating`, `comment`, `reply`, `createdAt`, `updatedAt`
 - `NotificationResponse`: `id`, `userId`, `type`, `title`, `content`, `link`, `isRead`, `createdAt`
+- `NotificationPageResponse`: `notifications`, `page`, `size`, `totalElements`, `totalPages`, `totalNotifications`, `unreadCount`
+- `NotificationReadAllResponse`: `updatedCount`
 - `SkillResponse`: `id`, `name`, `description`
 - `TransactionResponse`: `id`, `contractId`, `amount`, `method`, `status`, `createdAt`
 - `AdminUserSummaryResponse`: `id`, `fullName`, `email`, `role`, `avatarUrl`
@@ -175,7 +177,19 @@ Quy tắc payload:
 | `POST` | `/notifications`                       | Có   | `type?`, `title`, `content?`, `link?` | `NotificationResponse`   | Tạo notification cho chính user hiện tại; `type` mặc định `system` |
 | `GET`  | `/notifications/user/{userId}`         | Có   | Path `userId`                         | `NotificationResponse[]` | Chỉ cho chính user đó                                              |
 | `GET`  | `/notifications/user/me`               | Có   | Không                                 | `NotificationResponse[]` | Alias tiện dụng cho user hiện tại                                  |
+| `GET`  | `/notifications/user/me/page`          | Có   | Query `page?`, `size?`, `type?`, `unreadOnly?` | `NotificationPageResponse` | Inbox phân trang, hỗ trợ filter type và chỉ chưa đọc; `size` tối đa 100 |
 | `PUT`  | `/notifications/{notificationId}/read` | Có   | Path `notificationId`                 | `NotificationResponse`   | Chỉ chủ notification được đánh dấu đã đọc                          |
+| `PUT`  | `/notifications/read-all`              | Có   | Không                                 | `NotificationReadAllResponse` | Chỉ đánh dấu các notification chưa đọc của user hiện tại; trả số bản ghi đã cập nhật |
+
+Quy tắc notification:
+
+- `type` chỉ dùng các giá trị hiện có: `project`, `bid`, `contract`, `system`.
+- `title`, `content`, `link` phải được backend chuẩn hóa trim trước khi lưu và phát realtime.
+- Client không được tự gửi `userId` khi tạo notification ở luồng "của tôi".
+- Mọi notification lưu thành công phải được phát qua `/user/queue/notifications` với payload `NotificationResponse`.
+- Broadcast admin phải lưu từng notification theo user nhận và emit từng user queue; `/topic/global-notifications` chỉ là tín hiệu phụ, frontend không phụ thuộc vào topic này.
+- Frontend nên dùng endpoint phân trang cho inbox chính; endpoint list cũ giữ lại để tương thích.
+- `read-all` và `mark-read` phải đồng bộ badge giữa các tab bằng cross-tab sync hoặc reload nhẹ.
 
 ## 10. Report & KYC
 
@@ -255,6 +269,8 @@ Authorization: Bearer <access_token>
 
 - Subscriptions: `/user/queue/notifications`, `/topic/contract/{id}`.
 - Notification queue phát `NotificationResponse`.
+- STOMP `CONNECT` thiếu hoặc sai access token phải bị backend từ chối, tránh trạng thái socket anonymous.
+- Frontend phải lấy access token mới nhất trong `beforeConnect` và reload inbox sau mỗi lần reconnect để catch-up notification bị lỡ khi mất kết nối.
 - Contract topic phát envelope `ContractRealtimeEvent`:
 
 ```json
@@ -266,19 +282,37 @@ Authorization: Bearer <access_token>
 ```
 
 - Backend: `SimpMessagingTemplate` + `WebSocketAuthChannelInterceptor`.
-- Frontend: `useWebSocket` hook in `NotificationsPage` và `ContractsPage`.
+- Frontend: `NotificationProvider` subscribe `/user/queue/notifications`; `ContractsPage` dùng `useWebSocket` cho topic contract.
 - Rule: live updates cho notifications và các biến động contract/milestone/message/review/transaction.
-
-Update demo_runbook.md with realtime demo steps.
 
 ### 13.1. Notification events đang phát sinh tự động
 
 - Có bid mới cho project của Khách hàng
 - Bid bị Khách hàng từ chối
 - Bid không được chọn khi contract được tạo từ một bid khác
+- Freelancer rút bid khỏi project
 - Freelancer được chọn và có contract mới
 - Freelancer có milestone mới
+- Freelancer được báo khi milestone bị hủy
 - Participant còn lại được báo khi contract chuyển `completed` hoặc `cancelled`
+- Participant còn lại được báo khi có message mới
+- Participant còn lại được báo khi có review mới
+- Tất cả Quản trị viên được báo khi có KYC request mới
+- User gửi KYC được báo khi KYC được approve hoặc reject
+- Tất cả Quản trị viên được báo khi user gửi report mới; reporter nhận xác nhận đã ghi nhận
+- Reporter được báo khi report chuyển `RESOLVED` hoặc `DISMISSED`
+- User yêu cầu rút tiền được báo khi withdrawal được approve hoặc reject
+- User bị tác động được báo khi Quản trị viên đổi role, status hoặc moderation project
+- Target role nhận notification khi Quản trị viên gửi broadcast
+
+Link workspace chuẩn:
+
+- Bid/project moderation: `/workspace/projects`
+- Contract/milestone/message/review: `/workspace/contracts`
+- KYC admin: `/workspace/admin/kyc`
+- KYC user: `/workspace/profile`
+- Report admin: `/workspace/admin/reports`
+- Report/withdrawal/system follow-up: `/workspace/notifications`
 
 ## 14. Error code cần bám ở frontend
 

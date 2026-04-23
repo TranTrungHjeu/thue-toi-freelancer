@@ -34,10 +34,28 @@ public class Notification {
     @Column(name = "link")
     private String link;
 
+    @Column(name = "event_key")
+    private String eventKey;
+
     @CreationTimestamp
     @Column(name = "created_at", updatable = false)
     private LocalDateTime createdAt;
 
     @Column(name = "is_read", nullable = false)
     private Boolean isRead;
+
+    @Column(name = "read_at")
+    private LocalDateTime readAt;
+
+    @Column(name = "archived_at")
+    private LocalDateTime archivedAt;
+
+    @Column(name = "deleted_at")
+    private LocalDateTime deletedAt;
+
+    @Column(name = "email_sent_at")
+    private LocalDateTime emailSentAt;
+
+    @Column(name = "email_delivery_status")
+    private String emailDeliveryStatus;
 }

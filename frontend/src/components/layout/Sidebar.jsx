@@ -24,8 +24,18 @@ const Sidebar = ({ navigation = [], currentPath = '' }) => {
                           : 'border-transparent text-slate-600 hover:border-slate-200 hover:bg-slate-50 hover:text-secondary-900'
                     }`}
                   >
-                    <item.icon className="h-5 w-5" />
-                    {item.label}
+                    <span className="relative flex h-5 w-5 items-center justify-center">
+                      <item.icon className="h-5 w-5" />
+                      {item.badge && (
+                        <span
+                          className="absolute -right-2 -top-2 min-w-4 border border-white bg-red-500 px-1 text-[9px] font-black leading-4 text-white"
+                          aria-label={item.badgeLabel}
+                        >
+                          {item.badge}
+                        </span>
+                      )}
+                    </span>
+                    <span className="flex-1">{item.label}</span>
                   </NavLink>
                 );
               })}

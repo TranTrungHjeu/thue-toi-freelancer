@@ -16,6 +16,7 @@ import com.thuetoi.entity.KycRequest;
 import com.thuetoi.exception.BusinessException;
 import com.thuetoi.repository.KycRequestRepository;
 import com.thuetoi.security.CurrentUserProvider;
+import com.thuetoi.service.NotificationService;
 
 @RestController
 @RequestMapping("/api/v1/kyc")
@@ -26,6 +27,9 @@ public class KycController {
 
     @Autowired
     private KycRequestRepository kycRequestRepository;
+
+    @Autowired
+    private NotificationService notificationService;
 
     @PostMapping("/request")
     public ApiResponse<KycRequest> requestVerification(Principal principal) {
@@ -46,7 +50,15 @@ public class KycController {
         } catch (DataIntegrityViolationException ex) {
             throw new BusinessException("ERR_SYS_02", "Yêu cầu xác thực đang chờ xử lý", HttpStatus.CONFLICT, ex);
         }
-        return ApiResponse.success("Đã gửi yêu cầu xác thực tới quản trị viên", saved);
+        notificationService.broadcastNotification(
+            "admin",
+            "system",
+            "Có yêu cầu KYC mới",
+            "Một người dùng vừa gửi yêu cầu xác thực danh tính.",
+            "/workspace/admin/kyc",
+            null
+        );
+        return ApiResponse.success("Đã gửi yêu cầu xác thực tới Quản trị viên", saved);
     }
 
     @GetMapping("/my-status")

@@ -28,6 +28,9 @@ class ReviewServiceTest {
     @Mock
     private ContractAccessService contractAccessService;
 
+    @Mock
+    private NotificationService notificationService;
+
     @InjectMocks
     private ReviewService reviewService;
 
@@ -49,6 +52,13 @@ class ReviewServiceTest {
         assertThat(review.getRating()).isEqualTo(5);
         assertThat(review.getComment()).isEqualTo("Lam viec rat tot");
         assertThat(review.getReply()).isNull();
+        verify(notificationService).createNotificationForUser(
+            1L,
+            "contract",
+            "Đánh giá mới sau hợp đồng",
+            "Đối tác đã gửi đánh giá cho contract #7.",
+            "/workspace/contracts"
+        );
     }
 
     @Test

@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import { Menu } from 'iconoir-react';
 import { H2 } from '../common/Typography';
 import UserDropdown from './UserDropdown';
+import NotificationBell from './NotificationBell';
 import LanguageSwitcher from '../common/LanguageSwitcher';
 import { useI18n } from '../../hooks/useI18n';
 
@@ -34,6 +35,7 @@ const Header = ({ user, onOpenMenu }) => {
 
       <div className="flex items-center gap-4">
         <LanguageSwitcher className="hidden md:inline-flex" />
+        {user && <NotificationBell />}
         {user ? (
           <UserDropdown user={user} />
         ) : (

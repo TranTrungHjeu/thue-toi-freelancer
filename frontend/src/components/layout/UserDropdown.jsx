@@ -8,6 +8,7 @@ import { Caption } from '../common/Typography';
 import Avatar from '../common/Avatar';
 import { useAuth } from '../../hooks/useAuth';
 import { useI18n } from '../../hooks/useI18n';
+import { useNotifications } from '../../hooks/useNotifications';
 import { formatRole } from '../../utils/formatters';
 
 const UserDropdown = ({ user }) => {
@@ -16,6 +17,8 @@ const UserDropdown = ({ user }) => {
   const navigate = useNavigate();
   const { logout } = useAuth();
   const { locale, t } = useI18n();
+  const { unreadCount } = useNotifications();
+  const notificationBadge = unreadCount > 0 ? (unreadCount > 99 ? '99+' : String(unreadCount)) : null;
 
   useEffect(() => {
     const handleClickOutside = (event) => {
@@ -31,7 +34,7 @@ const UserDropdown = ({ user }) => {
   const menuItems = [
     { icon: User, label: t('layout.navigation.profile'), path: '/workspace/profile' },
     { icon: Page, label: t('layout.navigation.projects'), path: '/workspace/projects' },
-    { icon: Bell, label: t('layout.navigation.notifications'), path: '/workspace/notifications' },
+    { icon: Bell, label: t('layout.navigation.notifications'), path: '/workspace/notifications', badge: notificationBadge },
     { icon: Settings, label: t('layout.navigation.dashboard'), path: '/workspace' },
   ];
 
@@ -60,8 +63,15 @@ const UserDropdown = ({ user }) => {
                   onClick={() => setIsOpen(false)}
                   className="flex items-center gap-3 px-3 py-2.5 text-sm text-slate-600 transition-colors hover:bg-slate-50 hover:text-secondary-900"
                 >
-                  <item.icon className="h-5 w-5 text-slate-400" />
-                  {item.label}
+                  <span className="relative flex h-5 w-5 items-center justify-center">
+                    <item.icon className="h-5 w-5 text-slate-400" />
+                    {item.badge && (
+                      <span className="absolute -right-2 -top-2 min-w-4 border border-white bg-red-500 px-1 text-[9px] font-black leading-4 text-white">
+                        {item.badge}
+                      </span>
+                    )}
+                  </span>
+                  <span className="flex-1">{item.label}</span>
                 </Link>
               ))}
             </div>

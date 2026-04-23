@@ -28,6 +28,9 @@ class MessageServiceTest {
     @Mock
     private ContractAccessService contractAccessService;
 
+    @Mock
+    private NotificationService notificationService;
+
     @InjectMocks
     private MessageService messageService;
 
@@ -48,6 +51,13 @@ class MessageServiceTest {
         assertThat(message.getMessageType()).isEqualTo("text");
         assertThat(message.getContent()).isEqualTo("Xin chao client");
         assertThat(message.getAttachments()).isNull();
+        verify(notificationService).createNotificationForUser(
+            1L,
+            "contract",
+            "Tin nhắn mới trong hợp đồng",
+            "Bạn có tin nhắn mới trong contract #5.",
+            "/workspace/contracts"
+        );
     }
 
     @Test

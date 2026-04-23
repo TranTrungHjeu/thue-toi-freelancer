@@ -93,6 +93,13 @@ class BidServiceTest {
         Bid updated = bidService.updateBidStatus(100L, 2L, "withdrawn");
 
         assertThat(updated.getStatus()).isEqualTo("withdrawn");
+        verify(notificationService).createNotificationForUser(
+            1L,
+            "bid",
+            "Freelancer đã rút bid",
+            "Freelancer \"User 2\" đã rút bid khỏi project \"Project 10\".",
+            "/workspace/projects"
+        );
     }
 
     @Test

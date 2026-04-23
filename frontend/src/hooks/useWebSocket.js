@@ -26,6 +26,7 @@ const resolveChannel = (topic) =>
 export const useWebSocket = (onMessage, topics = []) => {
   const clientRef = useRef(null);
   const [isConnected, setIsConnected] = useState(false);
+  const [connectionVersion, setConnectionVersion] = useState(0);
   const { user } = useAuth();
   const normalizedTopics = useMemo(
     () => [...new Set(topics.filter(Boolean))],
@@ -37,16 +38,18 @@ export const useWebSocket = (onMessage, topics = []) => {
       return undefined;
     }
 
-    const accessToken = getAccessToken();
-
     const client = new Client({
       webSocketFactory: () => new SockJS(`${WS_BASE_URL}/ws`),
-      connectHeaders: accessToken
-        ? { Authorization: `Bearer ${accessToken}` }
-        : {},
+      beforeConnect: () => {
+        const accessToken = getAccessToken();
+        client.connectHeaders = accessToken
+          ? { Authorization: `Bearer ${accessToken}` }
+          : {};
+      },
       reconnectDelay: 5000,
       onConnect: () => {
         setIsConnected(true);
+        setConnectionVersion((version) => version + 1);
         normalizedTopics.forEach((topic) => {
           client.subscribe(topic, (message) => {
             if (typeof onMessage !== "function") {
@@ -61,6 +64,8 @@ export const useWebSocket = (onMessage, topics = []) => {
         });
       },
       onStompError: (error) => console.error("STOMP error", error),
+      onDisconnect: () => setIsConnected(false),
+      onWebSocketClose: () => setIsConnected(false),
     });
 
     client.activate();
@@ -79,5 +84,5 @@ export const useWebSocket = (onMessage, topics = []) => {
     }
   };
 
-  return { isConnected, sendMessage };
+  return { isConnected, connectionVersion, sendMessage };
 };

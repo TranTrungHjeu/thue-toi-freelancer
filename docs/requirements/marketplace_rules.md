@@ -92,3 +92,38 @@ Tài liệu này chốt các rule nghiệp vụ chính cho các module `project`
 - Admin không được tự hạ quyền của chính mình.
 - Bulk admin actions không được bao gồm chính admin đang đăng nhập.
 - Frontend phải có route guard riêng cho admin, không chỉ kiểm tra `isAuthenticated`.
+
+## 12. Notification
+
+- Giai đoạn hiện tại chỉ triển khai in-app notification và WebSocket realtime, chưa thêm email, push hoặc browser notification.
+- Xưng hô role trong copy hiển thị phải thống nhất: `customer` là `Khách hàng`, `freelancer` là `Freelancer`, `admin` là `Quản trị viên`.
+- `notification.type` chỉ dùng các giá trị hiện có: `project`, `bid`, `contract`, `system`.
+- Backend phải chuẩn hóa `title`, `content`, `link` trước khi lưu; `type` trống mặc định là `system`, `type` không hợp lệ phải bị chặn.
+- Notification nghiệp vụ phải được tạo từ backend service/controller theo event thật; client không được tự gửi `userId` để tạo notification cho người khác.
+- Mọi notification được lưu phải emit realtime tới `/user/queue/notifications` bằng payload tương thích `NotificationResponse`.
+- Admin broadcast phải lưu notification theo từng user nhận và emit từng user queue; frontend không phụ thuộc `/topic/global-notifications`.
+- `PUT /notifications/read-all` chỉ được đánh dấu unread notifications của user hiện tại và phải trả `updatedCount`.
+- STOMP `CONNECT` phải có access token hợp lệ; thiếu hoặc sai token phải bị từ chối.
+- Inbox chính phải dùng pagination/filter để tránh tải toàn bộ notification khi dữ liệu lớn; `size` API phải có trần an toàn.
+- Sau khi WebSocket reconnect, frontend phải reload inbox âm thầm để catch-up notification phát sinh trong lúc mất kết nối.
+- Khi user mark read hoặc mark all read ở một tab, các tab khác của cùng user phải sync lại unread badge/inbox.
+- Các notification có nguy cơ retry nhanh có thể dùng cơ chế recent duplicate guard theo `userId + type + title + content + link` trong một cửa sổ ngắn; không dùng guard này cho event có thể lặp hợp lệ như message chat.
+
+Event bắt buộc sinh notification:
+
+- Freelancer gửi bid, rút bid; Khách hàng từ chối bid; bid không được chọn khi accept bid khác.
+- Contract được tạo, completed hoặc cancelled; milestone created, completed hoặc cancelled.
+- Message mới và review mới trong contract.
+- User gửi KYC request; KYC được approve hoặc reject.
+- User gửi report; report được resolved hoặc dismissed.
+- Withdrawal được approve hoặc reject.
+- Quản trị viên đổi role, đổi trạng thái user, moderation project hoặc gửi broadcast.
+
+Link workspace chuẩn cho notification:
+
+- Bid/project moderation: `/workspace/projects`
+- Contract/milestone/message/review: `/workspace/contracts`
+- KYC admin: `/workspace/admin/kyc`
+- KYC user: `/workspace/profile`
+- Report admin: `/workspace/admin/reports`
+- Report/withdrawal/system follow-up: `/workspace/notifications`

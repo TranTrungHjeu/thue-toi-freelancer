@@ -10,6 +10,7 @@ import { H1, H2, Text, Caption } from '../components/common/Typography';
 import { useAuth } from '../hooks/useAuth';
 import { useToast } from '../hooks/useToast';
 import { useI18n } from '../hooks/useI18n';
+import { useNotifications } from '../hooks/useNotifications';
 import useMinimumLoadingState from '../hooks/useMinimumLoadingState';
 import marketplaceApi from '../api/marketplaceApi';
 import {
@@ -27,6 +28,7 @@ const WorkspaceDashboardPage = () => {
   const { user } = useAuth();
   const { addToast } = useToast();
   const { locale, t } = useI18n();
+  const { notifications, unreadCount: unreadNotifications } = useNotifications();
   const copy = t('workspaceDashboard');
   const [loading, setLoading] = useState(true);
   const visibleLoading = useMinimumLoadingState(loading, 700);
@@ -35,7 +37,6 @@ const WorkspaceDashboardPage = () => {
     marketplaceProjects: [],
     myBids: [],
     contracts: [],
-    notifications: [],
   });
 
   useEffect(() => {
@@ -46,12 +47,7 @@ const WorkspaceDashboardPage = () => {
 
       setLoading(true);
       try {
-        const [notificationsResponse, contractsResponse] = await Promise.all([
-          marketplaceApi.getNotificationsMe(),
-          marketplaceApi.getMyContracts(),
-        ]);
-
-        const notifications = notificationsResponse.data || [];
+        const contractsResponse = await marketplaceApi.getMyContracts();
         const contracts = contractsResponse.data || [];
 
         if (user.role === 'customer') {
@@ -61,7 +57,6 @@ const WorkspaceDashboardPage = () => {
             marketplaceProjects: [],
             myBids: [],
             contracts,
-            notifications,
           });
         } else {
           const [projectsResponse, bidsResponse] = await Promise.all([
@@ -74,7 +69,6 @@ const WorkspaceDashboardPage = () => {
             marketplaceProjects: projectsResponse.data || [],
             myBids: bidsResponse.data || [],
             contracts,
-            notifications,
           });
         }
       } catch (error) {
@@ -86,8 +80,6 @@ const WorkspaceDashboardPage = () => {
 
     loadDashboard();
   }, [addToast, t, user]);
-
-  const unreadNotifications = dashboardData.notifications.filter((notification) => !notification.isRead).length;
 
   const statCards = user?.role === 'customer'
     ? [
@@ -213,7 +205,7 @@ const WorkspaceDashboardPage = () => {
           </div>
 
           <div className="mt-5 flex flex-col gap-3">
-            {dashboardData.notifications.slice(0, 4).map((notification) => (
+            {notifications.slice(0, 4).map((notification) => (
               <InfoPanel key={notification.id}>
                 <div className="flex items-start justify-between gap-3">
                   <div>
@@ -232,7 +224,7 @@ const WorkspaceDashboardPage = () => {
               </InfoPanel>
             ))}
 
-            {!visibleLoading && dashboardData.notifications.length === 0 && (
+            {!visibleLoading && notifications.length === 0 && (
               <div className="border border-dashed border-slate-300 bg-slate-50 p-4 text-sm text-slate-600">
                 <div className="font-semibold text-secondary-900">{copy.notificationsSection.emptyTitle}</div>
                 <div className="mt-2">{copy.notificationsSection.emptyDescription}</div>

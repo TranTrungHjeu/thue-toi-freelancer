@@ -76,7 +76,7 @@ public class BidController {
     public ApiResponse<List<BidResponse>> getMyBids(Principal principal) {
         Long currentUserId = currentUserProvider.requireCurrentUserId(principal);
         List<Bid> bids = bidService.getBidsByFreelancer(currentUserId, currentUserId);
-        return ApiResponse.success("Lấy danh sách báo giá của freelancer hiện tại", marketplaceResponseMapper.toBidResponses(bids));
+        return ApiResponse.success("Lấy danh sách báo giá của Freelancer hiện tại", marketplaceResponseMapper.toBidResponses(bids));
     }
 
     /**
@@ -86,7 +86,7 @@ public class BidController {
     public ApiResponse<List<BidResponse>> getBidsByFreelancer(@PathVariable Long freelancerId, Principal principal) {
         Long currentUserId = currentUserProvider.requireCurrentUserId(principal);
         List<Bid> bids = bidService.getBidsByFreelancer(freelancerId, currentUserId);
-        return ApiResponse.success("Lấy danh sách báo giá của freelancer", marketplaceResponseMapper.toBidResponses(bids));
+        return ApiResponse.success("Lấy danh sách báo giá của Freelancer", marketplaceResponseMapper.toBidResponses(bids));
     }
 
     /**

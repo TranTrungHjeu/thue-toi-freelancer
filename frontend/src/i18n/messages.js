@@ -74,7 +74,8 @@ export const messages = {
         apply: "Áp dụng",
         cancel: "Hủy",
         confirmTitle: "Xác nhận thao tác hàng loạt",
-        confirmDesc: "Bạn có chắc chắn muốn thực hiện hành động này cho {count} đối tượng đã chọn?",
+        confirmDesc:
+          "Bạn có chắc chắn muốn thực hiện hành động này cho {count} đối tượng đã chọn?",
       },
     },
     common: {
@@ -92,11 +93,15 @@ export const messages = {
         apply: "Áp dụng",
         cancel: "Hủy",
         confirmTitle: "Xác nhận thao tác hàng loạt",
-        confirmDesc: "Bạn có chắc chắn muốn thực hiện hành động này cho {count} đối tượng đã chọn?",
+        confirmDesc:
+          "Bạn có chắc chắn muốn thực hiện hành động này cho {count} đối tượng đã chọn?",
       },
       pagination: {
         showing: "Hiển thị {from} - {to} của {total}",
       },
+    },
+    notificationsCenter: {
+      unreadBadge: "{count} thông báo chưa đọc",
     },
     layout: {
       workspace: "Khu làm việc",
@@ -297,6 +302,8 @@ export const messages = {
       notifications: {
         loadError: "Không thể tải thông báo.",
         markReadSuccess: "Đã cập nhật thông báo sang trạng thái đã đọc.",
+        markAllReadSuccess: "Đã đánh dấu tất cả thông báo là đã đọc.",
+        realtimeReceived: "Có thông báo mới.",
         updateError: "Không thể cập nhật thông báo.",
       },
       projects: {
@@ -332,7 +339,8 @@ export const messages = {
         reviewError: "Không thể gửi biểu mẫu đánh giá.",
       },
       reports: {
-        submitSuccess: "Báo cáo của bạn đã được gửi thành công và đang được xem xét.",
+        submitSuccess:
+          "Báo cáo của bạn đã được gửi thành công và đang được xem xét.",
         submitError: "Không thể gửi báo cáo vào lúc này.",
         updateStatusSuccess: "Đã cập nhật trạng thái báo cáo.",
         updateStatusError: "Không thể cập nhật trạng thái báo cáo.",
@@ -353,7 +361,7 @@ export const messages = {
         loadReportsError: "Không thể tải danh sách báo cáo.",
         loadKycError: "Không thể tải danh sách yêu cầu xác thực.",
         exportSuccess: "Trích xuất dữ liệu thành công.",
-      }
+      },
     },
     adminPages: {
       skills: {
@@ -373,7 +381,8 @@ export const messages = {
         cancelBtn: "Đóng",
         confirmCreateBtn: "Lưu bản ghi",
         confirmEditBtn: "Lưu thay đổi",
-        deleteConfirm: "Bạn có chắc chắn muốn xóa bản ghi chuyên môn này khỏi hệ thống?",
+        deleteConfirm:
+          "Bạn có chắc chắn muốn xóa bản ghi chuyên môn này khỏi hệ thống?",
       },
       broadcast: {
         title: "Gửi Thông báo Hệ thống",
@@ -392,7 +401,9 @@ export const messages = {
         linkPlaceholder: "VD: /workspace/notifications",
         submitBtn: "Gửi thông báo",
         sendingLabel: "Đang gửi...",
-        confirmPrompt: "Thông báo sẽ được gửi ngay tới nhóm đối tượng đã chọn. Xác nhận tiếp tục?",
+        confirmPrompt:
+          "Thông báo sẽ được gửi ngay tới nhóm đối tượng đã chọn. Xác nhận tiếp tục?",
+        confirmTitle: "Xác nhận gửi thông báo toàn hệ thống",
         previewTitle: "Xem trước",
         previewPlaceholderTitle: "Tiêu đề thông báo",
         previewPlaceholderContent: "Nội dung thông báo sẽ hiển thị ở đây.",
@@ -417,7 +428,8 @@ export const messages = {
         approveConfirm: "Xác nhận phê duyệt hồ sơ KYC của người dùng này?",
         rejectTitle: "Từ chối KYC",
         rejectReasonLabel: "Lý do từ chối (Bắt buộc)",
-        rejectReasonPlaceholder: "Giải thích để người dùng biết cần sửa gì và nộp lại...",
+        rejectReasonPlaceholder:
+          "Giải thích để người dùng biết cần sửa gì và nộp lại...",
         rejectCancelBtn: "Hủy",
         rejectConfirmBtn: "Xác nhận từ chối",
         rejectedReason: "Lý do:",
@@ -446,7 +458,8 @@ export const messages = {
       dashboard: {
         title: "Tổng quan Quản trị",
         caption: "Giám sát Hệ thống",
-        greeting: "Chào mừng trở lại! Dưới đây là các chỉ số vận hành của nền tảng.",
+        greeting:
+          "Chào mừng trở lại! Dưới đây là các chỉ số vận hành của nền tảng.",
         totalUsers: "Tổng số người dùng",
         activeProjects: "Dự án đang mở",
         totalGmv: "Tổng giá trị giao dịch (GMV)",
@@ -487,12 +500,15 @@ export const messages = {
         unlockBtn: "Mở khóa tài khoản",
         editRole: "Thay đổi vai trò",
         changeRoleTitle: "Cập nhật vai trò",
-        changeRoleWarning: "Lưu ý: Hành động này sẽ thay đổi quyền truy cập của người dùng ngay lập tức.",
+        changeRoleWarning:
+          "Lưu ý: Hành động này sẽ thay đổi quyền truy cập của người dùng ngay lập tức.",
         selfDemoteError: "Không thể thay đổi vai trò của chính mình.",
         modalToggleTitleLock: "Khóa tài khoản",
         modalToggleTitleUnlock: "Mở khóa tài khoản",
-        modalToggleConfirmLock: "Tài khoản này sẽ bị khóa và người dùng sẽ không thể đăng nhập cho đến khi được mở khóa.",
-        modalToggleConfirmUnlock: "Tài khoản này sẽ được mở khóa và người dùng có thể đăng nhập bình thường trở lại.",
+        modalToggleConfirmLock:
+          "Tài khoản này sẽ bị khóa và người dùng sẽ không thể đăng nhập cho đến khi được mở khóa.",
+        modalToggleConfirmUnlock:
+          "Tài khoản này sẽ được mở khóa và người dùng có thể đăng nhập bình thường trở lại.",
         modalToggleConfirmLabel: "Thực hiện với tài khoản:",
         modalToggleReasonLabel: "Lý do (Bắt buộc)",
         modalToggleReasonPlaceholder: "Nhập lý do để người dùng biết...",
@@ -530,10 +546,14 @@ export const messages = {
         modalBankLabel: "Thông tin tài khoản nhận tiền",
         modalConfirmApprove: "Xác nhận phê duyệt số tiền",
         modalConfirmReject: "Xác nhận từ chối yêu cầu",
-        modalApproveNote: "Lưu ý: Chỉ phê duyệt sau khi đã chuyển tiền thành công. Số dư ví của người dùng sẽ bị trừ ngay lập tức.",
-        modalRejectNote: "Yêu cầu rút tiền sẽ bị hủy và người dùng sẽ nhận được thông báo từ chối.",
-        notePlaceholderApprove: "VD: Đã chuyển khoản BIDV số XXXXX thành công...",
-        notePlaceholderReject: "VD: Thông tin tài khoản ngân hàng không hợp lệ. Vui lòng cập nhật lại...",
+        modalApproveNote:
+          "Lưu ý: Chỉ phê duyệt sau khi đã chuyển tiền thành công. Số dư ví của người dùng sẽ bị trừ ngay lập tức.",
+        modalRejectNote:
+          "Yêu cầu rút tiền sẽ bị hủy và người dùng sẽ nhận được thông báo từ chối.",
+        notePlaceholderApprove:
+          "VD: Đã chuyển khoản BIDV số XXXXX thành công...",
+        notePlaceholderReject:
+          "VD: Thông tin tài khoản ngân hàng không hợp lệ. Vui lòng cập nhật lại...",
         cancelBtn: "Hủy",
         confirmBtn: "Xác nhận",
         taxReportLabel: "Báo cáo Thuế",
@@ -550,24 +570,32 @@ export const messages = {
         desc: "Thiết lập các thông số vận hành, chính sách phí và cấu hình toàn nền tảng.",
         financialSection: "Chính sách tài chính",
         platformFeeLabel: "Phí nền tảng (%)",
-        platformFeeDesc: "Phần trăm phí tự động khấu trừ từ mỗi giao dịch thành công.",
+        platformFeeDesc:
+          "Phần trăm phí tự động khấu trừ từ mỗi giao dịch thành công.",
         minWithdrawalLabel: "Số tiền rút tối thiểu",
-        minWithdrawalDesc: "Mức tối thiểu để người dùng có thể tạo yêu cầu rút tiền.",
+        minWithdrawalDesc:
+          "Mức tối thiểu để người dùng có thể tạo yêu cầu rút tiền.",
         operationsSection: "Vận hành",
         autoApproveLabel: "Tự động duyệt dự án",
-        autoApproveDesc: "Bỏ qua kiểm duyệt thủ công, dự án được đăng ngay sau khi tạo.",
+        autoApproveDesc:
+          "Bỏ qua kiểm duyệt thủ công, dự án được đăng ngay sau khi tạo.",
         autoApproveOn: "Bật (Tự động)",
         autoApproveOff: "Tắt (Kiểm duyệt thủ công)",
         maintenanceLabel: "Chế độ bảo trì",
-        maintenanceDesc: "Tạm ngưng hệ thống để bảo trì. Người dùng sẽ không thể truy cập.",
+        maintenanceDesc:
+          "Tạm ngưng hệ thống để bảo trì. Người dùng sẽ không thể truy cập.",
         maintenanceOff: "Hoạt động bình thường",
         maintenanceOn: "Đang bảo trì",
         globalAnnouncement: "Thông báo toàn hệ thống",
-        globalAnnouncementDesc: "Hiển thị banner thông báo trên giao diện của tất cả người dùng.",
-        announcementPlaceholder: "VD: Hệ thống sẽ bảo trì vào 2h sáng ngày 01/05...",
+        globalAnnouncementDesc:
+          "Hiển thị banner thông báo trên giao diện của tất cả người dùng.",
+        announcementPlaceholder:
+          "VD: Hệ thống sẽ bảo trì vào 2h sáng ngày 01/05...",
         sidebarTitle: "Lưu ý quan trọng",
-        sidebarTip1: "Thay đổi phí nền tảng chỉ áp dụng cho hợp đồng mới tạo sau đó.",
-        sidebarTip2: "Bật chế độ bảo trì sẽ ngăn không cho người dùng gửi request lên API.",
+        sidebarTip1:
+          "Thay đổi phí nền tảng chỉ áp dụng cho hợp đồng mới tạo sau đó.",
+        sidebarTip2:
+          "Bật chế độ bảo trì sẽ ngăn không cho người dùng gửi request lên API.",
         statusSidebarTitle: "Trạng thái dữ liệu",
         statusDataSource: "Nguồn dữ liệu",
         statusLastUpdated: "Cập nhật",
@@ -787,6 +815,9 @@ export const messages = {
       fileUploadPrompt: "Click to upload or drag files here",
       fileUploadHint: "PDF, DOCX, PNG (up to 10 MB)",
     },
+    notificationsCenter: {
+      unreadBadge: "{count} unread notifications",
+    },
     layout: {
       workspace: "Workspace",
       openMenu: "Open menu",
@@ -829,7 +860,8 @@ export const messages = {
       login: "Sign in",
       getStarted: "Get started",
       heroBadge: "Fast, clear collaboration",
-      heroTitle: "Where customers and freelancers start projects professionally.",
+      heroTitle:
+        "Where customers and freelancers start projects professionally.",
       heroDescription:
         "Post projects, receive bids, and track contracts in one unified workspace.",
       createAccount: "Create a new account",
@@ -984,6 +1016,8 @@ export const messages = {
       notifications: {
         loadError: "Could not load notifications.",
         markReadSuccess: "Notification has been marked as read.",
+        markAllReadSuccess: "All notifications have been marked as read.",
+        realtimeReceived: "New notification received.",
         updateError: "Could not update the notification.",
       },
       projects: {
@@ -1019,7 +1053,8 @@ export const messages = {
         reviewError: "Could not submit this review right now.",
       },
       reports: {
-        submitSuccess: "Your report has been submitted successfully and is being reviewed.",
+        submitSuccess:
+          "Your report has been submitted successfully and is being reviewed.",
         submitError: "Could not submit the report at this time.",
         updateStatusSuccess: "Report status updated.",
         updateStatusError: "Could not update report status.",
@@ -1039,7 +1074,7 @@ export const messages = {
         loadProjectsError: "Could not load projects.",
         loadReportsError: "Could not load reports.",
         loadKycError: "Could not load KYC requests.",
-      }
+      },
     },
     adminPages: {
       skills: {
@@ -1078,15 +1113,18 @@ export const messages = {
         linkPlaceholder: "URL when user taps (e.g., /workspace/notifications)",
         submitBtn: "Broadcast Now",
         sendingLabel: "Broadcasting...",
-        confirmPrompt: "Are you sure you want to send this notification to all selected users? This action cannot be undone.",
+        confirmPrompt:
+          "Are you sure you want to send this notification to all selected users? This action cannot be undone.",
+        confirmTitle: "Confirm System Broadcast",
         previewTitle: "Preview",
         previewPlaceholderTitle: "Sample Title",
-        previewPlaceholderContent: "Notification content will appear here when users open their notification list.",
+        previewPlaceholderContent:
+          "Notification content will appear here when users open their notification list.",
         previewViewNow: "View now",
         tipsTitle: "Content best practices:",
         tip1: "Keep titles under 50 characters to avoid truncation on mobile.",
         tip2: "Use workspace paths for effective user navigation.",
-        tip3: "The system will store and display this notification under the \"System\" tab.",
+        tip3: 'The system will store and display this notification under the "System" tab.',
         broadcastError: "Could not send broadcast.",
       },
       kyc: {
@@ -1102,7 +1140,8 @@ export const messages = {
         approveConfirm: "Confirm KYC approval for this user?",
         rejectTitle: "Reject Verification",
         rejectReasonLabel: "Rejection Reason (Required)",
-        rejectReasonPlaceholder: "Explain why so the user can improve their profile...",
+        rejectReasonPlaceholder:
+          "Explain why so the user can improve their profile...",
         rejectCancelBtn: "Cancel",
         rejectConfirmBtn: "Confirm Rejection",
         rejectedReason: "Reason:",
@@ -1129,7 +1168,8 @@ export const messages = {
       dashboard: {
         title: "System Health Overview",
         caption: "System Administration",
-        greeting: "Welcome back, Admin. Here are the latest operational metrics.",
+        greeting:
+          "Welcome back, Admin. Here are the latest operational metrics.",
         totalUsers: "Total Users",
         activeProjects: "Active Projects",
         totalGmv: "Total GMV",
@@ -1160,16 +1200,21 @@ export const messages = {
         unlockBtn: "Unlock Account",
         editRole: "Change Role",
         changeRoleTitle: "Update Role",
-        changeRoleWarning: "This action will immediately change user access permissions.",
-        selfDemoteError: "You cannot change your own role to protect admin access.",
+        changeRoleWarning:
+          "This action will immediately change user access permissions.",
+        selfDemoteError:
+          "You cannot change your own role to protect admin access.",
         modalToggleTitleLock: "Lock Account",
         modalToggleTitleUnlock: "Activate Account",
-        modalToggleConfirmLock: "This account will not be able to sign in until unlocked.",
-        modalToggleConfirmUnlock: "This account will regain full access to all platform features.",
+        modalToggleConfirmLock:
+          "This account will not be able to sign in until unlocked.",
+        modalToggleConfirmUnlock:
+          "This account will regain full access to all platform features.",
         modalToggleConfirmLabel: "Confirm status change for",
         modalToggleReasonLabel: "Reason for change (Required)",
         modalToggleReasonPlaceholder: "Enter detailed reason...",
-        modalToggleNote: "The user will receive a notification with this reason.",
+        modalToggleNote:
+          "The user will receive a notification with this reason.",
         modalToggleCancelBtn: "Cancel",
         modalToggleConfirmLockBtn: "Confirm Lock",
         modalToggleConfirmUnlockBtn: "Activate Now",
@@ -1202,10 +1247,13 @@ export const messages = {
         modalBankLabel: "Recipient Bank Info",
         modalConfirmApprove: "Confirm approval of payout order",
         modalConfirmReject: "Confirm rejection of payout order",
-        modalApproveNote: "Please ensure you have made the actual bank transfer before confirming here. The user's balance will be deducted immediately.",
-        modalRejectNote: "The request will be cancelled and the user will be notified with your rejection reason.",
+        modalApproveNote:
+          "Please ensure you have made the actual bank transfer before confirming here. The user's balance will be deducted immediately.",
+        modalRejectNote:
+          "The request will be cancelled and the user will be notified with your rejection reason.",
         notePlaceholderApprove: "e.g., Transfer successful via Chase Bank...",
-        notePlaceholderReject: "e.g., Invalid bank information, please update...",
+        notePlaceholderReject:
+          "e.g., Invalid bank information, please update...",
         cancelBtn: "Cancel",
         confirmBtn: "Confirm Process",
         taxReportLabel: "Tax Reports",
@@ -1224,7 +1272,8 @@ export const messages = {
         platformFeeLabel: "Platform Service Fee (Commission)",
         platformFeeDesc: "Percentage deducted from each completed contract.",
         minWithdrawalLabel: "Minimum Withdrawal",
-        minWithdrawalDesc: "Minimum balance required to create a payout request.",
+        minWithdrawalDesc:
+          "Minimum balance required to create a payout request.",
         operationsSection: "Operations & Control",
         autoApproveLabel: "Auto-approve Projects",
         autoApproveDesc: "Allow projects to appear immediately after posting.",
@@ -1235,11 +1284,15 @@ export const messages = {
         maintenanceOff: "Operating normally",
         maintenanceOn: "Under maintenance",
         globalAnnouncement: "Global Announcement",
-        globalAnnouncementDesc: "Display a notification banner to all users across the system.",
-        announcementPlaceholder: "e.g., System maintenance scheduled for 2 AM tomorrow...",
+        globalAnnouncementDesc:
+          "Display a notification banner to all users across the system.",
+        announcementPlaceholder:
+          "e.g., System maintenance scheduled for 2 AM tomorrow...",
         sidebarTitle: "Admin Notes",
-        sidebarTip1: "Commission fee changes only apply to contracts created after the update.",
-        sidebarTip2: "Enabling Maintenance Mode will send a disconnect notification to all online users.",
+        sidebarTip1:
+          "Commission fee changes only apply to contracts created after the update.",
+        sidebarTip2:
+          "Enabling Maintenance Mode will send a disconnect notification to all online users.",
         statusSidebarTitle: "Configuration Status",
         statusDataSource: "Data Source",
         statusLastUpdated: "Last Updated",

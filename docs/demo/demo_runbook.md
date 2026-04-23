@@ -9,7 +9,8 @@ Demo cần chứng minh được 4 điểm:
 1. Auth flow đang chạy theo JWT + refresh cookie + profile.
 2. Luồng marketplace core chạy trọn từ project đến contract.
 3. Sau khi có contract, hai bên có thể cộng tác bằng milestone, message, review và notification.
-4. Hệ thống có đủ tài liệu, test và dữ liệu seed để review lại.
+4. Quản trị viên có thể xử lý KYC/report/withdrawal và gửi broadcast có realtime notification.
+5. Hệ thống có đủ tài liệu, test và dữ liệu seed để review lại.
 
 ## 2. Chuẩn bị trước demo
 
@@ -82,15 +83,23 @@ Demo cần chứng minh được 4 điểm:
 ### Màn 7. Notification center + Realtime
 
 1. Mở `Notifications`.
-2. Cho thấy type badge, unread count, mark-as-read và điều hướng bằng `link`.
-3. Trigger action ở tab khác (contract status/message) để demo realtime update qua WebSocket (no refresh).
-4. Nêu các event hiện có:
+2. Cho thấy type badge, unread badge ở header/sidebar/bottom nav, filter type/read-state, pagination, mark-as-read, mark-all-read và điều hướng bằng `link`.
+3. Mở cùng user ở 2 tab, mark read ở một tab để demo badge tab còn lại tự sync.
+4. Trigger action ở tab khác để demo realtime update qua WebSocket không cần refresh, ví dụ gửi message, tạo review, rút bid hoặc đổi trạng thái contract.
+5. Nếu có thời gian, tắt/mở lại backend hoặc mô phỏng reconnect rồi cho thấy inbox tự catch-up sau khi socket kết nối lại.
+6. Mở tài khoản `admin@gmail.com` và demo thêm KYC request, report submit hoặc admin broadcast nếu còn thời gian.
+7. Nêu các event đang được phủ:
    - bid mới
-   - bid bị từ chối hoặc không được chọn
+   - bid bị từ chối, bị rút hoặc không được chọn
    - contract mới
-   - milestone mới
+   - milestone mới, hoàn thành hoặc bị hủy
    - contract hoàn thành hoặc bị hủy
-   - live notifications/messages (useWebSocket hook)
+   - message mới và review mới
+   - KYC request/approve/reject
+   - report submit/resolved/dismissed
+   - withdrawal approved/rejected
+   - admin broadcast theo target role
+   - live notifications qua `/user/queue/notifications` và live contract events qua `/topic/contract/{id}`
 
 ## 4. Fallback demo
 

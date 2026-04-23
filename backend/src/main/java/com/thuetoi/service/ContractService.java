@@ -333,6 +333,15 @@ public class ContractService {
                 "/workspace/contracts"
             );
         }
+        if (normalized == MilestoneStatus.CANCELLED) {
+            notificationService.createNotificationForUser(
+                contract.getFreelancerId(),
+                "contract",
+                "Milestone đã bị hủy",
+                "Milestone \"" + milestone.getTitle() + "\" đã bị hủy.",
+                "/workspace/contracts"
+            );
+        }
 
         publishContractEvent(contract.getId(), "milestone.status_updated", updatedMilestone);
         return updatedMilestone;

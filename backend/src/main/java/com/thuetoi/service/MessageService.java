@@ -24,6 +24,9 @@ public class MessageService {
     @Autowired
     private ContractRealtimePublisher contractRealtimePublisher;
 
+    @Autowired
+    private NotificationService notificationService;
+
     public Message sendMessage(Long currentUserId, MessageRequest request) {
         Contract contract = contractAccessService.requireAccessibleContract(request.getContractId(), currentUserId);
         if (!ContractStatus.IN_PROGRESS.matches(contract.getStatus())) {
@@ -52,6 +55,17 @@ public class MessageService {
         if (contractRealtimePublisher != null) {
             contractRealtimePublisher.publish(request.getContractId(), "message.created", savedMessage);
         }
+
+        Long recipientId = contract.getClientId().equals(currentUserId)
+            ? contract.getFreelancerId()
+            : contract.getClientId();
+        notificationService.createNotificationForUser(
+            recipientId,
+            "contract",
+            "Tin nhắn mới trong hợp đồng",
+            "Bạn có tin nhắn mới trong contract #" + request.getContractId() + ".",
+            "/workspace/contracts"
+        );
 
         return savedMessage;
     }

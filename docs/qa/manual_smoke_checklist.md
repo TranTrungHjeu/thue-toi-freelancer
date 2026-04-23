@@ -21,7 +21,7 @@ Sau khi import DB sạch từ `docs/database/seed.sql`, có thể đăng nhập 
 
 Lưu ý:
 
-- `admin` hiện chủ yếu phục vụ kiểm tra dữ liệu và API, chưa có luồng quản trị riêng ở frontend.
+- `admin` dùng để kiểm tra dashboard quản trị, KYC, reports, withdrawals, broadcast và audit log.
 - Auth runtime chuẩn vẫn hỗ trợ register + OTP bằng email thật cho user mới.
 
 ## 3. Auth smoke
@@ -46,7 +46,7 @@ Lưu ý:
 5. Thử set status thủ công sang `in_progress` hoặc `completed` nếu UI/API cho phép.
    - Kỳ vọng: backend chặn với `ERR_SYS_02`.
 6. Mở `Notifications`.
-   - Kỳ vọng: danh sách notification của Khách hàng tải được, unread count hiển thị đúng.
+   - Kỳ vọng: danh sách notification của Khách hàng tải được, unread badge trên header/sidebar/bottom nav hiển thị đúng.
 
 ## 5. Freelancer flow
 
@@ -60,6 +60,8 @@ Lưu ý:
    - Kỳ vọng: Khách hàng nhận notification `bid`.
 6. Với Freelancer, vào danh sách bid của mình.
    - Kỳ vọng: thấy bid vừa tạo.
+7. Rút một bid còn `pending` nếu có dữ liệu phù hợp.
+   - Kỳ vọng: Khách hàng sở hữu project nhận notification `bid` và link về `/workspace/projects`.
 
 ## 6. Accept bid -> contract -> milestone
 
@@ -80,11 +82,11 @@ Lưu ý:
 ## 7. Collaboration flow
 
 1. Trong `Contracts`, ở contract `in_progress`, gửi 1 tin nhắn text bằng Khách hàng.
-   - Kỳ vọng: message xuất hiện đúng `senderId`, không cần client gửi `senderId`.
+   - Kỳ vọng: message xuất hiện đúng `senderId`, không cần client gửi `senderId`; Freelancer nhận notification `contract`.
 2. Login bằng `freelancer1@gmail.com`, mở cùng contract.
    - Kỳ vọng: thấy lịch sử message của contract.
 3. Gửi 1 tin nhắn file với `attachments`.
-   - Kỳ vọng: message file được tạo, link/attachment hiển thị đúng.
+   - Kỳ vọng: message file được tạo, link/attachment hiển thị đúng; participant còn lại nhận notification realtime.
 4. Thử gửi message khi contract đã kết thúc.
    - Kỳ vọng: backend chặn với `ERR_SYS_02`.
 
@@ -98,7 +100,7 @@ Lưu ý:
    - Project liên quan đổi `completed`
    - Participant còn lại nhận notification trạng thái hợp đồng
 3. Tạo review cho contract đã hoàn thành.
-   - Kỳ vọng: review tạo thành công.
+   - Kỳ vọng: review tạo thành công; participant còn lại nhận notification `contract`.
 4. Thử tạo review lần thứ hai bằng cùng user.
    - Kỳ vọng: backend chặn với `409` và `ERR_SYS_02`.
 5. Login user còn lại và tạo review của họ.
@@ -108,14 +110,33 @@ Lưu ý:
 
 1. Kiểm tra các event sau có sinh notification:
    - bid mới
-   - bid bị từ chối hoặc không được chọn
+   - bid bị từ chối, bị rút hoặc không được chọn
    - contract mới
-   - milestone mới
+   - milestone mới, hoàn thành hoặc bị hủy
    - contract hoàn thành hoặc bị hủy
-2. Tại `Notifications`, bấm `Đánh dấu đã đọc`.
+   - message mới và review mới
+   - user gửi KYC request, Quản trị viên nhận notification ở `/workspace/admin/kyc`
+   - KYC approved/rejected, user nhận notification ở `/workspace/profile`
+   - user gửi report, Quản trị viên nhận notification ở `/workspace/admin/reports`, reporter nhận xác nhận
+   - report resolved/dismissed, reporter nhận notification ở `/workspace/notifications`
+   - withdrawal approved/rejected, user nhận notification ở `/workspace/notifications`
+   - admin broadcast tới target role, từng user nhận realtime notification
+2. Kiểm tra realtime.
+   - Kỳ vọng: khi action được trigger từ tab/tài khoản khác, notification mới xuất hiện không cần refresh và unread badge tăng đúng.
+3. Ngắt/kết nối lại mạng hoặc restart backend ngắn rồi trigger notification mới.
+   - Kỳ vọng: sau khi WebSocket reconnect, inbox tự reload âm thầm và không bỏ sót notification mới.
+4. Mở cùng user ở 2 tab, bấm `Đánh dấu đã đọc` hoặc `Đánh dấu tất cả đã đọc` ở tab thứ nhất.
+   - Kỳ vọng: tab thứ hai tự sync lại unread badge/inbox mà không cần refresh thủ công.
+5. Dùng filter trong `Notifications`.
+   - Kỳ vọng: lọc được theo type `project`, `bid`, `contract`, `system` và chế độ chỉ chưa đọc.
+6. Nếu có nhiều notification, chuyển trang.
+   - Kỳ vọng: range phân trang đúng, nút trang trước/sau không vượt biên.
+7. Tại `Notifications`, bấm `Đánh dấu đã đọc`.
    - Kỳ vọng: `isRead` cập nhật về `true`.
-3. Nếu notification có `link`, bấm mở liên kết.
-   - Kỳ vọng: điều hướng đúng workspace liên quan.
+8. Tại `Notifications`, bấm `Đánh dấu tất cả đã đọc`.
+   - Kỳ vọng: API trả `updatedCount`, unread badge về 0, các item chuyển trạng thái đã đọc.
+9. Nếu notification có `link`, bấm mở liên kết.
+   - Kỳ vọng: item được mark read trước khi điều hướng đúng workspace liên quan.
 
 ## 10. Regression technical gate
 
