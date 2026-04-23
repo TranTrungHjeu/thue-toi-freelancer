@@ -12,6 +12,7 @@ import com.thuetoi.security.RestAuthenticationEntryPoint;
 import com.thuetoi.security.SecurityConfig;
 import com.thuetoi.service.AdminService;
 import com.thuetoi.service.AuditLogService;
+import com.thuetoi.service.NotificationDeliveryLogService;
 import com.thuetoi.service.NotificationService;
 import com.thuetoi.service.SkillService;
 import com.thuetoi.service.SystemHealthService;
@@ -59,6 +60,9 @@ class AdminControllerSecurityTest {
 
     @MockBean
     private NotificationService notificationService;
+
+    @MockBean
+    private NotificationDeliveryLogService notificationDeliveryLogService;
 
     @MockBean
     private UserRepository userRepository;

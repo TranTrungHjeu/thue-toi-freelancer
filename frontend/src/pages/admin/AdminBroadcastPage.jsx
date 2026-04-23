@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
-import { 
-  Megaphone, 
-  Send, 
+import {
+  Megaphone,
+  Send,
   InfoCircle,
   NavArrowRight
 } from 'iconoir-react';
