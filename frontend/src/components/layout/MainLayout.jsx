@@ -7,18 +7,29 @@ import MobileDrawer from './MobileDrawer';
 import BottomNav from './BottomNav';
 import { useAuth } from '../../hooks/useAuth';
 import { useI18n } from '../../hooks/useI18n';
+import { useNotifications } from '../../hooks/useNotifications';
 
 const MainLayout = () => {
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
   const { user, logout } = useAuth();
   const location = useLocation();
   const { t } = useI18n();
+  const { unreadCount } = useNotifications();
 
   const role = (user?.role || '').toLowerCase();
+  const notificationBadge = unreadCount > 0 ? (unreadCount > 99 ? '99+' : String(unreadCount)) : null;
 
   const navigation = useMemo(() => {
+    const notificationItem = {
+      label: t('layout.navigation.notifications'),
+      to: '/workspace/notifications',
+      icon: Bell,
+      badge: notificationBadge,
+      badgeLabel: t('notificationsCenter.unreadBadge', { count: unreadCount }),
+    };
+
     const commonWorkspaceItems = [
-      { label: t('layout.navigation.notifications'), to: '/workspace/notifications', icon: Bell },
+      notificationItem,
       { label: t('layout.navigation.profile'), to: '/workspace/profile', icon: ProfileCircle },
     ];
 
@@ -48,6 +59,7 @@ const MainLayout = () => {
             { label: t('layout.navigation.adminSkills'), to: '/workspace/admin/skills', icon: Database },
             { label: t('layout.navigation.adminSettings'), to: '/workspace/admin/settings', icon: Settings },
             { label: t('layout.navigation.adminLogs'), to: '/workspace/admin/logs', icon: PageSearch },
+            ...commonWorkspaceItems,
           ],
         }
       ];
@@ -60,7 +72,7 @@ const MainLayout = () => {
           items: [
             { label: t('layout.navigation.dashboard'), to: '/workspace', icon: Home },
             { label: t('layout.navigation.projects'), to: '/workspace/projects', icon: ViewGrid },
-            { label: t('workspaceMessages.contractsPage.participants.customer'), to: '/workspace/contracts', icon: PageSearch },
+            { label: t('layout.navigation.contracts'), to: '/workspace/contracts', icon: PageSearch },
             ...commonWorkspaceItems,
           ],
         }
@@ -79,12 +91,19 @@ const MainLayout = () => {
         ],
       }
     ];
-  }, [role, t]);
+  }, [notificationBadge, role, t, unreadCount]);
 
   const mobileNavigation = useMemo(() => {
     const baseNav = [
       { label: t('layout.navigation.dashboard'), to: '/workspace', icon: Home },
     ];
+    const notificationItem = {
+      label: t('layout.navigation.notifications'),
+      to: '/workspace/notifications',
+      icon: Bell,
+      badge: notificationBadge,
+      badgeLabel: t('notificationsCenter.unreadBadge', { count: unreadCount }),
+    };
 
     if (role === 'admin') {
       return [
@@ -92,6 +111,7 @@ const MainLayout = () => {
         { label: t('layout.navigation.projects'), to: '/workspace/admin/projects', icon: ViewGrid },
         { label: t('layout.navigation.adminUsers'), to: '/workspace/admin/users', icon: Group },
         { label: t('layout.navigation.adminFinance'), to: '/workspace/admin/finance', icon: Reports },
+        notificationItem,
       ];
     }
 
@@ -100,6 +120,7 @@ const MainLayout = () => {
         ...baseNav,
         { label: t('layout.navigation.projects'), to: '/workspace/projects', icon: ViewGrid },
         { label: t('layout.navigation.rent'), to: '/workspace/contracts', icon: PageSearch },
+        notificationItem,
         { label: t('layout.navigation.profile'), to: '/workspace/profile', icon: ProfileCircle },
       ];
     }
@@ -108,9 +129,10 @@ const MainLayout = () => {
       ...baseNav,
       { label: t('layout.navigation.findJobs'), to: '/workspace/projects', icon: PageSearch },
       { label: t('layout.navigation.contracts'), to: '/workspace/contracts', icon: ViewGrid },
+      notificationItem,
       { label: t('layout.navigation.profile'), to: '/workspace/profile', icon: ProfileCircle },
     ];
-  }, [role, t]);
+  }, [notificationBadge, role, t, unreadCount]);
 
   return (
     <div className="relative min-h-screen flex flex-col overflow-hidden bg-[radial-gradient(circle_at_top_left,_rgba(34,197,94,0.12),_transparent_28%),linear-gradient(180deg,#f8fafc_0%,#eff6ff_45%,#f8fafc_100%)]">

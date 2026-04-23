@@ -294,7 +294,7 @@ public class UserService {
         if (!"freelancer".equals(normalizedRole) && !"customer".equals(normalizedRole) && !"admin".equals(normalizedRole)) {
             throw new BusinessException(
                 "ERR_AUTH_06",
-                "Vai trò không hợp lệ. Chỉ chấp nhận freelancer hoặc customer",
+                "Vai trò không hợp lệ. Chỉ chấp nhận Freelancer hoặc Khách hàng",
                 HttpStatus.BAD_REQUEST
             );
         }

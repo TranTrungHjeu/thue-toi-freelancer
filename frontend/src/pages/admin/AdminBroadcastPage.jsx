@@ -15,6 +15,7 @@ import adminApi from '../../api/adminApi';
 import { useToast } from '../../hooks/useToast';
 import { useI18n } from '../../hooks/useI18n';
 import Spinner from '../../components/common/Spinner';
+import Modal from '../../components/common/Modal';
 
 const AdminBroadcastPage = () => {
   const { t } = useI18n();
@@ -28,11 +29,15 @@ const AdminBroadcastPage = () => {
     link: ''
   });
   const [submitting, setSubmitting] = useState(false);
+  const [showConfirmModal, setShowConfirmModal] = useState(false);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!window.confirm(t('adminPages.broadcast.confirmPrompt'))) return;
+    setShowConfirmModal(true);
+  };
 
+  const handleConfirmBroadcast = async () => {
+    setShowConfirmModal(false);
     setSubmitting(true);
     try {
       await adminApi.broadcast(form);
@@ -191,6 +196,36 @@ const AdminBroadcastPage = () => {
           </Card>
         </div>
       </div>
+
+      <Modal
+        isOpen={showConfirmModal}
+        onClose={() => setShowConfirmModal(false)}
+        title={t('adminPages.broadcast.confirmTitle')}
+      >
+        <div className="space-y-6">
+          <p className="text-slate-600 leading-relaxed">
+            {t('adminPages.broadcast.confirmPrompt')}
+          </p>
+
+          <div className="flex gap-3 pt-4 border-t border-slate-100">
+            <Button
+              variant="outline"
+              onClick={() => setShowConfirmModal(false)}
+              className="flex-1"
+              disabled={submitting}
+            >
+              Hủy
+            </Button>
+            <Button
+              onClick={handleConfirmBroadcast}
+              className="flex-1 bg-primary-600 hover:bg-primary-700"
+              disabled={submitting}
+            >
+              {submitting ? 'Đang gửi...' : 'Gửi'}
+            </Button>
+          </div>
+        </div>
+      </Modal>
     </div>
   );
 };

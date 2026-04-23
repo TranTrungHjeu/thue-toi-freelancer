@@ -4,6 +4,7 @@ import AppRoutes from './routes/AppRoutes';
 import { ToastProvider } from './components/common/Toast';
 import { AuthProvider } from './contexts/AuthContext';
 import { I18nProvider } from './contexts/I18nContext';
+import { NotificationProvider } from './contexts/NotificationContext';
 import Spinner from './components/common/Spinner';
 
 const AppRouteFallback = () => {
@@ -18,9 +19,11 @@ const AppShell = () => (
   <BrowserRouter>
     <ToastProvider>
       <AuthProvider>
-        <Suspense fallback={<AppRouteFallback />}>
-          <AppRoutes />
-        </Suspense>
+        <NotificationProvider>
+          <Suspense fallback={<AppRouteFallback />}>
+            <AppRoutes />
+          </Suspense>
+        </NotificationProvider>
       </AuthProvider>
     </ToastProvider>
   </BrowserRouter>

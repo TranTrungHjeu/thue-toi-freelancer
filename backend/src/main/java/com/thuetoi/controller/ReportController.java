@@ -1,6 +1,7 @@
 package com.thuetoi.controller;
 
 import java.security.Principal;
+import java.time.Duration;
 import java.util.Locale;
 import java.util.Set;
 
@@ -16,6 +17,7 @@ import com.thuetoi.dto.response.ApiResponse;
 import com.thuetoi.exception.BusinessException;
 import com.thuetoi.repository.ReportRepository;
 import com.thuetoi.security.CurrentUserProvider;
+import com.thuetoi.service.NotificationService;
 
 import jakarta.validation.Valid;
 
@@ -28,6 +30,9 @@ public class ReportController {
 
     @Autowired
     private ReportRepository reportRepository;
+
+    @Autowired
+    private NotificationService notificationService;
 
     @PostMapping
     public ApiResponse<Void> submitReport(@Valid @RequestBody ReportSubmitRequest payload, Principal principal) {
@@ -44,6 +49,22 @@ public class ReportController {
         report.setStatus("PENDING");
 
         reportRepository.save(report);
+        notificationService.createNotificationForUserOnce(
+            userId,
+            "system",
+            "Báo cáo đã được ghi nhận",
+            "Báo cáo của bạn đã được gửi tới Quản trị viên để xem xét.",
+            "/workspace/notifications",
+            Duration.ofSeconds(30)
+        );
+        notificationService.broadcastNotification(
+            "admin",
+            "system",
+            "Có báo cáo vi phạm mới",
+            "Một báo cáo vi phạm mới đang chờ Quản trị viên xử lý.",
+            "/workspace/admin/reports",
+            null
+        );
         return ApiResponse.success("Báo cáo đã được gửi để xem xét", null);
     }
 

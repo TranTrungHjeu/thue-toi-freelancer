@@ -31,12 +31,12 @@ public class WebSocketAuthChannelInterceptor implements ChannelInterceptor {
         }
 
         if (authorizationHeader == null || !authorizationHeader.startsWith("Bearer ")) {
-            return message;
+            return null;
         }
 
         String accessToken = authorizationHeader.substring(7).trim();
         if (!jwtTokenProvider.validateAccessToken(accessToken)) {
-            return message;
+            return null;
         }
 
         String userId = jwtTokenProvider.getSubjectFromAccessToken(accessToken);
