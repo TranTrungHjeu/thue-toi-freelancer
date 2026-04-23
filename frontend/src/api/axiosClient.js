@@ -2,7 +2,7 @@ import axios from 'axios';
 import { createApiError } from '../utils/apiError';
 
 const ACCESS_TOKEN_STORAGE_KEY = 'thuetoi_access_token';
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8080/api';
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || '/api';
 
 export const getAccessToken = () => localStorage.getItem(ACCESS_TOKEN_STORAGE_KEY);
 
@@ -52,8 +52,18 @@ axiosClient.interceptors.request.use(
 
 axiosClient.interceptors.response.use(
     (response) => {
+        // Trường hợp login/refresh: response data chứa accessToken
         if (response.data?.data?.accessToken) {
             setAccessToken(response.data.data.accessToken);
+        }
+        // Token rotation khi đổi mật khẩu: backend trả JWT mới thẳng vào data
+        // Nhận biết qua URL chứa /me/password và data là chuỗi JWT (bắt đầu bằng eyJ)
+        if (
+            response.config?.url?.includes('/me/password') &&
+            typeof response.data?.data === 'string' &&
+            response.data.data.startsWith('eyJ')
+        ) {
+            setAccessToken(response.data.data);
         }
         if (response.config?.url?.includes('/v1/auth/logout')) {
             clearAccessToken();

@@ -4,6 +4,7 @@ public record UserSummaryResponse(
     Long id,
     String fullName,
     String role,
-    String avatarUrl
+    String avatarUrl,
+    java.util.List<String> skills
 ) {
 }

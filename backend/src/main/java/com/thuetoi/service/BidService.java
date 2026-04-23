@@ -85,7 +85,7 @@ public class BidService {
             "Freelancer \"" + resolveUserDisplayName(freelancer, "Freelancer") + "\" vừa gửi bid cho project \"" + project.getTitle() + "\".",
             "/workspace/projects"
         );
-        return createdBid;
+        return getRequiredBid(createdBid.getId());
     }
 
     /**
@@ -144,7 +144,15 @@ public class BidService {
                 throw new BusinessException("ERR_AUTH_04", "Freelancer chỉ có thể rút bid của mình", HttpStatus.FORBIDDEN);
             }
             bid.setStatus(BidStatus.WITHDRAWN.getValue());
-            return bidRepository.save(bid);
+            Bid updatedBid = bidRepository.save(bid);
+            notificationService.createNotificationForUser(
+                bid.getProject().getUser().getId(),
+                "bid",
+                "Freelancer đã rút bid",
+                "Freelancer \"" + resolveUserDisplayName(bid.getFreelancer(), "Freelancer") + "\" đã rút bid khỏi project \"" + bid.getProject().getTitle() + "\".",
+                "/workspace/projects"
+            );
+            return getRequiredBid(updatedBid.getId());
         }
 
         if (normalizedStatus != BidStatus.REJECTED) {
@@ -160,7 +168,7 @@ public class BidService {
             "Khách hàng đã từ chối bid của bạn cho project \"" + bid.getProject().getTitle() + "\".",
             "/workspace/projects"
         );
-        return updatedBid;
+        return getRequiredBid(updatedBid.getId());
     }
 
     /**
@@ -195,7 +203,7 @@ public class BidService {
     private void ensureFreelancer(User user) {
         String role = user.getRole() == null ? "" : user.getRole().trim().toLowerCase(Locale.ROOT);
         if (!"freelancer".equals(role)) {
-            throw new BusinessException("ERR_AUTH_04", "Chỉ freelancer mới có thể gửi bid", HttpStatus.FORBIDDEN);
+            throw new BusinessException("ERR_AUTH_04", "Chỉ Freelancer mới có thể gửi bid", HttpStatus.FORBIDDEN);
         }
     }
 

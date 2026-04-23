@@ -20,6 +20,12 @@ public class ReviewService {
     @Autowired
     private ContractAccessService contractAccessService;
 
+    @Autowired
+    private ContractRealtimePublisher contractRealtimePublisher;
+
+    @Autowired
+    private NotificationService notificationService;
+
     public Review createReview(Long currentUserId, ReviewRequest request) {
         Contract contract = contractAccessService.requireAccessibleContract(request.getContractId(), currentUserId);
         if (!ContractStatus.COMPLETED.matches(contract.getStatus())) {
@@ -35,7 +41,21 @@ public class ReviewService {
         review.setRating(request.getRating());
         review.setComment(normalizeText(request.getComment()));
         review.setReply(null);
-        return reviewRepository.save(review);
+        Review savedReview = reviewRepository.save(review);
+        if (contractRealtimePublisher != null) {
+            contractRealtimePublisher.publish(request.getContractId(), "review.created", savedReview);
+        }
+        Long recipientId = contract.getClientId().equals(currentUserId)
+            ? contract.getFreelancerId()
+            : contract.getClientId();
+        notificationService.createNotificationForUser(
+            recipientId,
+            "contract",
+            "Đánh giá mới sau hợp đồng",
+            "Đối tác đã gửi đánh giá cho contract #" + request.getContractId() + ".",
+            "/workspace/contracts"
+        );
+        return savedReview;
     }
 
     public List<Review> getReviewsByContract(Long contractId, Long currentUserId) {

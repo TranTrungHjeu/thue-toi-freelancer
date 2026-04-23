@@ -5,7 +5,8 @@ import lombok.RequiredArgsConstructor;
 
 import java.util.Optional;
 
-@Getter
+@Getter 
+
 @RequiredArgsConstructor
 public enum ContractStatus implements StringValuedEnum {
     IN_PROGRESS("in_progress"),

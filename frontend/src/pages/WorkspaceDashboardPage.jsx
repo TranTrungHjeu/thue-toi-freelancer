@@ -1,14 +1,17 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Bell, Lock, PageSearch, StatsUpSquare, ViewGrid } from 'iconoir-react';
+import { Bell, PageSearch, StatsUpSquare, ViewGrid } from 'iconoir-react';
 import Card from '../components/common/Card';
 import Button from '../components/common/Button';
 import Badge from '../components/common/Badge';
-import Callout from '../components/common/Callout';
+import StatMetricCard from '../components/common/StatMetricCard';
+import InfoPanel from '../components/common/InfoPanel';
 import { H1, H2, Text, Caption } from '../components/common/Typography';
 import { useAuth } from '../hooks/useAuth';
 import { useToast } from '../hooks/useToast';
 import { useI18n } from '../hooks/useI18n';
+import { useNotifications } from '../hooks/useNotifications';
+import useMinimumLoadingState from '../hooks/useMinimumLoadingState';
 import marketplaceApi from '../api/marketplaceApi';
 import {
   buildBudgetRange,
@@ -25,14 +28,15 @@ const WorkspaceDashboardPage = () => {
   const { user } = useAuth();
   const { addToast } = useToast();
   const { locale, t } = useI18n();
+  const { notifications, unreadCount: unreadNotifications } = useNotifications();
   const copy = t('workspaceDashboard');
   const [loading, setLoading] = useState(true);
+  const visibleLoading = useMinimumLoadingState(loading, 700);
   const [dashboardData, setDashboardData] = useState({
     customerProjects: [],
     marketplaceProjects: [],
     myBids: [],
     contracts: [],
-    notifications: [],
   });
 
   useEffect(() => {
@@ -43,12 +47,7 @@ const WorkspaceDashboardPage = () => {
 
       setLoading(true);
       try {
-        const [notificationsResponse, contractsResponse] = await Promise.all([
-          marketplaceApi.getNotificationsMe(),
-          marketplaceApi.getMyContracts(),
-        ]);
-
-        const notifications = notificationsResponse.data || [];
+        const contractsResponse = await marketplaceApi.getMyContracts();
         const contracts = contractsResponse.data || [];
 
         if (user.role === 'customer') {
@@ -58,7 +57,6 @@ const WorkspaceDashboardPage = () => {
             marketplaceProjects: [],
             myBids: [],
             contracts,
-            notifications,
           });
         } else {
           const [projectsResponse, bidsResponse] = await Promise.all([
@@ -71,7 +69,6 @@ const WorkspaceDashboardPage = () => {
             marketplaceProjects: projectsResponse.data || [],
             myBids: bidsResponse.data || [],
             contracts,
-            notifications,
           });
         }
       } catch (error) {
@@ -83,8 +80,6 @@ const WorkspaceDashboardPage = () => {
 
     loadDashboard();
   }, [addToast, t, user]);
-
-  const unreadNotifications = dashboardData.notifications.filter((notification) => !notification.isRead).length;
 
   const statCards = user?.role === 'customer'
     ? [
@@ -100,7 +95,7 @@ const WorkspaceDashboardPage = () => {
 
   return (
     <div className="flex flex-col gap-6">
-      <section className="grid gap-5 lg:grid-cols-[1.15fr_0.85fr]">
+      <section>
         <Card className="border-2 border-slate-200 bg-white p-6 md:p-8">
           <Caption className="text-[11px] uppercase tracking-[0.18em] text-primary-700">
             {copy.hero.caption}
@@ -124,51 +119,17 @@ const WorkspaceDashboardPage = () => {
             </Button>
           </div>
         </Card>
-
-        <Card className="border-2 border-secondary-900 bg-secondary-900 p-6 text-white">
-          <Caption className="text-[11px] uppercase tracking-[0.18em] text-primary-100">
-            {copy.account.caption}
-          </Caption>
-          <div className="mt-4 flex flex-wrap gap-2">
-            <Badge color="success" className="border-slate-600 bg-primary-100 text-primary-800">
-              {copy.account.verified}
-            </Badge>
-            <Badge color={user?.isActive ? 'success' : 'error'} className="border-slate-600 bg-slate-100 text-slate-800">
-              {user?.isActive ? copy.account.active : copy.account.locked}
-            </Badge>
-          </div>
-          <Text className="mt-4 text-sm text-slate-300">
-            {copy.account.description}
-          </Text>
-          <div className="mt-6 border border-slate-700 bg-slate-800/60 p-4">
-            <div className="flex items-center gap-3">
-              <Lock className="h-5 w-5 text-primary-300" />
-              <span className="text-sm font-semibold text-white">{copy.account.sessionTitle}</span>
-            </div>
-            <Text className="mt-3 text-sm text-slate-300">
-              {copy.account.sessionDescription}
-            </Text>
-          </div>
-        </Card>
       </section>
-
-      <Callout type="success" title={copy.processCallout.title}>
-        {copy.processCallout.description}
-      </Callout>
 
       <section className="grid gap-4 md:grid-cols-3">
         {statCards.map((stat) => (
-          <Card key={stat.label} className="border-2 border-slate-200 bg-white p-5">
-            <div className="flex items-center justify-between">
-              <Caption className="text-[11px] uppercase tracking-[0.18em] text-slate-500">
-                {stat.label}
-              </Caption>
-              <stat.icon className="h-5 w-5 text-primary-700" />
-            </div>
-            <div className="mt-4 text-4xl font-black text-secondary-900">
-              {loading ? '...' : stat.value}
-            </div>
-          </Card>
+          <StatMetricCard
+            key={stat.label}
+            label={stat.label}
+            value={stat.value}
+            isLoading={visibleLoading}
+            labelClassName="text-slate-500"
+          />
         ))}
       </section>
 
@@ -192,7 +153,7 @@ const WorkspaceDashboardPage = () => {
             {(user?.role === 'customer' ? dashboardData.customerProjects : dashboardData.marketplaceProjects)
               .slice(0, 3)
               .map((project) => (
-                <div key={project.id} className="border border-slate-200 bg-slate-50 p-4">
+                <InfoPanel key={project.id}>
                   <div className="flex items-start justify-between gap-3">
                     <div>
                       <div className="text-sm font-bold text-secondary-900">{project.title}</div>
@@ -210,15 +171,20 @@ const WorkspaceDashboardPage = () => {
                   <div className="mt-3 text-sm font-semibold text-slate-700">
                     {t('workspaceDashboard.projectsSection.budget', { value: buildBudgetRange(project, locale) })}
                   </div>
-                </div>
+                </InfoPanel>
               ))}
 
-            {!loading && (user?.role === 'customer' ? dashboardData.customerProjects : dashboardData.marketplaceProjects).length === 0 && (
-              <Callout type="info" title={user?.role === 'customer' ? copy.projectsSection.emptyCustomerTitle : copy.projectsSection.emptyFreelancerTitle}>
-                {user?.role === 'customer'
-                  ? copy.projectsSection.emptyCustomerDescription
-                  : copy.projectsSection.emptyFreelancerDescription}
-              </Callout>
+            {!visibleLoading && (user?.role === 'customer' ? dashboardData.customerProjects : dashboardData.marketplaceProjects).length === 0 && (
+              <div className="border border-dashed border-slate-300 bg-slate-50 p-4 text-sm text-slate-600">
+                <div className="font-semibold text-secondary-900">
+                  {user?.role === 'customer' ? copy.projectsSection.emptyCustomerTitle : copy.projectsSection.emptyFreelancerTitle}
+                </div>
+                <div className="mt-2">
+                  {user?.role === 'customer'
+                    ? copy.projectsSection.emptyCustomerDescription
+                    : copy.projectsSection.emptyFreelancerDescription}
+                </div>
+              </div>
             )}
           </div>
         </Card>
@@ -239,8 +205,8 @@ const WorkspaceDashboardPage = () => {
           </div>
 
           <div className="mt-5 flex flex-col gap-3">
-            {dashboardData.notifications.slice(0, 4).map((notification) => (
-              <div key={notification.id} className="border border-slate-200 bg-slate-50 p-4">
+            {notifications.slice(0, 4).map((notification) => (
+              <InfoPanel key={notification.id}>
                 <div className="flex items-start justify-between gap-3">
                   <div>
                     <div className="text-sm font-bold text-secondary-900">{notification.title}</div>
@@ -255,13 +221,14 @@ const WorkspaceDashboardPage = () => {
                 <Text className="mt-3 text-sm text-slate-600">
                   {notification.content}
                 </Text>
-              </div>
+              </InfoPanel>
             ))}
 
-            {!loading && dashboardData.notifications.length === 0 && (
-              <Callout type="info" title={copy.notificationsSection.emptyTitle}>
-                {copy.notificationsSection.emptyDescription}
-              </Callout>
+            {!visibleLoading && notifications.length === 0 && (
+              <div className="border border-dashed border-slate-300 bg-slate-50 p-4 text-sm text-slate-600">
+                <div className="font-semibold text-secondary-900">{copy.notificationsSection.emptyTitle}</div>
+                <div className="mt-2">{copy.notificationsSection.emptyDescription}</div>
+              </div>
             )}
           </div>
         </Card>
@@ -277,7 +244,7 @@ const WorkspaceDashboardPage = () => {
           </H2>
           <div className="mt-5 grid gap-3 md:grid-cols-2">
             {dashboardData.myBids.slice(0, 4).map((bid) => (
-              <div key={bid.id} className="border border-slate-200 bg-slate-50 p-4">
+              <InfoPanel key={bid.id}>
                 <div className="flex items-center justify-between gap-3">
                   <div className="text-sm font-bold text-secondary-900">
                     {bid.project?.title || t('workspaceDashboard.bidsSection.projectFallback', { id: bid.project?.id || bid.id })}
@@ -289,13 +256,14 @@ const WorkspaceDashboardPage = () => {
                 <Text className="mt-3 text-sm text-slate-600">
                   {t('workspaceDashboard.bidsSection.price', { value: formatCurrency(bid.price, locale) })}
                 </Text>
-              </div>
+              </InfoPanel>
             ))}
 
-            {!loading && dashboardData.myBids.length === 0 && (
-              <Callout type="info" title={copy.bidsSection.emptyTitle}>
-                {copy.bidsSection.emptyDescription}
-              </Callout>
+            {!visibleLoading && dashboardData.myBids.length === 0 && (
+              <div className="border border-dashed border-slate-300 bg-slate-50 p-4 text-sm text-slate-600">
+                <div className="font-semibold text-secondary-900">{copy.bidsSection.emptyTitle}</div>
+                <div className="mt-2">{copy.bidsSection.emptyDescription}</div>
+              </div>
             )}
           </div>
         </Card>

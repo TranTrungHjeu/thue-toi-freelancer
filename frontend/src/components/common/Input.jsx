@@ -1,29 +1,29 @@
 import React from 'react';
+import { getFieldErrorMessage } from '../../utils/formError';
 
 /**
  * Thành phần ô nhập liệu dùng chung, hỗ trợ nhãn và hiển thị lỗi.
  * Giữ phong cách giao diện góc cạnh, không bo tròn.
  */
-const Input = ({ label, error, className = '', ...props }) => {
+const Input = ({ label, error, className = '', type, ...props }) => {
+  const isDateInput = type === 'date';
+  const normalizedError = getFieldErrorMessage(error);
+
   return (
     <div className={`flex flex-col gap-1.5 ${className}`}>
       {label && (
-        <label className="text-sm font-semibold text-secondary-900 font-sans">
+        <label className="ui-label">
           {label}
         </label>
       )}
       <input
-        className={`
-          min-h-11 border-2 px-4 py-2 bg-white
-          focus:border-primary-500 focus:ring-0 outline-none
-          transition-colors font-sans
-          ${error ? 'border-error' : 'border-slate-300'}
-        `}
+        type={type}
+        className={`ui-field ${isDateInput ? 'ui-field-date' : ''} ${normalizedError ? 'ui-field-error' : ''}`}
         {...props}
       />
-      {error && (
-        <span className="text-xs text-error font-sans italic">
-          {error}
+      {normalizedError && (
+        <span className="ui-error-text">
+          {normalizedError}
         </span>
       )}
     </div>

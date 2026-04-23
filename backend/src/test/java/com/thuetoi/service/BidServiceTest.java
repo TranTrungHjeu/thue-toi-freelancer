@@ -51,10 +51,19 @@ class BidServiceTest {
         User customer = user(1L, "customer");
         User freelancer = user(2L, "freelancer");
         Project project = project(10L, customer, "open");
+        Bid persistedBid = bid(100L, project, freelancer, "pending");
+        persistedBid.setPrice(BigDecimal.valueOf(2000000));
+        persistedBid.setMessage("Em co the lam trong 5 ngay");
+        persistedBid.setEstimatedTime("5 ngày");
 
         when(projectRepository.findById(10L)).thenReturn(Optional.of(project));
         when(userRepository.findById(2L)).thenReturn(Optional.of(freelancer));
-        when(bidRepository.save(any(Bid.class))).thenAnswer(invocation -> invocation.getArgument(0));
+        when(bidRepository.save(any(Bid.class))).thenAnswer(invocation -> {
+            Bid savedBid = invocation.getArgument(0);
+            savedBid.setId(100L);
+            return savedBid;
+        });
+        when(bidRepository.findById(100L)).thenReturn(Optional.of(persistedBid));
 
         Bid created = bidService.createBid(10L, 2L, BigDecimal.valueOf(2000000), "  Em co the lam trong 5 ngay  ", "5 ngày", null);
 
@@ -84,6 +93,13 @@ class BidServiceTest {
         Bid updated = bidService.updateBidStatus(100L, 2L, "withdrawn");
 
         assertThat(updated.getStatus()).isEqualTo("withdrawn");
+        verify(notificationService).createNotificationForUser(
+            1L,
+            "bid",
+            "Freelancer đã rút bid",
+            "Freelancer \"User 2\" đã rút bid khỏi project \"Project 10\".",
+            "/workspace/projects"
+        );
     }
 
     @Test
@@ -152,7 +168,7 @@ class BidServiceTest {
         bid.setId(id);
         bid.setProject(project);
         bid.setFreelancer(freelancer);
-        bid.setPrice(1_500_000.0);
+        bid.setPrice(BigDecimal.valueOf(1500000));
         bid.setStatus(status);
         return bid;
     }

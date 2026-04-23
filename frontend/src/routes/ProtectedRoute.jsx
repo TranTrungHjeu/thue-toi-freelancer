@@ -6,7 +6,8 @@ const ProtectedRoute = () => {
   const location = useLocation();
 
   if (!isAuthenticated) {
-    return <Navigate to="/auth/login" replace state={{ from: location }} />;
+    const redirectTo = encodeURIComponent(`${location.pathname}${location.search}${location.hash}`);
+    return <Navigate to={`/?auth=login&redirect=${redirectTo}`} replace />;
   }
 
   return <Outlet />;

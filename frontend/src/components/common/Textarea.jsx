@@ -1,25 +1,23 @@
 import React from 'react';
+import { getFieldErrorMessage } from '../../utils/formError';
 
 const Textarea = ({ label, error, className = '', ...props }) => {
+  const normalizedError = getFieldErrorMessage(error);
+
   return (
     <div className={`flex flex-col gap-1.5 ${className}`}>
       {label && (
-        <label className="text-sm font-semibold text-secondary-900 font-sans">
+        <label className="ui-label">
           {label}
         </label>
       )}
       <textarea
-        className={`
-          min-h-32 border-2 px-4 py-3 bg-white resize-y
-          focus:border-primary-500 focus:ring-0 outline-none
-          transition-colors font-sans
-          ${error ? 'border-error' : 'border-slate-300'}
-        `}
+        className={`ui-field ui-textarea ${normalizedError ? 'ui-field-error' : ''}`}
         {...props}
       />
-      {error && (
-        <span className="text-xs text-error font-sans italic">
-          {error}
+      {normalizedError && (
+        <span className="ui-error-text">
+          {normalizedError}
         </span>
       )}
     </div>

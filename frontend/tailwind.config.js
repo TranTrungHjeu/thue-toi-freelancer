@@ -1,37 +1,35 @@
 /** @type {import('tailwindcss').Config} */
 export default {
-  content: [
-    "./index.html",
-    "./src/**/*.{js,ts,jsx,tsx}",
-  ],
+  content: ["./index.html", "./src/**/*.{js,ts,jsx,tsx}"],
   theme: {
     extend: {
       fontFamily: {
-        sans: ['Manrope', 'sans-serif'],
-        serif: ['Lora', 'serif'],
+        sans: ["Manrope", "sans-serif"],
+        serif: ["Lora", "serif"],
       },
       colors: {
         primary: {
-          50: '#f0fdf4',
-          100: '#dcfce7',
-          500: '#22c55e',
-          600: '#16a34a',
-          700: '#15803d',
+          DEFAULT: "#16a34a",
+          50: "#f0fdf4",
+          100: "#dcfce7",
+          500: "#22c55e",
+          600: "#16a34a",
+          700: "#15803d",
         },
         secondary: {
-          900: '#0f172a',
-          800: '#1e293b',
-          700: '#334155',
+          900: "#0f172a",
+          800: "#1e293b",
+          700: "#334155",
         },
         accent: {
-          500: '#3b82f6',
+          500: "#3b82f6",
         },
-        error: '#ef4444',
-        warning: '#f59e0b',
-        info: '#3b82f6',
-        success: '#22c55e',
-      }
+        error: "#ef4444",
+        warning: "#f59e0b",
+        info: "#3b82f6",
+        success: "#22c55e",
+      },
     },
   },
   plugins: [],
-}
+};

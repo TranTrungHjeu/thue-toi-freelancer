@@ -28,6 +28,9 @@ public class EmailService {
     @Value("${resend.from:Thue Toi <onboarding@resend.dev>}")
     private String fromAddress;
 
+    @Value("${app.notifications.email.enabled:false}")
+    private boolean notificationEmailEnabled;
+
     private final RestTemplate restTemplate = new RestTemplate();
 
     public void sendOtpEmail(String toEmail, String otp) {
@@ -75,5 +78,162 @@ public class EmailService {
             }
             throw new BusinessException("ERR_SYS_03", "Không thể gửi OTP xác thực email", HttpStatus.INTERNAL_SERVER_ERROR, e);
         }
+    }
+
+    public void sendPasswordChangeOtpEmail(String toEmail, String otp) {
+        if (apiKey == null || apiKey.isBlank()) {
+            throw new BusinessException("ERR_SYS_03", "Dịch vụ gửi email chưa được cấu hình", HttpStatus.INTERNAL_SERVER_ERROR);
+        }
+
+        HttpHeaders headers = new HttpHeaders();
+        headers.set("Authorization", "Bearer " + apiKey);
+        headers.setContentType(MediaType.APPLICATION_JSON);
+
+        String emailHtml = """
+            <div style="font-family:Arial,sans-serif;line-height:1.6;color:#0f172a">
+              <h2 style="margin-bottom:8px;">Ma xac thuc ban yeu cau doi mat khau</h2>
+              <p style="margin:0 0 16px;">Day la ma OTP bao mat de doi mat khau cua ban.</p>
+              <div style="display:inline-block;padding:12px 20px;border:2px solid #0f172a;font-size:24px;font-weight:700;letter-spacing:0.32em;">
+                %s
+              </div>
+              <p style="margin:16px 0 0;">Ma nay se het han sau 5 phut. Khong chia se no voi bat ky ai!</p>
+            </div>
+            """.formatted(otp);
+
+        Map<String, Object> payload = Map.of(
+            "from", fromAddress,
+            "to", List.of(toEmail),
+            "subject", "Thuê Tôi - Ma xac thuc doi mat khau",
+            "html", emailHtml
+        );
+
+        HttpEntity<Map<String, Object>> request = new HttpEntity<>(payload, headers);
+
+        try {
+            ResponseEntity<String> response = restTemplate.postForEntity(RESEND_URL, request, String.class);
+            if (!response.getStatusCode().is2xxSuccessful()) {
+                throw new BusinessException("ERR_SYS_03", "Không thể gửi OTP đổi mật khẩu", HttpStatus.INTERNAL_SERVER_ERROR);
+            }
+            logger.info("Password change OTP email sent successfully to {}", toEmail);
+        } catch (HttpStatusCodeException ex) {
+            logger.error("Resend rejected password change OTP email for {} with status {} and body {}", toEmail, ex.getStatusCode(), ex.getResponseBodyAsString());
+            throw new BusinessException("ERR_SYS_03", "Không thể gửi OTP đổi mật khẩu", HttpStatus.INTERNAL_SERVER_ERROR, ex);
+        } catch (Exception e) {
+            logger.error("Error sending password change OTP email to {}: {}", toEmail, e.getMessage());
+            if (e instanceof BusinessException businessException) {
+                throw businessException;
+            }
+            throw new BusinessException("ERR_SYS_03", "Không thể gửi OTP đổi mật khẩu", HttpStatus.INTERNAL_SERVER_ERROR, e);
+        }
+    }
+    
+    public void sendEmailChangeOtpEmail(String toEmail, String otp) {
+        if (apiKey == null || apiKey.isBlank()) {
+            throw new BusinessException("ERR_SYS_03", "Dịch vụ gửi email chưa được cấu hình", HttpStatus.INTERNAL_SERVER_ERROR);
+        }
+
+        HttpHeaders headers = new HttpHeaders();
+        headers.set("Authorization", "Bearer " + apiKey);
+        headers.setContentType(MediaType.APPLICATION_JSON);
+
+        String emailHtml = """
+            <div style="font-family:Arial,sans-serif;line-height:1.6;color:#0f172a">
+              <h2 style="margin-bottom:8px;">Xac minh dia chi email moi</h2>
+              <p style="margin:0 0 16px;">Hay dung ma OTP sau day de xac minh dia chi email thay the cho tai khoan Thuê Tôi cua ban.</p>
+              <div style="display:inline-block;padding:12px 20px;border:2px solid #0f172a;font-size:24px;font-weight:700;letter-spacing:0.32em;">
+                %s
+              </div>
+              <p style="margin:16px 0 0;">Ma nay se het han sau 5 phut.</p>
+            </div>
+            """.formatted(otp);
+
+        Map<String, Object> payload = Map.of(
+            "from", fromAddress,
+            "to", List.of(toEmail),
+            "subject", "Thuê Tôi - Xac minh email moi",
+            "html", emailHtml
+        );
+
+        HttpEntity<Map<String, Object>> request = new HttpEntity<>(payload, headers);
+
+        try {
+            ResponseEntity<String> response = restTemplate.postForEntity(RESEND_URL, request, String.class);
+            if (!response.getStatusCode().is2xxSuccessful()) {
+                throw new BusinessException("ERR_SYS_03", "Không thể gửi OTP đổi email", HttpStatus.INTERNAL_SERVER_ERROR);
+            }
+            logger.info("Email change OTP sent successfully to {}", toEmail);
+        } catch (HttpStatusCodeException ex) {
+            logger.error("Resend rejected email change OTP for {} with status {} and body {}", toEmail, ex.getStatusCode(), ex.getResponseBodyAsString());
+            throw new BusinessException("ERR_SYS_03", "Không thể gửi OTP đổi email", HttpStatus.INTERNAL_SERVER_ERROR, ex);
+        } catch (Exception e) {
+            logger.error("Error sending email change OTP to {}: {}", toEmail, e.getMessage());
+            if (e instanceof BusinessException businessException) {
+                throw businessException;
+            }
+            throw new BusinessException("ERR_SYS_03", "Không thể gửi OTP đổi email", HttpStatus.INTERNAL_SERVER_ERROR, e);
+        }
+    }
+
+    public boolean sendNotificationEmail(String toEmail, String title, String content, String link) {
+        if (!notificationEmailEnabled || apiKey == null || apiKey.isBlank()) {
+            logger.info("Notification email skipped for {} because email notifications are disabled or not configured", toEmail);
+            return false;
+        }
+
+        HttpHeaders headers = new HttpHeaders();
+        headers.set("Authorization", "Bearer " + apiKey);
+        headers.setContentType(MediaType.APPLICATION_JSON);
+
+        String safeTitle = escapeHtml(title == null ? "Thông báo mới từ Thuê Tôi" : title);
+        String safeContent = escapeHtml(content == null ? "" : content);
+        String safeLink = link == null || link.isBlank() ? "" : escapeHtml(link);
+        String linkBlock = safeLink.isBlank()
+            ? ""
+            : """
+              <p style="margin:16px 0 0;">
+                <a href="%s" style="display:inline-block;background:#0f172a;color:#ffffff;text-decoration:none;padding:10px 16px;border-radius:12px;font-weight:700;">Mở trong Thuê Tôi</a>
+              </p>
+              """.formatted(safeLink);
+
+        String emailHtml = """
+            <div style="font-family:Arial,sans-serif;line-height:1.6;color:#0f172a">
+              <p style="margin:0 0 8px;color:#64748b;font-size:12px;text-transform:uppercase;letter-spacing:0.12em;">Thuê Tôi</p>
+              <h2 style="margin:0 0 12px;">%s</h2>
+              <p style="margin:0;">%s</p>
+              %s
+              <p style="margin:20px 0 0;color:#64748b;font-size:12px;">Bạn có thể thay đổi tùy chọn nhận thông báo trong Trung tâm thông báo.</p>
+            </div>
+            """.formatted(safeTitle, safeContent, linkBlock);
+
+        Map<String, Object> payload = Map.of(
+            "from", fromAddress,
+            "to", List.of(toEmail),
+            "subject", "Thuê Tôi - " + (title == null || title.isBlank() ? "Thông báo mới" : title),
+            "html", emailHtml
+        );
+
+        HttpEntity<Map<String, Object>> request = new HttpEntity<>(payload, headers);
+
+        try {
+            ResponseEntity<String> response = restTemplate.postForEntity(RESEND_URL, request, String.class);
+            if (!response.getStatusCode().is2xxSuccessful()) {
+                logger.error("Resend rejected notification email for {} with status {}", toEmail, response.getStatusCode());
+                return false;
+            }
+            logger.info("Notification email sent successfully to {}", toEmail);
+            return true;
+        } catch (Exception e) {
+            logger.error("Error sending notification email to {}: {}", toEmail, e.getMessage());
+            return false;
+        }
+    }
+
+    private String escapeHtml(String value) {
+        return value
+            .replace("&", "&amp;")
+            .replace("<", "&lt;")
+            .replace(">", "&gt;")
+            .replace("\"", "&quot;")
+            .replace("'", "&#39;");
     }
 }

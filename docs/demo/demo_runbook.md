@@ -9,13 +9,14 @@ Demo cần chứng minh được 4 điểm:
 1. Auth flow đang chạy theo JWT + refresh cookie + profile.
 2. Luồng marketplace core chạy trọn từ project đến contract.
 3. Sau khi có contract, hai bên có thể cộng tác bằng milestone, message, review và notification.
-4. Hệ thống có đủ tài liệu, test và dữ liệu seed để review lại.
+4. Quản trị viên có thể xử lý KYC/report/withdrawal và gửi broadcast có realtime notification.
+5. Hệ thống có đủ tài liệu, test và dữ liệu seed để review lại.
 
 ## 2. Chuẩn bị trước demo
 
 1. Nếu cần dữ liệu sạch, chạy `docker compose down -v`.
-2. Chạy `docker compose up -d --build`.
-3. Xác nhận frontend và backend health đều lên.
+2. Chạy `docker compose up -d --build` (Flyway sẽ tự apply V1\_\_Initial_schema.sql).
+3. Xác nhận frontend và backend health đều lên, DB tables từ migration.
 4. Dùng sẵn tài khoản seed:
    - `customer1@gmail.com / Demo@123`
    - `freelancer1@gmail.com / Demo@123`
@@ -33,7 +34,7 @@ Demo cần chứng minh được 4 điểm:
    - role đang là `customer`
    - app dùng JWT access token và refresh cookie
 
-### Màn 2. Customer tạo project
+### Màn 2. Khách hàng tạo project
 
 1. Vào `Projects`.
 2. Tạo project mới với title dễ nhận biết, ví dụ `Demo landing page doanh nghiệp`.
@@ -46,10 +47,10 @@ Demo cần chứng minh được 4 điểm:
 2. Vào `Projects`, thấy project `open` vừa tạo.
 3. Gửi bid với giá, mô tả và thời gian dự kiến.
 4. Nhấn mạnh rule:
-   - chỉ freelancer được bid
+   - chỉ Freelancer được bid
    - bid mới tạo ở trạng thái `pending`
 
-### Màn 4. Customer chấp nhận bid và tạo contract
+### Màn 4. Khách hàng chấp nhận bid và tạo contract
 
 1. Quay lại `customer1@gmail.com`.
 2. Mở project vừa tạo, xem bid list.
@@ -58,14 +59,14 @@ Demo cần chứng minh được 4 điểm:
    - bid được chọn thành `accepted`
    - project thành `in_progress`
    - contract được tạo
-   - notification cho freelancer được phát sinh
+   - notification cho Freelancer được phát sinh
 
 ### Màn 5. Milestone và collaboration
 
 1. Vào `Contracts`, chọn contract mới.
 2. Tạo một milestone mới.
 3. Gửi một tin nhắn text trong contract.
-4. Chuyển sang freelancer để cho thấy:
+4. Chuyển sang Freelancer để cho thấy:
    - milestone đã xuất hiện
    - message đã đồng bộ
    - notification contract/milestone hiển thị ở `Notifications`
@@ -79,16 +80,26 @@ Demo cần chứng minh được 4 điểm:
 3. Tạo review từ một bên.
 4. Nếu còn thời gian, tạo review từ bên còn lại để chứng minh rule “mỗi user một lần mỗi contract”.
 
-### Màn 7. Notification center
+### Màn 7. Notification center + Realtime
 
 1. Mở `Notifications`.
-2. Cho thấy type badge, unread count, mark-as-read và điều hướng bằng `link`.
-3. Nêu các event hiện có:
+2. Cho thấy type badge, unread badge ở header/sidebar/bottom nav, filter type/read-state, pagination, mark-as-read, mark-all-read và điều hướng bằng `link`.
+3. Mở cùng user ở 2 tab, mark read ở một tab để demo badge tab còn lại tự sync.
+4. Trigger action ở tab khác để demo realtime update qua WebSocket không cần refresh, ví dụ gửi message, tạo review, rút bid hoặc đổi trạng thái contract.
+5. Nếu có thời gian, tắt/mở lại backend hoặc mô phỏng reconnect rồi cho thấy inbox tự catch-up sau khi socket kết nối lại.
+6. Mở tài khoản `admin@gmail.com` và demo thêm KYC request, report submit hoặc admin broadcast nếu còn thời gian.
+7. Nêu các event đang được phủ:
    - bid mới
-   - bid bị từ chối hoặc không được chọn
+   - bid bị từ chối, bị rút hoặc không được chọn
    - contract mới
-   - milestone mới
+   - milestone mới, hoàn thành hoặc bị hủy
    - contract hoàn thành hoặc bị hủy
+   - message mới và review mới
+   - KYC request/approve/reject
+   - report submit/resolved/dismissed
+   - withdrawal approved/rejected
+   - admin broadcast theo target role
+   - live notifications qua `/user/queue/notifications` và live contract events qua `/topic/contract/{id}`
 
 ## 4. Fallback demo
 
