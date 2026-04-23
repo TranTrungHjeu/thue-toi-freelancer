@@ -98,6 +98,9 @@ export const messages = {
         showing: "Hiển thị {from} - {to} của {total}",
       },
     },
+    notificationsCenter: {
+      unreadBadge: "{count} thông báo chưa đọc",
+    },
     layout: {
       workspace: "Khu làm việc",
       openMenu: "Mở menu",
@@ -297,6 +300,8 @@ export const messages = {
       notifications: {
         loadError: "Không thể tải thông báo.",
         markReadSuccess: "Đã cập nhật thông báo sang trạng thái đã đọc.",
+        markAllReadSuccess: "Đã đánh dấu tất cả thông báo là đã đọc.",
+        realtimeReceived: "Có thông báo mới.",
         updateError: "Không thể cập nhật thông báo.",
       },
       projects: {
@@ -393,6 +398,7 @@ export const messages = {
         submitBtn: "Gửi thông báo",
         sendingLabel: "Đang gửi...",
         confirmPrompt: "Thông báo sẽ được gửi ngay tới nhóm đối tượng đã chọn. Xác nhận tiếp tục?",
+        confirmTitle: "Xác nhận gửi thông báo toàn hệ thống",
         previewTitle: "Xem trước",
         previewPlaceholderTitle: "Tiêu đề thông báo",
         previewPlaceholderContent: "Nội dung thông báo sẽ hiển thị ở đây.",
@@ -787,6 +793,9 @@ export const messages = {
       fileUploadPrompt: "Click to upload or drag files here",
       fileUploadHint: "PDF, DOCX, PNG (up to 10 MB)",
     },
+    notificationsCenter: {
+      unreadBadge: "{count} unread notifications",
+    },
     layout: {
       workspace: "Workspace",
       openMenu: "Open menu",
@@ -984,6 +993,8 @@ export const messages = {
       notifications: {
         loadError: "Could not load notifications.",
         markReadSuccess: "Notification has been marked as read.",
+        markAllReadSuccess: "All notifications have been marked as read.",
+        realtimeReceived: "New notification received.",
         updateError: "Could not update the notification.",
       },
       projects: {
@@ -1079,6 +1090,7 @@ export const messages = {
         submitBtn: "Broadcast Now",
         sendingLabel: "Broadcasting...",
         confirmPrompt: "Are you sure you want to send this notification to all selected users? This action cannot be undone.",
+        confirmTitle: "Confirm System Broadcast",
         previewTitle: "Preview",
         previewPlaceholderTitle: "Sample Title",
         previewPlaceholderContent: "Notification content will appear here when users open their notification list.",

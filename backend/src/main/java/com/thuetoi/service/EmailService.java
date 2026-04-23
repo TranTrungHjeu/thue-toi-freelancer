@@ -28,6 +28,9 @@ public class EmailService {
     @Value("${resend.from:Thue Toi <onboarding@resend.dev>}")
     private String fromAddress;
 
+    @Value("${app.notifications.email.enabled:false}")
+    private boolean notificationEmailEnabled;
+
     private final RestTemplate restTemplate = new RestTemplate();
 
     public void sendOtpEmail(String toEmail, String otp) {
@@ -169,5 +172,68 @@ public class EmailService {
             }
             throw new BusinessException("ERR_SYS_03", "Không thể gửi OTP đổi email", HttpStatus.INTERNAL_SERVER_ERROR, e);
         }
+    }
+
+    public boolean sendNotificationEmail(String toEmail, String title, String content, String link) {
+        if (!notificationEmailEnabled || apiKey == null || apiKey.isBlank()) {
+            logger.info("Notification email skipped for {} because email notifications are disabled or not configured", toEmail);
+            return false;
+        }
+
+        HttpHeaders headers = new HttpHeaders();
+        headers.set("Authorization", "Bearer " + apiKey);
+        headers.setContentType(MediaType.APPLICATION_JSON);
+
+        String safeTitle = escapeHtml(title == null ? "Thông báo mới từ Thuê Tôi" : title);
+        String safeContent = escapeHtml(content == null ? "" : content);
+        String safeLink = link == null || link.isBlank() ? "" : escapeHtml(link);
+        String linkBlock = safeLink.isBlank()
+            ? ""
+            : """
+              <p style="margin:16px 0 0;">
+                <a href="%s" style="display:inline-block;background:#0f172a;color:#ffffff;text-decoration:none;padding:10px 16px;border-radius:12px;font-weight:700;">Mở trong Thuê Tôi</a>
+              </p>
+              """.formatted(safeLink);
+
+        String emailHtml = """
+            <div style="font-family:Arial,sans-serif;line-height:1.6;color:#0f172a">
+              <p style="margin:0 0 8px;color:#64748b;font-size:12px;text-transform:uppercase;letter-spacing:0.12em;">Thuê Tôi</p>
+              <h2 style="margin:0 0 12px;">%s</h2>
+              <p style="margin:0;">%s</p>
+              %s
+              <p style="margin:20px 0 0;color:#64748b;font-size:12px;">Bạn có thể thay đổi tùy chọn nhận thông báo trong Trung tâm thông báo.</p>
+            </div>
+            """.formatted(safeTitle, safeContent, linkBlock);
+
+        Map<String, Object> payload = Map.of(
+            "from", fromAddress,
+            "to", List.of(toEmail),
+            "subject", "Thuê Tôi - " + (title == null || title.isBlank() ? "Thông báo mới" : title),
+            "html", emailHtml
+        );
+
+        HttpEntity<Map<String, Object>> request = new HttpEntity<>(payload, headers);
+
+        try {
+            ResponseEntity<String> response = restTemplate.postForEntity(RESEND_URL, request, String.class);
+            if (!response.getStatusCode().is2xxSuccessful()) {
+                logger.error("Resend rejected notification email for {} with status {}", toEmail, response.getStatusCode());
+                return false;
+            }
+            logger.info("Notification email sent successfully to {}", toEmail);
+            return true;
+        } catch (Exception e) {
+            logger.error("Error sending notification email to {}: {}", toEmail, e.getMessage());
+            return false;
+        }
+    }
+
+    private String escapeHtml(String value) {
+        return value
+            .replace("&", "&amp;")
+            .replace("<", "&lt;")
+            .replace(">", "&gt;")
+            .replace("\"", "&quot;")
+            .replace("'", "&#39;");
     }
 }

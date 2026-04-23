@@ -17,7 +17,17 @@ const BottomNav = ({ items = [], currentPath = '', className = '' }) => {
               isActive ? 'text-primary-600' : 'text-slate-400 hover:text-secondary-900'
             }`}
           >
-            <item.icon className="h-5 w-5" />
+            <span className="relative flex h-5 w-5 items-center justify-center">
+              <item.icon className="h-5 w-5" />
+              {item.badge && (
+                <span
+                  className="absolute -right-3 -top-2 min-w-4 border border-white bg-red-500 px-1 text-[9px] font-black leading-4 text-white"
+                  aria-label={item.badgeLabel}
+                >
+                  {item.badge}
+                </span>
+              )}
+            </span>
             <Caption className={`text-[9px] font-bold uppercase ${isActive ? 'text-primary-600' : 'text-slate-400'}`}>
               {item.label}
             </Caption>

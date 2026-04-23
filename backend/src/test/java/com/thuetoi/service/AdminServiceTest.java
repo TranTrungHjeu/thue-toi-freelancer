@@ -159,7 +159,7 @@ class AdminServiceTest {
             eq("system"),
             eq("Lệnh rút tiền thành công"),
             eq("Số tiền 150000 đã được chuyển tới tài khoản của bạn."),
-            eq("/workspace/finance")
+            eq("/workspace/notifications")
         );
     }
 

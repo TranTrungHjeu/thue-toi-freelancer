@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import React, { useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import Card from '../components/common/Card';
 import Button from '../components/common/Button';
@@ -7,11 +7,9 @@ import StatMetricCard from '../components/common/StatMetricCard';
 import InfoPanel from '../components/common/InfoPanel';
 import Spinner from '../components/common/Spinner';
 import { H1, H2, Text, Caption } from '../components/common/Typography';
-import { useToast } from '../hooks/useToast';
 import { useI18n } from '../hooks/useI18n';
 import useMinimumLoadingState from '../hooks/useMinimumLoadingState';
-import marketplaceApi from '../api/marketplaceApi';
-import { useWebSocket } from '../hooks/useWebSocket';
+import { useNotifications } from '../hooks/useNotifications';
 import { formatDateTime, getNotificationTypeMeta } from '../utils/formatters';
 
 const getNotificationsPageCopy = (locale) => {
@@ -24,8 +22,15 @@ const getNotificationsPageCopy = (locale) => {
       statsUnread: 'Unread',
       inboxCaption: 'Inbox',
       inboxTitle: 'All notifications',
+      filterType: 'Type',
+      filterReadStatus: 'Read status',
+      filterAllTypes: 'All types',
+      filterAllReadStates: 'All',
+      filterUnreadOnly: 'Unread only',
       reload: 'Reload',
       reloadLoading: 'Reloading...',
+      markAllRead: 'Mark all as read',
+      markAllReadLoading: 'Updating...',
       loadingList: 'Loading notifications...',
       openLink: 'Open link',
       markRead: 'Mark as read',
@@ -37,6 +42,9 @@ const getNotificationsPageCopy = (locale) => {
       realtimeConnected: 'Connected',
       realtimeDisconnected: 'Waiting',
       realtimeToast: 'New notification received.',
+      paginationRange: '{from} - {to} of {total}',
+      previousPage: 'Previous',
+      nextPage: 'Next',
     };
   }
 
@@ -48,8 +56,15 @@ const getNotificationsPageCopy = (locale) => {
     statsUnread: 'Chưa đọc',
     inboxCaption: 'Hộp thư',
     inboxTitle: 'Tất cả thông báo',
+    filterType: 'Loại thông báo',
+    filterReadStatus: 'Trạng thái đọc',
+    filterAllTypes: 'Tất cả loại',
+    filterAllReadStates: 'Tất cả',
+    filterUnreadOnly: 'Chỉ chưa đọc',
     reload: 'Tải lại',
     reloadLoading: 'Đang tải lại...',
+    markAllRead: 'Đánh dấu tất cả đã đọc',
+    markAllReadLoading: 'Đang cập nhật...',
     loadingList: 'Đang tải danh sách thông báo...',
     openLink: 'Mở liên kết',
     markRead: 'Đánh dấu đã đọc',
@@ -61,83 +76,58 @@ const getNotificationsPageCopy = (locale) => {
     realtimeConnected: 'Đã kết nối',
     realtimeDisconnected: 'Đang chờ',
     realtimeToast: 'Có thông báo mới.',
+    paginationRange: '{from} - {to} trên {total}',
+    previousPage: 'Trang trước',
+    nextPage: 'Trang sau',
   };
 };
 
 const NotificationsPage = () => {
   const navigate = useNavigate();
-  const { addToast } = useToast();
-  const { locale, t } = useI18n();
+  const { locale } = useI18n();
   const copy = useMemo(() => getNotificationsPageCopy(locale), [locale]);
-  const [loading, setLoading] = useState(true);
+  const {
+    notifications,
+    unreadCount,
+    totalNotifications,
+    page,
+    pageInfo,
+    filters,
+    loading,
+    reloading,
+    updatingReadIds,
+    markingAllRead,
+    isRealtimeConnected,
+    reloadNotifications,
+    markAsRead,
+    markAllAsRead,
+    setNotificationPage,
+    setNotificationFilters,
+  } = useNotifications();
   const visibleLoading = useMinimumLoadingState(loading, 700);
-  const [notifications, setNotifications] = useState([]);
-  const [reloading, setReloading] = useState(false);
-  const [updatingReadIds, setUpdatingReadIds] = useState([]);
+  const typeOptions = useMemo(() => ['project', 'bid', 'contract', 'system'].map((type) => ({
+    value: type,
+    label: getNotificationTypeMeta(type, locale).label,
+  })), [locale]);
+  const pageFrom = pageInfo.totalElements === 0 ? 0 : page * pageInfo.size + 1;
+  const pageTo = Math.min((page + 1) * pageInfo.size, pageInfo.totalElements);
+  const rangeText = copy.paginationRange
+    .replace('{from}', pageFrom)
+    .replace('{to}', pageTo)
+    .replace('{total}', pageInfo.totalElements);
 
-  const unreadCount = useMemo(
-    () => notifications.filter((notification) => !notification.isRead).length,
-    [notifications],
-  );
-
-  const loadNotifications = useCallback(async (manual = false) => {
-    if (manual) {
-      setReloading(true);
-    }
-    setLoading(true);
-    try {
-      const response = await marketplaceApi.getNotificationsMe();
-      setNotifications(response.data || []);
-    } catch (error) {
-      addToast(error?.message || t('toasts.notifications.loadError'), 'error');
-    } finally {
-      setLoading(false);
-      if (manual) {
-        setReloading(false);
-      }
-    }
-  }, [addToast, t]);
-
-  const handleRealtimeNotification = useCallback(({ channel, payload }) => {
-    if (channel !== 'notification' || !payload) {
+  const handleOpenLink = async (notification) => {
+    if (!notification?.link) {
       return;
     }
-
-    setNotifications((previous) => {
-      const existingNotification = previous.find((notification) => notification.id === payload.id);
-      if (existingNotification) {
-        return previous.map((notification) => (
-          notification.id === payload.id ? { ...notification, ...payload } : notification
-        ));
+    if (!notification.isRead) {
+      try {
+        await markAsRead(notification.id, { silent: true });
+      } catch {
+        // Navigation should not be blocked by a transient read-state update failure.
       }
-      return [payload, ...previous];
-    });
-    addToast(copy.realtimeToast, 'info');
-  }, [addToast, copy.realtimeToast]);
-
-  const { isConnected: isRealtimeConnected } = useWebSocket(handleRealtimeNotification, ['/user/queue/notifications']);
-
-  useEffect(() => {
-    loadNotifications(false);
-  }, [loadNotifications]);
-
-  const handleMarkAsRead = async (notificationId) => {
-    setUpdatingReadIds((previous) => [...new Set([...previous, notificationId])]);
-    try {
-      await marketplaceApi.markNotificationAsRead(notificationId);
-      addToast(t('toasts.notifications.markReadSuccess'), 'success');
-      setNotifications((previous) =>
-        previous.map((notification) =>
-          notification.id === notificationId
-            ? { ...notification, isRead: true }
-            : notification,
-        ),
-      );
-    } catch (error) {
-      addToast(error?.message || t('toasts.notifications.updateError'), 'error');
-    } finally {
-      setUpdatingReadIds((previous) => previous.filter((id) => id !== notificationId));
     }
+    navigate(notification.link);
   };
 
   return (
@@ -162,7 +152,7 @@ const NotificationsPage = () => {
       </section>
 
       <section className="grid gap-4 md:grid-cols-2">
-        <StatMetricCard label={copy.statsTotal} value={notifications.length} isLoading={visibleLoading} />
+        <StatMetricCard label={copy.statsTotal} value={totalNotifications} isLoading={visibleLoading} />
         <StatMetricCard label={copy.statsUnread} value={unreadCount} isLoading={visibleLoading} />
       </section>
 
@@ -176,9 +166,41 @@ const NotificationsPage = () => {
               {copy.inboxTitle}
             </H2>
           </div>
-          <Button variant="outline" disabled={reloading} onClick={() => loadNotifications(true)}>
-            {reloading ? copy.reloadLoading : copy.reload}
-          </Button>
+          <div className="flex flex-wrap gap-3">
+            <Button variant="ghost" disabled={markingAllRead || unreadCount === 0} onClick={markAllAsRead}>
+              {markingAllRead ? copy.markAllReadLoading : copy.markAllRead}
+            </Button>
+            <Button variant="outline" disabled={reloading} onClick={() => reloadNotifications({ manual: true })}>
+              {reloading ? copy.reloadLoading : copy.reload}
+            </Button>
+          </div>
+        </div>
+
+        <div className="mt-5 grid gap-3 md:grid-cols-2">
+          <label className="flex flex-col gap-2 text-xs font-bold uppercase tracking-[0.14em] text-slate-500">
+            {copy.filterType}
+            <select
+              className="rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm font-semibold normal-case tracking-normal text-secondary-900 outline-none transition focus:border-primary-500 focus:ring-4 focus:ring-primary-100"
+              value={filters.type}
+              onChange={(event) => setNotificationFilters({ type: event.target.value })}
+            >
+              <option value="all">{copy.filterAllTypes}</option>
+              {typeOptions.map((option) => (
+                <option key={option.value} value={option.value}>{option.label}</option>
+              ))}
+            </select>
+          </label>
+          <label className="flex flex-col gap-2 text-xs font-bold uppercase tracking-[0.14em] text-slate-500">
+            {copy.filterReadStatus}
+            <select
+              className="rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm font-semibold normal-case tracking-normal text-secondary-900 outline-none transition focus:border-primary-500 focus:ring-4 focus:ring-primary-100"
+              value={filters.readStatus}
+              onChange={(event) => setNotificationFilters({ readStatus: event.target.value })}
+            >
+              <option value="all">{copy.filterAllReadStates}</option>
+              <option value="unread">{copy.filterUnreadOnly}</option>
+            </select>
+          </label>
         </div>
 
         <div className="mt-5 flex flex-col gap-3">
@@ -189,30 +211,33 @@ const NotificationsPage = () => {
           )}
 
           {notifications.map((notification) => (
-            <InfoPanel key={notification.id}>
-              <div className="flex items-start justify-between gap-3">
-                <div>
-                  <div className="text-sm font-bold text-secondary-900">{notification.title}</div>
-                  <div className="mt-2 flex flex-wrap gap-2">
-                    <Badge color={getNotificationTypeMeta(notification.type, locale).color}>
-                      {getNotificationTypeMeta(notification.type, locale).label}
-                    </Badge>
-                    <Caption className="text-xs text-slate-500">
-                      {formatDateTime(notification.createdAt, locale)}
-                    </Caption>
+            <InfoPanel
+              key={notification.id}
+              className={`group rounded-3xl p-6 transition-all duration-300 hover:shadow-xl hover:-translate-y-px ${!notification.isRead
+                ? 'border-l-4 border-primary-400 bg-gradient-to-br from-slate-50 to-white shadow-sm'
+                : 'border border-slate-200 bg-white hover:border-slate-300'}`}
+            >
+              <div className="flex-1 min-w-0">
+                  <div className="flex items-start justify-between gap-3">
+                    <div className={`font-serif text-base leading-tight transition-colors duration-200 ${!notification.isRead ? 'font-bold text-secondary-900' : 'font-medium text-slate-700'}`}>{notification.title}</div>
+                    <div className="flex items-center gap-3">
+                      <span className="text-[10px] font-medium uppercase tracking-widest text-slate-400">
+                        {getNotificationTypeMeta(notification.type, locale).label}
+                      </span>
+                      <Caption className="text-xs text-slate-400 whitespace-nowrap tabular-nums">
+                        {formatDateTime(notification.createdAt, locale)}
+                      </Caption>
+                    </div>
                   </div>
+                  <Text className={`mt-2.5 text-sm line-clamp-3 transition-colors duration-200 ${!notification.isRead ? 'text-slate-600' : 'text-slate-500'}`}>
+                    {notification.content}
+                  </Text>
                 </div>
-                <Badge color={notification.isRead ? 'info' : 'warning'}>
-                  {notification.isRead ? copy.readStatus : copy.newStatus}
-                </Badge>
-              </div>
-              <Text className="mt-3 text-sm text-slate-600">
-                {notification.content}
-              </Text>
+
               {(notification.link || !notification.isRead) && (
-                <div className="mt-4 flex flex-wrap gap-3">
+                <div className="mt-6 flex flex-wrap gap-2 pt-4 border-t border-slate-100">
                   {notification.link && (
-                    <Button variant="outline" onClick={() => navigate(notification.link)}>
+                    <Button variant="outline" onClick={() => handleOpenLink(notification)}>
                       {copy.openLink}
                     </Button>
                   )}
@@ -220,7 +245,7 @@ const NotificationsPage = () => {
                     <Button
                       variant="ghost"
                       disabled={updatingReadIds.includes(notification.id)}
-                      onClick={() => handleMarkAsRead(notification.id)}
+                      onClick={() => markAsRead(notification.id)}
                     >
                       {updatingReadIds.includes(notification.id) ? copy.markReadLoading : copy.markRead}
                     </Button>
@@ -231,11 +256,33 @@ const NotificationsPage = () => {
           ))}
 
           {!visibleLoading && notifications.length === 0 && (
-            <div className="border border-dashed border-slate-300 bg-slate-50 p-4 text-sm text-slate-600">
+            <div className="border border-dashed border-slate-300 bg-slate-50 p-4 text-sm text-slate-600 rounded-3xl">
               <div className="font-semibold text-secondary-900">{copy.emptyTitle}</div>
               <div className="mt-2">{copy.emptyDescription}</div>
             </div>
           )}
+        </div>
+
+        <div className="mt-5 flex flex-col gap-3 border-t border-slate-100 pt-5 sm:flex-row sm:items-center sm:justify-between">
+          <Caption className="text-xs text-slate-500">
+            {rangeText}
+          </Caption>
+          <div className="flex gap-3">
+            <Button
+              variant="outline"
+              disabled={page <= 0 || reloading || loading}
+              onClick={() => setNotificationPage(page - 1)}
+            >
+              {copy.previousPage}
+            </Button>
+            <Button
+              variant="outline"
+              disabled={pageInfo.totalPages === 0 || page >= pageInfo.totalPages - 1 || reloading || loading}
+              onClick={() => setNotificationPage(page + 1)}
+            >
+              {copy.nextPage}
+            </Button>
+          </div>
         </div>
       </Card>
     </div>
