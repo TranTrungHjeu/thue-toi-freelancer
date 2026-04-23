@@ -12,6 +12,7 @@ import com.thuetoi.dto.response.admin.AdminProjectResponse;
 import com.thuetoi.dto.response.admin.AdminReportResponse;
 import com.thuetoi.dto.response.admin.AdminStatsResponse;
 import com.thuetoi.dto.response.admin.AdminWithdrawalResponse;
+import com.thuetoi.dto.response.admin.NotificationDeliveryLogResponse;
 import com.thuetoi.dto.response.admin.SystemSettingAdminResponse;
 import com.thuetoi.dto.response.admin.SystemHealthResponse;
 import com.thuetoi.dto.response.admin.UserAdminResponse;
@@ -21,6 +22,7 @@ import com.thuetoi.mapper.MarketplaceResponseMapper;
 import com.thuetoi.repository.UserRepository;
 import com.thuetoi.service.AdminService;
 import com.thuetoi.service.NotificationService;
+import com.thuetoi.service.NotificationDeliveryLogService;
 import com.thuetoi.service.SkillService;
 import com.thuetoi.service.AuditLogService;
 import com.thuetoi.service.SystemHealthService;
@@ -55,6 +57,9 @@ public class AdminController {
 
     @Autowired
     private NotificationService notificationService;
+
+    @Autowired
+    private NotificationDeliveryLogService notificationDeliveryLogService;
 
     @Autowired
     private UserRepository userRepository;
@@ -185,13 +190,15 @@ public class AdminController {
     // --- Broadcast ---
 
     @PostMapping("/broadcast")
-    public ApiResponse<Void> broadcast(@Valid @RequestBody AdminBroadcastRequest payload) {
+    public ApiResponse<Void> broadcast(@Valid @RequestBody AdminBroadcastRequest payload, Principal principal) {
+        User currentAdmin = requireCurrentAdmin(principal);
         notificationService.broadcastNotification(
             payload.getTargetRole(),
             payload.getType(),
             payload.getTitle(),
             payload.getContent(),
-            payload.getLink()
+            payload.getLink(),
+            currentAdmin.getId()
         );
         return ApiResponse.success("Phát sóng thông báo thành công", null);
     }
@@ -269,6 +276,11 @@ public class AdminController {
     @GetMapping("/logs")
     public ApiResponse<List<AdminAuditLogResponse>> getAuditLogs() {
         return ApiResponse.success("Nhật ký hệ thống", adminResponseMapper.toAuditLogResponses(auditLogService.getAllLogs()));
+    }
+
+    @GetMapping("/notifications/delivery-logs")
+    public ApiResponse<List<NotificationDeliveryLogResponse>> getNotificationDeliveryLogs() {
+        return ApiResponse.success("Nhật ký gửi thông báo", notificationDeliveryLogService.getRecentLogs());
     }
 
     private User requireCurrentAdmin(Principal principal) {

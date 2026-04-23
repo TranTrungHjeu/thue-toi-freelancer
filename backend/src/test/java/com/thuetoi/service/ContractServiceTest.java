@@ -319,6 +319,28 @@ class ContractServiceTest {
         verify(transactionService, never()).createTransaction(any(), any(), any(), any());
     }
 
+    @Test
+    void updateMilestoneStatusNotifiesFreelancerWhenMilestoneCancelled() {
+        Contract contract = contract(70L, 10L, 1L, 2L, "in_progress");
+        Milestone milestone = milestone(301L, 70L, "Phase 1", BigDecimal.valueOf(1500000), "pending");
+
+        when(milestoneRepository.findById(301L)).thenReturn(Optional.of(milestone));
+        when(contractAccessService.requireCustomerContract(70L, 1L)).thenReturn(contract);
+        when(milestoneRepository.save(any(Milestone.class))).thenAnswer(invocation -> invocation.getArgument(0));
+
+        Milestone updated = contractService.updateMilestoneStatus(301L, 1L, "cancelled");
+
+        assertThat(updated.getStatus()).isEqualTo("cancelled");
+        verify(notificationService).createNotificationForUser(
+            eq(2L),
+            eq("contract"),
+            eq("Milestone đã bị hủy"),
+            eq("Milestone \"Phase 1\" đã bị hủy."),
+            eq("/workspace/contracts")
+        );
+        verify(transactionService, never()).createTransaction(any(), any(), any(), any());
+    }
+
     private User user(Long id, String role) {
         User user = new User();
         user.setId(id);

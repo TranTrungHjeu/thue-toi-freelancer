@@ -106,7 +106,7 @@ public class AdminService {
         userRepository.save(target);
 
         notificationService.createNotificationForUser(userId, "system", "Quyền hạn tài khoản thay đổi",
-            "Vai trò của bạn đã được quản trị viên cập nhật thành: " + newRole, "/workspace/profile");
+            "Vai trò của bạn đã được Quản trị viên cập nhật thành: " + newRole, "/workspace/profile");
     }
 
     @Transactional(readOnly = true)
@@ -150,7 +150,7 @@ public class AdminService {
             user.getId(),
             "system",
             "Trạng thái tài khoản thay đổi",
-            "Tài khoản của bạn đã được " + statusText + " bởi quản trị viên. Lý do: " + (reason != null ? reason : "Vi phạm chính sách hệ thống."),
+            "Tài khoản của bạn đã được " + statusText + " bởi Quản trị viên. Lý do: " + (reason != null ? reason : "Vi phạm chính sách hệ thống."),
             "/workspace/profile"
         );
     }
@@ -170,7 +170,7 @@ public class AdminService {
                     user.getId(),
                     "system",
                     "Cập nhật trạng thái tài khoản hàng loạt",
-                    "Tài khoản của bạn đã được " + statusText + " bởi quản trị viên. Lý do: " + (reason != null ? reason : "Vi phạm chính sách hệ thống."),
+                    "Tài khoản của bạn đã được " + statusText + " bởi Quản trị viên. Lý do: " + (reason != null ? reason : "Vi phạm chính sách hệ thống."),
                     "/workspace/profile"
                 );
             });
@@ -194,7 +194,7 @@ public class AdminService {
 
         // Notify owner
         notificationService.createNotificationForUser(
-            project.getUser().getId(), "system", "Project status updated by admin", "Status: " + normalizedStatus.getValue(), "/projects/" + projectId);
+            project.getUser().getId(), "project", "Trạng thái dự án đã được cập nhật", "Trạng thái: " + normalizedStatus.getValue(), "/workspace/projects");
 
         return saved;
     }
@@ -213,7 +213,7 @@ public class AdminService {
                     "system",
                     "Cập nhật trạng thái dự án hàng loạt",
                     "Trạng thái dự án của bạn đã được cập nhật thành: " + normalizedStatus.getValue(),
-                    "/projects/" + projectId
+                    "/workspace/projects"
                 );
             });
         }
@@ -238,7 +238,7 @@ public class AdminService {
         user.setVerified(true);
         userRepository.save(user);
 
-        notificationService.createNotificationForUser(user.getId(), "system", "Tài khoản đã được xác thực", "Hồ sơ của bạn đã được kiểm duyệt và cấp huy hiệu xác thực.", "/profile");
+        notificationService.createNotificationForUser(user.getId(), "system", "Tài khoản đã được xác thực", "Hồ sơ của bạn đã được kiểm duyệt và cấp huy hiệu xác thực.", "/workspace/profile");
         return kycRequestRepository.save(request);
     }
 
@@ -251,7 +251,7 @@ public class AdminService {
         request.setStatus("REJECTED");
         request.setNote(reason);
 
-        notificationService.createNotificationForUser(request.getUserId(), "system", "Yêu cầu xác thực bị từ chối", "Lý do: " + reason, "/profile");
+        notificationService.createNotificationForUser(request.getUserId(), "system", "Yêu cầu xác thực bị từ chối", "Lý do: " + reason, "/workspace/profile");
         return kycRequestRepository.save(request);
     }
 
@@ -267,8 +267,17 @@ public class AdminService {
         Report report = reportRepository.findById(reportId)
             .orElseThrow(() -> new BusinessException("ERR_SYS_02", "Không tìm thấy báo cáo", HttpStatus.NOT_FOUND));
 
-        report.setStatus(normalizeReportStatus(status));
-        return reportRepository.save(report);
+        String normalizedStatus = normalizeReportStatus(status);
+        report.setStatus(normalizedStatus);
+        Report savedReport = reportRepository.save(report);
+        notificationService.createNotificationForUser(
+            report.getReporterId(),
+            "system",
+            "Báo cáo đã được xử lý",
+            "Báo cáo của bạn đã được cập nhật trạng thái: " + normalizedStatus + ".",
+            "/workspace/notifications"
+        );
+        return savedReport;
     }
 
     // --- Finance & Withdrawal Management ---
@@ -305,16 +314,16 @@ public class AdminService {
             userRepository.save(user);
 
             notificationService.createNotificationForUser(user.getId(), "system", "Lệnh rút tiền thành công",
-                "Số tiền " + request.getAmount() + " đã được chuyển tới tài khoản của bạn.", "/workspace/finance");
+                "Số tiền " + request.getAmount() + " đã được chuyển tới tài khoản của bạn.", "/workspace/notifications");
         } else {
             String rejectionReason = normalizedNote;
             if (rejectionReason == null || rejectionReason.isBlank()) {
-                rejectionReason = "Yêu cầu rút tiền bị từ chối bởi quản trị viên.";
+                rejectionReason = "Yêu cầu rút tiền bị từ chối bởi Quản trị viên.";
             }
             request.setNote(rejectionReason);
 
             notificationService.createNotificationForUser(request.getUserId(), "system", "Lệnh rút tiền bị từ chối",
-                "Lý do: " + rejectionReason, "/workspace/finance");
+                "Lý do: " + rejectionReason, "/workspace/notifications");
         }
 
         return withdrawalRequestRepository.save(request);

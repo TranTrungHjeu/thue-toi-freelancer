@@ -46,7 +46,9 @@ export const marketplaceApi = {
   getReviewsByContract: (contractId) => axiosClient.get(`/v1/reviews/contract/${contractId}`),
   createReview: (payload) => axiosClient.post('/v1/reviews', payload),
   getNotificationsMe: () => axiosClient.get('/v1/notifications/user/me'),
+  getNotificationsPage: (params = {}) => axiosClient.get('/v1/notifications/user/me/page', { params }),
   markNotificationAsRead: (notificationId) => axiosClient.put(`/v1/notifications/${notificationId}/read`),
+  markAllNotificationsAsRead: () => axiosClient.put('/v1/notifications/read-all'),
 
   // --- Reports ---
   submitReport: (payload) => axiosClient.post('/v1/reports', payload),

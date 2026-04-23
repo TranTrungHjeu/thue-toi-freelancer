@@ -145,6 +145,13 @@ public class BidService {
             }
             bid.setStatus(BidStatus.WITHDRAWN.getValue());
             Bid updatedBid = bidRepository.save(bid);
+            notificationService.createNotificationForUser(
+                bid.getProject().getUser().getId(),
+                "bid",
+                "Freelancer đã rút bid",
+                "Freelancer \"" + resolveUserDisplayName(bid.getFreelancer(), "Freelancer") + "\" đã rút bid khỏi project \"" + bid.getProject().getTitle() + "\".",
+                "/workspace/projects"
+            );
             return getRequiredBid(updatedBid.getId());
         }
 
@@ -196,7 +203,7 @@ public class BidService {
     private void ensureFreelancer(User user) {
         String role = user.getRole() == null ? "" : user.getRole().trim().toLowerCase(Locale.ROOT);
         if (!"freelancer".equals(role)) {
-            throw new BusinessException("ERR_AUTH_04", "Chỉ freelancer mới có thể gửi bid", HttpStatus.FORBIDDEN);
+            throw new BusinessException("ERR_AUTH_04", "Chỉ Freelancer mới có thể gửi bid", HttpStatus.FORBIDDEN);
         }
     }
 
