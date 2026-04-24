@@ -180,6 +180,7 @@ const ProjectsPage = () => {
   const [editingProjectId, setEditingProjectId] = useState(null);
   const [projectActionId, setProjectActionId] = useState(null);
   const [bidActionId, setBidActionId] = useState(null);
+  const [activePayment, setActivePayment] = useState(null);
   const [marketplaceSearchTerm, setMarketplaceSearchTerm] = useState('');
   const [marketplaceStatus, setMarketplaceStatus] = useState('open');
   const [marketplaceSkills, setMarketplaceSkills] = useState([]);
@@ -189,6 +190,8 @@ const ProjectsPage = () => {
   const [projectToReport, setProjectToReport] = useState(null);
 
   const isCustomer = user?.role === 'customer';
+
+  const paymentStorageKey = useCallback((projectId) => `thuetoi:payment:${projectId}`, []);
 
   const loadSkillCatalog = useCallback(async () => {
     setLoadingSkillCatalog(true);
@@ -255,6 +258,70 @@ const ProjectsPage = () => {
   useEffect(() => {
     loadSkillCatalog();
   }, [loadSkillCatalog]);
+
+  useEffect(() => {
+    if (!isCustomer || !selectedProject || selectedProject.status !== 'pending_payment') {
+      return;
+    }
+    const code = sessionStorage.getItem(paymentStorageKey(selectedProject.id));
+    if (!code) {
+      return;
+    }
+    let cancelled = false;
+    (async () => {
+      try {
+        const r = await marketplaceApi.getPaymentByOrderCode(code);
+        const p = r?.data;
+        if (cancelled || !p) {
+          return;
+        }
+        if (p.status === 'pending' || p.status === 'paid') {
+          setActivePayment({ ...p, projectId: selectedProject.id });
+        }
+        if (p.status === 'cancelled' || p.status === 'expired' || p.status === 'failed') {
+          sessionStorage.removeItem(paymentStorageKey(selectedProject.id));
+        }
+        if (p.status === 'paid') {
+          sessionStorage.removeItem(paymentStorageKey(selectedProject.id));
+        }
+      } catch {
+        sessionStorage.removeItem(paymentStorageKey(selectedProject.id));
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [isCustomer, selectedProject?.id, selectedProject?.status, paymentStorageKey]);
+
+  useEffect(() => {
+    if (!activePayment?.orderCode || activePayment.status !== 'pending') {
+      return undefined;
+    }
+    const timer = setInterval(async () => {
+      try {
+        const r = await marketplaceApi.getPaymentByOrderCode(activePayment.orderCode);
+        const p = r?.data;
+        if (p) {
+          setActivePayment((prev) => {
+            if (!prev || prev.orderCode !== p.orderCode) {
+              return prev;
+            }
+            return { ...prev, ...p, projectId: prev.projectId };
+          });
+        }
+        if (p?.status === 'paid') {
+          if (activePayment.projectId) {
+            sessionStorage.removeItem(paymentStorageKey(activePayment.projectId));
+          }
+          addToast(copy.projectBids.paymentPaidToast, 'success');
+          await loadPageData();
+        }
+      } catch {
+        // ignore
+      }
+    }, 3000);
+    return () => clearInterval(timer);
+  }, [activePayment?.orderCode, activePayment?.status, activePayment?.projectId, addToast, copy.projectBids.paymentPaidToast, loadPageData, paymentStorageKey]);
 
   const customerProjectSummary = useMemo(() => {
     return projects.reduce((accumulator, project) => {
@@ -383,19 +450,50 @@ const ProjectsPage = () => {
     }
   };
 
-  const handleAcceptBid = async (bidId) => {
+  const handleCheckoutBid = async (bidId) => {
     setBidActionId(bidId);
     try {
-      await marketplaceApi.acceptBid(bidId);
-      addToast(t('toasts.projects.acceptSuccess'), 'success');
+      const response = await marketplaceApi.checkoutBid(bidId);
+      const payment = response?.data;
+      if (payment?.orderCode && selectedProject?.id) {
+        sessionStorage.setItem(paymentStorageKey(selectedProject.id), payment.orderCode);
+        setActivePayment({ ...payment, projectId: selectedProject.id });
+      }
+      addToast(copy.projectBids.checkoutSuccess, 'success');
       await loadPageData();
       if (selectedProject) {
-        await loadProjectBids({ ...selectedProject, status: 'in_progress' });
+        const refreshed = (await marketplaceApi.getMyProjects())?.data || [];
+        const next = refreshed.find((p) => p.id === selectedProject.id) || { ...selectedProject, status: 'pending_payment' };
+        setSelectedProject(next);
+        await loadProjectBids(next);
       }
     } catch (error) {
       addToast(error?.message || t('toasts.projects.acceptError'), 'error');
     } finally {
       setBidActionId(null);
+    }
+  };
+
+  const handleCancelActivePayment = async () => {
+    if (!activePayment?.orderCode) {
+      return;
+    }
+    try {
+      await marketplaceApi.cancelPaymentByOrderCode(activePayment.orderCode);
+      if (activePayment.projectId) {
+        sessionStorage.removeItem(paymentStorageKey(activePayment.projectId));
+      }
+      setActivePayment(null);
+      addToast(t('toasts.projects.cancelSuccess'), 'success');
+      await loadPageData();
+      if (selectedProject) {
+        const refreshed = (await marketplaceApi.getMyProjects())?.data || [];
+        const next = refreshed.find((p) => p.id === selectedProject.id) || selectedProject;
+        setSelectedProject(next);
+        await loadProjectBids(next);
+      }
+    } catch (error) {
+      addToast(error?.message || t('toasts.projects.cancelError'), 'error');
     }
   };
 
@@ -708,7 +806,8 @@ const ProjectsPage = () => {
                 {!visibleProjectBidsLoading && selectedProjectBids.map((bid) => {
                   const statusMeta = getBidStatusMeta(bid.status, locale);
                   const isHandlingBid = bidActionId === bid.id;
-                  const canProcessBid = selectedProject.status === 'open' && bid.status === 'pending';
+                  const canProcessBid =
+                    (selectedProject.status === 'open' || selectedProject.status === 'pending_payment') && bid.status === 'pending';
 
                   return (
                     <div key={bid.id} className="border border-slate-200 bg-slate-50 p-4">
@@ -736,7 +835,7 @@ const ProjectsPage = () => {
                       </Text>
                       {canProcessBid && (
                         <div className="mt-4 flex flex-wrap gap-3">
-                          <Button disabled={isHandlingBid} onClick={() => handleAcceptBid(bid.id)}>
+                          <Button disabled={isHandlingBid} onClick={() => handleCheckoutBid(bid.id)}>
                             {isHandlingBid ? copy.projectBids.processing : copy.projectBids.accept}
                           </Button>
                           <Button disabled={isHandlingBid} variant="danger" onClick={() => handleRejectBid(bid.id)}>
@@ -747,6 +846,82 @@ const ProjectsPage = () => {
                     </div>
                   );
                 })}
+
+                {activePayment
+                  && selectedProject
+                  && activePayment.projectId === selectedProject.id && (
+                    <InfoPanel className="mt-5 border-2 border-amber-200 bg-amber-50/90">
+                      <div className="text-sm font-bold text-amber-900">
+                        {copy.projectBids.paymentBlockTitle}
+                      </div>
+                      <div className="mt-3 grid gap-2 text-sm text-slate-800">
+                        <div>
+                          <Text className="text-xs font-semibold uppercase text-slate-500">{copy.projectBids.paymentStatus}</Text>
+                          <div className="font-mono text-base">{activePayment.status}</div>
+                        </div>
+                        <div>
+                          <Text className="text-xs font-semibold uppercase text-slate-500">Order</Text>
+                          <div className="font-mono text-sm break-all">{activePayment.orderCode}</div>
+                        </div>
+                        {activePayment.bankName && (
+                          <div>
+                            <Text className="text-xs font-semibold uppercase text-slate-500">{copy.projectBids.paymentBank}</Text>
+                            <div>{activePayment.bankName}</div>
+                          </div>
+                        )}
+                        {activePayment.vaNumber && (
+                          <div>
+                            <Text className="text-xs font-semibold uppercase text-slate-500">{copy.projectBids.paymentVa}</Text>
+                            <div className="font-mono">{activePayment.vaNumber}</div>
+                          </div>
+                        )}
+                        {activePayment.vaHolderName && (
+                          <div>
+                            <Text className="text-xs font-semibold uppercase text-slate-500">{copy.projectBids.paymentHolder}</Text>
+                            <div>{activePayment.vaHolderName}</div>
+                          </div>
+                        )}
+                        {activePayment.amount != null && (
+                          <div>
+                            <Text className="text-xs font-semibold uppercase text-slate-500">{copy.projectBids.paymentAmount}</Text>
+                            <div className="font-semibold">{formatCurrency(activePayment.amount, locale)}</div>
+                          </div>
+                        )}
+                        {activePayment.expiredAt && (
+                          <div>
+                            <Text className="text-xs font-semibold uppercase text-slate-500">{copy.projectBids.paymentExpires}</Text>
+                            <div>{formatDateTime(activePayment.expiredAt, locale)}</div>
+                          </div>
+                        )}
+                      </div>
+                      {activePayment.qrCodeData && String(activePayment.qrCodeData).startsWith('data:image') && (
+                        <div className="mt-3">
+                          <img
+                            src={activePayment.qrCodeData}
+                            alt="VietQR"
+                            className="max-w-[220px] border border-slate-200 bg-white p-2"
+                          />
+                        </div>
+                      )}
+                      {activePayment.qrCodeUrl && (
+                        <a
+                          href={activePayment.qrCodeUrl}
+                          className="mt-2 inline-block text-sm font-semibold text-primary-700 underline"
+                          target="_blank"
+                          rel="noreferrer"
+                        >
+                          {copy.projectBids.openQrLink}
+                        </a>
+                      )}
+                      {activePayment.status === 'pending' && (
+                        <div className="mt-4">
+                          <Button type="button" variant="ghost" onClick={handleCancelActivePayment}>
+                            {copy.projectBids.paymentCancel}
+                          </Button>
+                        </div>
+                      )}
+                    </InfoPanel>
+                )}
 
                 {!visibleProjectBidsLoading && selectedProjectBids.length === 0 && (
                   <Callout type="info" title={copy.projectBids.emptyTitle}>

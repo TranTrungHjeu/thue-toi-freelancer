@@ -28,6 +28,7 @@ export const messages = {
     status: {
       project: {
         open: "Đang tìm đối tác",
+        pending_payment: "Chờ thanh toán",
         in_progress: "Đang triển khai",
         completed: "Đã hoàn thành",
         cancelled: "Đã hủy",
@@ -778,6 +779,7 @@ export const messages = {
     status: {
       project: {
         open: "Open",
+        pending_payment: "Pending payment",
         in_progress: "In progress",
         completed: "Completed",
         cancelled: "Cancelled",
