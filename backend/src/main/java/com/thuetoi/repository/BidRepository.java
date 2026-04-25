@@ -19,6 +19,8 @@ public interface BidRepository extends JpaRepository<Bid, Long> {
     @EntityGraph(attributePaths = {"project", "freelancer.skills"})
     List<Bid> findByFreelancerId(Long freelancerId);
 
+    long countByFreelancerId(Long freelancerId);
+
     @EntityGraph(attributePaths = {"project", "freelancer.skills"})
     List<Bid> findByProjectIdOrderByCreatedAtDesc(Long projectId);
 

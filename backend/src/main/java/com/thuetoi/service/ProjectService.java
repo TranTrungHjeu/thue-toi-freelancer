@@ -2,6 +2,7 @@ package com.thuetoi.service;
 
 import com.thuetoi.entity.Project;
 import com.thuetoi.entity.User;
+import com.thuetoi.dto.request.FileAttachmentRequest;
 import com.thuetoi.enums.ProjectStatus;
 import com.thuetoi.exception.BusinessException;
 import com.thuetoi.repository.ProjectRepository;
@@ -38,6 +39,9 @@ public class ProjectService {
     @Autowired
     private SkillService skillService;
 
+    @Autowired
+    private AttachmentMetadataService attachmentMetadataService;
+
     /**
      * Tạo dự án mới
      */
@@ -63,6 +67,20 @@ public class ProjectService {
         LocalDateTime deadline,
         List<String> skills
     ) {
+        return createProject(userId, title, description, budgetMin, budgetMax, deadline, skills, null);
+    }
+
+    @Transactional
+    public Project createProject(
+        Long userId,
+        String title,
+        String description,
+        BigDecimal budgetMin,
+        BigDecimal budgetMax,
+        LocalDateTime deadline,
+        List<String> skills,
+        List<FileAttachmentRequest> attachments
+    ) {
         User user = getRequiredUser(userId);
         ensureCustomer(user);
         validateProjectPayload(title, budgetMin != null ? budgetMin.doubleValue() : null, budgetMax != null ? budgetMax.doubleValue() : null);
@@ -74,6 +92,7 @@ public class ProjectService {
         project.setBudgetMin(budgetMin);
         project.setBudgetMax(budgetMax);
         project.setDeadline(deadline);
+        project.setAttachments(serializeAttachments(attachments));
         project.setStatus(ProjectStatus.OPEN.getValue());
         project.setSkills(resolveSkills(skills));
         Project savedProject = projectRepository.save(project);
@@ -132,6 +151,22 @@ public class ProjectService {
         String status,
         List<String> skills
     ) {
+        return updateProject(id, userId, title, description, budgetMin, budgetMax, deadline, status, skills, null);
+    }
+
+    @Transactional
+    public Project updateProject(
+        Long id,
+        Long userId,
+        String title,
+        String description,
+        BigDecimal budgetMin,
+        BigDecimal budgetMax,
+        LocalDateTime deadline,
+        String status,
+        List<String> skills,
+        List<FileAttachmentRequest> attachments
+    ) {
         Project project = getOwnedProject(id, userId);
         validateProjectPayload(title, budgetMin != null ? budgetMin.doubleValue() : null, budgetMax != null ? budgetMax.doubleValue() : null);
 
@@ -140,6 +175,9 @@ public class ProjectService {
         project.setBudgetMin(budgetMin);
         project.setBudgetMax(budgetMax);
         project.setDeadline(deadline);
+        if (attachments != null) {
+            project.setAttachments(serializeAttachments(attachments));
+        }
         project.setStatus(normalizeStatus(status, project.getStatus()));
         if (skills != null) {
             project.setSkills(resolveSkills(skills));
@@ -189,6 +227,13 @@ public class ProjectService {
             return new java.util.HashSet<>();
         }
         return skillService.resolveSkills(skills);
+    }
+
+    private String serializeAttachments(List<FileAttachmentRequest> attachments) {
+        if (attachments == null) {
+            return null;
+        }
+        return attachmentMetadataService.serialize(attachments);
     }
 
     private void validateProjectPayload(String title, Double budgetMin, Double budgetMax) {

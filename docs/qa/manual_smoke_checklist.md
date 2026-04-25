@@ -39,8 +39,8 @@ Lưu ý:
 
 1. Login bằng `customer1@gmail.com`.
 2. Vào `Projects`.
-3. Tạo 1 project mới với `budgetMin < budgetMax`.
-   - Kỳ vọng: project mới xuất hiện trong danh sách `My Projects` với status `open`.
+3. Tạo 1 project mới với `budgetMin < budgetMax` và đính kèm 1 file hợp lệ.
+   - Kỳ vọng: project mới xuất hiện trong danh sách `My Projects` với status `open`; attachment hiển thị tên file và mở được link Cloudinary.
 4. Sửa project vừa tạo.
    - Kỳ vọng: title/description/budget cập nhật đúng.
 5. Thử set status thủ công sang `in_progress` hoặc `completed` nếu UI/API cho phép.
@@ -54,8 +54,8 @@ Lưu ý:
 2. Vào `Projects`.
 3. Xem project vừa tạo ở danh sách project mở.
    - Kỳ vọng: project hiển thị trong marketplace.
-4. Gửi bid mới cho project đó.
-   - Kỳ vọng: bid tạo thành công với status `pending`.
+4. Gửi bid mới cho project đó và đính kèm 1 file proposal hợp lệ.
+   - Kỳ vọng: bid tạo thành công với status `pending`; attachment hiển thị trong bid của Freelancer và danh sách bid của Khách hàng.
 5. Mở `Notifications` hoặc quay lại Khách hàng để kiểm tra.
    - Kỳ vọng: Khách hàng nhận notification `bid`.
 6. Với Freelancer, vào danh sách bid của mình.
@@ -85,10 +85,12 @@ Lưu ý:
    - Kỳ vọng: message xuất hiện đúng `senderId`, không cần client gửi `senderId`; Freelancer nhận notification `contract`.
 2. Login bằng `freelancer1@gmail.com`, mở cùng contract.
    - Kỳ vọng: thấy lịch sử message của contract.
-3. Gửi 1 tin nhắn file với `attachments`.
-   - Kỳ vọng: message file được tạo, link/attachment hiển thị đúng; participant còn lại nhận notification realtime.
+3. Gửi 1 tin nhắn file bằng nút chọn file thật.
+   - Kỳ vọng: frontend upload qua `/api/v1/files/messages?contractId=...`, message file được tạo, link hiển thị theo `name`, `size`, `contentType`; participant còn lại nhận notification realtime.
 4. Thử gửi message khi contract đã kết thúc.
    - Kỳ vọng: backend chặn với `ERR_SYS_02`.
+5. Thử upload file sai loại, file rỗng hoặc quá 5 MB.
+   - Kỳ vọng: backend chặn với `ERR_FILE_01`; UI hiển thị lỗi upload thân thiện.
 
 ## 8. Complete contract -> review
 
@@ -144,7 +146,8 @@ Chạy các lệnh sau trước khi review hoặc demo:
 
 - Frontend: `npm run lint`
 - Frontend: `npm run build`
-- Backend: `docker run --rm -v "${PWD}\\backend:/app" -w /app maven:3.9.6-eclipse-temurin-21 mvn test`
+- Backend local: `cd backend && mvn test`
+- Backend Docker: `docker run --rm -v "${PWD}\\backend:/app" -w /app maven:3.9.6-eclipse-temurin-21 mvn test`
 
 Kỳ vọng:
 

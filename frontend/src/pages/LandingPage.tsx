@@ -310,7 +310,7 @@ const LandingPage = () => {
               <div className="col-span-12 md:col-span-8">
                 <WordsPullUp
                   text="Nền tảng kết nối khách hàng và freelancer chuyên nghiệp."
-                  className="max-w-full text-[clamp(3.25rem,10vw,7.5rem)] font-medium leading-[0.9] tracking-[-0.07em]"
+                  className="max-w-full text-[clamp(3.25rem,10vw,7.5rem)] font-medium leading-[1.05] tracking-[-0.07em]"
                 />
               </div>
 

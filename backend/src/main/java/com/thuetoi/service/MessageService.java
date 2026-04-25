@@ -27,6 +27,9 @@ public class MessageService {
     @Autowired
     private NotificationService notificationService;
 
+    @Autowired
+    private AttachmentMetadataService attachmentMetadataService;
+
     public Message sendMessage(Long currentUserId, MessageRequest request) {
         Contract contract = contractAccessService.requireAccessibleContract(request.getContractId(), currentUserId);
         if (!ContractStatus.IN_PROGRESS.matches(contract.getStatus())) {
@@ -35,7 +38,7 @@ public class MessageService {
 
         MessageType messageType = normalizeMessageType(request.getMessageType());
         String normalizedContent = normalizeText(request.getContent());
-        String normalizedAttachments = normalizeText(request.getAttachments());
+        String normalizedAttachments = serializeAttachments(request.getAttachments());
 
         if (messageType == MessageType.TEXT && normalizedContent == null) {
             throw new BusinessException("ERR_SYS_02", "Tin nhắn văn bản không được để trống nội dung", HttpStatus.BAD_REQUEST);
@@ -89,5 +92,12 @@ public class MessageService {
         }
         String normalized = value.trim();
         return normalized.isEmpty() ? null : normalized;
+    }
+
+    private String serializeAttachments(java.util.List<com.thuetoi.dto.request.FileAttachmentRequest> attachments) {
+        if (attachments == null || attachments.isEmpty()) {
+            return null;
+        }
+        return attachmentMetadataService.serialize(attachments);
     }
 }

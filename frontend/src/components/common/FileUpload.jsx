@@ -1,36 +1,62 @@
 "use client";
 
-import React, { useState } from 'react';
+import React, { useId, useMemo, useState } from 'react';
 import { Upload, Xmark, Notes } from 'iconoir-react';
 import { Text, Caption } from '../common/Typography';
 import { useToast } from '../../hooks/useToast';
 import { useI18n } from '../../hooks/useI18n';
 
-/**
- * Professional File Upload area with drag & drop support.
- * Strictly sharp with dashed border.
- */
-const FileUpload = ({ 
+const DEFAULT_ACCEPT = '.jpg,.jpeg,.png,.webp,.pdf,.docx,.xlsx,.pptx,.txt';
+
+const FileUpload = ({
   label = "Đính kèm tài liệu",
+  value,
+  onChange,
+  accept = DEFAULT_ACCEPT,
   maxFiles = 5,
-  className = "" 
+  disabled = false,
+  error = '',
+  helperText = '',
+  className = "",
 }) => {
-  const [files, setFiles] = useState([]);
+  const inputId = useId();
+  const [internalFiles, setInternalFiles] = useState([]);
   const [isDragOver, setIsDragOver] = useState(false);
   const { addToast } = useToast();
   const { t } = useI18n();
+  const files = useMemo(() => (Array.isArray(value) ? value : internalFiles), [internalFiles, value]);
 
-  const handleFileChange = (e) => {
-    const selectedFiles = Array.from(e.target.files);
+  const commitFiles = (nextFiles) => {
+    if (onChange) {
+      onChange(nextFiles);
+      return;
+    }
+    setInternalFiles(nextFiles);
+  };
+
+  const appendFiles = (selectedFiles) => {
+    if (disabled || selectedFiles.length === 0) {
+      return;
+    }
+
     if (files.length + selectedFiles.length > maxFiles) {
       addToast(t('common.fileUploadMaxFiles', { maxFiles }), "warning");
       return;
     }
-    setFiles([...files, ...selectedFiles]);
+
+    commitFiles([...files, ...selectedFiles]);
+  };
+
+  const handleFileChange = (event) => {
+    appendFiles(Array.from(event.target.files || []));
+    event.target.value = '';
   };
 
   const removeFile = (index) => {
-    setFiles(files.filter((_, i) => i !== index));
+    if (disabled) {
+      return;
+    }
+    commitFiles(files.filter((_, i) => i !== index));
   };
 
   return (
@@ -45,31 +71,30 @@ const FileUpload = ({
         onDrop={(e) => { 
           e.preventDefault(); 
           setIsDragOver(false);
-          const droppedFiles = Array.from(e.dataTransfer.files);
-          if (files.length + droppedFiles.length > maxFiles) {
-            addToast(t('common.fileUploadExceeded'), "warning");
-            return;
-          }
-          setFiles([...files, ...droppedFiles]);
+          appendFiles(Array.from(e.dataTransfer.files || []));
         }}
         className={`
           flex flex-col items-center justify-center border-2 border-dashed p-8 transition-all cursor-pointer relative
-          ${isDragOver ? 'border-primary-500 bg-primary-50/50' : 'border-slate-200 hover:border-slate-300'}
+          ${disabled ? 'cursor-not-allowed bg-slate-50 opacity-70' : ''}
+          ${error ? 'border-red-300 bg-red-50/40' : (isDragOver && !disabled ? 'border-primary-500 bg-primary-50/50' : 'border-slate-200 hover:border-slate-300')}
         `}
         style={{ borderRadius: '0px' }}
       >
         <Upload className={`w-8 h-8 mb-3 ${isDragOver ? 'text-primary-500' : 'text-slate-400'}`} />
         <Text className="text-center font-medium">{t('common.fileUploadPrompt')}</Text>
-        <Caption className="mt-1">{t('common.fileUploadHint')}</Caption>
+        <Caption className="mt-1">{helperText || t('common.fileUploadHint')}</Caption>
         <input 
           type="file" 
           multiple 
+          accept={accept}
+          disabled={disabled}
           onChange={handleFileChange}
           className="hidden" 
-          id="file-upload-input"
+          id={inputId}
         />
-        <label htmlFor="file-upload-input" className="absolute inset-0 cursor-pointer" />
+        <label htmlFor={inputId} className={`absolute inset-0 ${disabled ? 'cursor-not-allowed' : 'cursor-pointer'}`} />
       </div>
+      {error && <p className="text-sm font-medium text-red-600">{error}</p>}
 
       {files.length > 0 && (
         <div className="flex flex-col gap-2 mt-2">
@@ -85,9 +110,11 @@ const FileUpload = ({
                   <Caption>{(file.size / 1024 / 1024).toFixed(2)} MB</Caption>
                 </div>
               </div>
-              <button 
+              <button
+                type="button"
+                disabled={disabled}
                 onClick={() => removeFile(idx)}
-                className="p-1 hover:bg-slate-100 text-slate-400 hover:text-red-500 transition-colors"
+                className="p-1 hover:bg-slate-100 text-slate-400 hover:text-red-500 transition-colors disabled:cursor-not-allowed disabled:opacity-50"
                 title="Gỡ bỏ tệp"
               >
                 <Xmark className="w-4 h-4" />
