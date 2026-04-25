@@ -85,7 +85,15 @@ Nếu là lỗi validation, backend trả thêm trường `errors`:
 | --- | --- | --- | --- |
 | `ERR_NOTIFICATION_01` | Không tìm thấy thông báo | `404` | Xóa item lỗi thời khỏi UI hoặc tải lại danh sách |
 
-### 2.7. Lỗi Hệ thống (`ERR_SYS_***`)
+### 2.7. Lỗi File Upload (`ERR_FILE_***`)
+
+| Code | Ý nghĩa | HTTP Status | Gợi ý cho Frontend |
+| --- | --- | --- | --- |
+| `ERR_FILE_01` | File hoặc metadata attachment không hợp lệ | `400` | Hiển thị lỗi ở vùng upload; kiểm tra loại file, tên file, file rỗng, số lượng và dung lượng |
+| `ERR_FILE_02` | Upload lên storage thất bại | `500` | Hiện toast lỗi upload và cho phép thử lại |
+| `ERR_FILE_03` | Context upload không hợp lệ | `400` | Kiểm tra tham số `context`, `projectId`, `contractId` trước khi gọi API |
+
+### 2.8. Lỗi Hệ thống (`ERR_SYS_***`)
 
 | Code | Ý nghĩa | HTTP Status | Gợi ý cho Frontend |
 | --- | --- | --- | --- |

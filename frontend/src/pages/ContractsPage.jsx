@@ -6,6 +6,7 @@ import Callout from '../components/common/Callout';
 import InlineErrorBlock from '../components/common/InlineErrorBlock';
 import Input from '../components/common/Input';
 import Textarea from '../components/common/Textarea';
+import FileUpload from '../components/common/FileUpload';
 import StatMetricCard from '../components/common/StatMetricCard';
 import InfoPanel from '../components/common/InfoPanel';
 import InteractiveRating from '../components/common/InteractiveRating';
@@ -23,12 +24,13 @@ import {
   getContractStatusMeta,
   getMilestoneStatusMeta,
 } from '../utils/formatters';
+import { formatAttachmentSize, normalizeAttachments } from '../utils/attachments';
 import { splitApiFormError } from '../utils/formError';
 import ReportModal from '../components/common/ReportModal';
 import { WarningTriangle } from 'iconoir-react';
 
 const initialMilestoneForm = { title: '', amount: '', dueDate: '' };
-const initialMessageForm = { messageType: 'text', content: '', attachments: '' };
+const initialMessageForm = { messageType: 'text', content: '', attachments: [] };
 const initialReviewForm = { rating: 5, comment: '' };
 
 const getContractsSupplementaryCopy = (locale) => {
@@ -59,6 +61,7 @@ const getContractsSupplementaryCopy = (locale) => {
       milestoneCancelledSuccess: 'Milestone cancelled successfully.',
       milestoneUpdateError: 'Could not update the milestone status.',
       realtimeRefreshError: 'Could not sync the latest contract update.',
+      messageAttachmentsLabel: 'Message attachments',
     };
   }
 
@@ -88,11 +91,11 @@ const getContractsSupplementaryCopy = (locale) => {
     milestoneCancelledSuccess: 'Đã hủy milestone thành công.',
     milestoneUpdateError: 'Không thể cập nhật trạng thái milestone.',
     realtimeRefreshError: 'Không thể đồng bộ cập nhật hợp đồng mới nhất.',
+    messageAttachmentsLabel: 'Tệp đính kèm tin nhắn',
   };
 };
 
 const toLocalDateTimeOrNull = (value) => (value ? `${value}T00:00:00` : null);
-const isExternalLink = (value) => /^https?:\/\//i.test(value || '');
 
 const resolveParticipantLabel = (participantId, contract, currentUserId, translate) => {
   if (participantId === currentUserId) return translate('contractsPage.participants.you');
@@ -104,9 +107,43 @@ const resolveParticipantLabel = (participantId, contract, currentUserId, transla
 
 const buildMessagePreview = (message, translate) => {
   if (message?.messageType === 'file') {
-    return message.content || translate('contractsPage.messagePreview.file');
+    const attachmentNames = normalizeAttachments(message.attachments)
+      .map((attachment) => attachment.name)
+      .filter(Boolean)
+      .join(', ');
+    return message.content || attachmentNames || translate('contractsPage.messagePreview.file');
   }
   return message?.content || translate('contractsPage.messagePreview.empty');
+};
+
+const MessageAttachmentLinks = ({ attachments, isSender }) => {
+  const normalizedAttachments = normalizeAttachments(attachments);
+
+  if (normalizedAttachments.length === 0) {
+    return null;
+  }
+
+  return (
+    <div className={`flex max-w-full flex-col gap-2 ${isSender ? 'self-end text-right' : 'self-start'}`}>
+      {normalizedAttachments.map((attachment, index) => {
+        const sizeLabel = formatAttachmentSize(attachment.size);
+        const meta = [sizeLabel, attachment.contentType].filter(Boolean).join(' - ');
+
+        return (
+          <a
+            key={`${attachment.url}-${index}`}
+            href={attachment.url}
+            target="_blank"
+            rel="noreferrer"
+            className="max-w-full border border-slate-300 bg-white px-3 py-2 text-sm font-semibold text-primary-700 underline-offset-2 hover:border-primary-500 hover:underline"
+          >
+            <span className="block truncate">{attachment.name}</span>
+            {meta && <span className="block text-xs font-medium text-slate-500">{meta}</span>}
+          </a>
+        );
+      })}
+    </div>
+  );
 };
 
 const applyTemplate = (template, replacements = {}) =>
@@ -344,6 +381,15 @@ const ContractsPage = () => {
     setReviewFormError('');
   };
 
+  const uploadSelectedFiles = useCallback(async (context, files, params = {}) => {
+    if (!files?.length) {
+      return [];
+    }
+
+    const response = await marketplaceApi.uploadFiles(context, files, params);
+    return normalizeAttachments(response.data || []);
+  }, []);
+
   const handleSelectContract = async (contract) => {
     selectedContractIdRef.current = contract.id;
     setSelectedContractId(contract.id);
@@ -427,11 +473,14 @@ const ContractsPage = () => {
     setMessageFieldErrors({});
     setMessageFormError('');
     try {
+      const uploadedAttachments = messageForm.messageType === 'file'
+        ? await uploadSelectedFiles('messages', messageForm.attachments, { contractId: selectedContract.id })
+        : [];
       await marketplaceApi.sendMessage({
         contractId: selectedContract.id,
         messageType: messageForm.messageType,
         content: messageForm.content,
-        attachments: messageForm.attachments,
+        attachments: uploadedAttachments,
       });
       addToast(t('toasts.contracts.messageSuccess'), 'success');
       resetMessageForm();
@@ -686,12 +735,12 @@ const ContractsPage = () => {
                     <div className="mt-5 flex flex-col gap-4">
                       <div className="flex flex-wrap gap-3">
                         <Button type="button" variant={messageForm.messageType === 'text' ? 'primary' : 'ghost'} onClick={() => {
-                          setMessageForm({ messageType: 'text', content: '', attachments: '' });
+                          setMessageForm({ messageType: 'text', content: '', attachments: [] });
                           setMessageFieldErrors({});
                           setMessageFormError('');
                         }}>{copy.messages.textType}</Button>
                         <Button type="button" variant={messageForm.messageType === 'file' ? 'primary' : 'ghost'} onClick={() => {
-                          setMessageForm({ messageType: 'file', content: '', attachments: '' });
+                          setMessageForm({ messageType: 'file', content: '', attachments: [] });
                           setMessageFieldErrors({});
                           setMessageFormError('');
                         }}>{copy.messages.fileType}</Button>
@@ -707,7 +756,18 @@ const ContractsPage = () => {
                             <Textarea label={copy.messages.contentLabel} value={messageForm.content} onChange={(event) => setMessageForm((previous) => ({ ...previous, content: event.target.value }))} error={messageFieldErrors.content} />
                           ) : (
                             <>
-                              <Input label={copy.messages.attachmentLabel} value={messageForm.attachments} onChange={(event) => setMessageForm((previous) => ({ ...previous, attachments: event.target.value }))} error={messageFieldErrors.attachments} />
+                              <FileUpload
+                                label={extraCopy.messageAttachmentsLabel || copy.messages.attachmentLabel}
+                                value={messageForm.attachments}
+                                onChange={(attachments) => {
+                                  setMessageForm((previous) => ({ ...previous, attachments }));
+                                  setMessageFieldErrors((previous) => ({ ...previous, attachments: '' }));
+                                  setMessageFormError('');
+                                }}
+                                maxFiles={5}
+                                disabled={submittingMessage}
+                                error={messageFieldErrors.attachments}
+                              />
                               <Textarea label={copy.messages.attachmentNoteLabel} value={messageForm.content} onChange={(event) => setMessageForm((previous) => ({ ...previous, content: event.target.value }))} error={messageFieldErrors.content} />
                             </>
                           )}
@@ -724,12 +784,8 @@ const ContractsPage = () => {
                         <div key={message.id} className="flex flex-col gap-2">
                           <Caption className={`text-[11px] uppercase tracking-[0.16em] ${isSender ? 'text-right text-primary-700' : 'text-slate-500'}`}>{resolveParticipantLabel(message.senderId, selectedContract, user?.id, t)}</Caption>
                           <ChatBubble message={buildMessagePreview(message, t)} time={formatDateTime(message.sentAt, locale)} isSender={isSender} status={t('status.message.sent')} />
-                          {message.messageType === 'file' && message.attachments && (
-                            isExternalLink(message.attachments) ? (
-                              <a href={message.attachments} target="_blank" rel="noreferrer" className={`text-sm font-semibold text-primary-700 underline ${isSender ? 'self-end' : 'self-start'}`}>{copy.messages.openAttachment}</a>
-                            ) : (
-                              <Text className={`text-sm text-slate-500 ${isSender ? 'self-end text-right' : 'self-start'}`}>{t('contractsPage.messages.attachmentInline', { value: message.attachments })}</Text>
-                            )
+                          {message.messageType === 'file' && (
+                            <MessageAttachmentLinks attachments={message.attachments} isSender={isSender} />
                           )}
                         </div>
                       );

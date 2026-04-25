@@ -35,7 +35,9 @@ Authorization: Bearer <access_token>
 ### 1.2. Response DTO chính
 
 - `AuthUserResponse`: `id`, `email`, `fullName`, `role`, `avatarUrl`, `profileDescription`, `skills`, `isActive`, `verified`, `createdAt`, `updatedAt`
-- `ProjectResponse`: `id`, `user`, `title`, `description`, `budgetMin`, `budgetMax`, `deadline`, `status`, `skills`, `createdAt`, `updatedAt`
+- `FileAttachmentRequest`: `url`, `name`, `contentType`, `size`
+- `FileUploadResponse`: `url`, `name`, `contentType`, `size`, `storageProvider`
+- `ProjectResponse`: `id`, `user`, `title`, `description`, `budgetMin`, `budgetMax`, `deadline`, `status`, `skills`, `attachments`, `createdAt`, `updatedAt`
 - `BidResponse`: `id`, `project`, `freelancer`, `price`, `message`, `estimatedTime`, `attachments`, `status`, `createdAt`
 - `ContractResponse`: `id`, `projectId`, `freelancerId`, `customerId`, `totalAmount`, `progress`, `status`, `startDate`, `endDate`
 - `MilestoneResponse`: `id`, `contractId`, `title`, `amount`, `dueDate`, `status`
@@ -94,12 +96,31 @@ Authorization: Bearer <access_token>
 | `GET`  | `/skills`     | Không | `SkillResponse[]`  | Danh mục kỹ năng chuẩn hóa dùng cho project/profile |
 | `GET`  | `/users/{id}` | Không | `AuthUserResponse` | Phục vụ tra cứu user theo id                        |
 
+## 3.5. File upload
+
+| Method | Path               | Auth | Request                                                | Data success           | Rule chính                                                                                                                                       |
+| ------ | ------------------ | ---- | ------------------------------------------------------ | ---------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `POST` | `/files/{context}` | Có   | `files` multipart, query `projectId?`, `contractId?`   | `FileUploadResponse[]` | `context`: `projects`, `bids`, `messages`; backend validate quyền, owner/participant, status nghiệp vụ, MIME, filename và size trước khi upload |
+
+Query theo context:
+
+- `projects`: `projectId` optional, nếu có thì user phải là owner project.
+- `bids`: bắt buộc `projectId`; chỉ `freelancer`, project phải `open`, không phải project của chính mình.
+- `messages`: bắt buộc `contractId`; chỉ participant của contract `in_progress`.
+
+Giới hạn file:
+
+- Tối đa 5 file mỗi entity.
+- Tối đa 5 MB mỗi file, `max-request-size` 10 MB.
+- Extension: `jpg`, `jpeg`, `png`, `webp`, `pdf`, `docx`, `xlsx`, `pptx`, `txt`.
+- Response metadata dùng để gửi tiếp vào `ProjectRequest.attachments`, `BidRequest.attachments`, `MessageRequest.attachments`.
+
 ## 4. Project
 
 | Method   | Path                        | Auth  | Request                                                                     | Data success        | Rule chính                                                                                       |
 | -------- | --------------------------- | ----- | --------------------------------------------------------------------------- | ------------------- | ------------------------------------------------------------------------------------------------ |
 | `GET`    | `/projects`                 | Không | Không                                                                       | `ProjectResponse[]` | Chỉ trả project `open` trên marketplace                                                          |
-| `POST`   | `/projects`                 | Có    | `title`, `description?`, `budgetMin`, `budgetMax`, `deadline?`, `skills?[]` | `ProjectResponse`   | Chỉ `customer` được tạo; skills phải tồn tại trong catalog                                       |
+| `POST`   | `/projects`                 | Có    | `title`, `description?`, `budgetMin`, `budgetMax`, `deadline?`, `skills?[]`, `attachments?[]` | `ProjectResponse`   | Chỉ `customer` được tạo; skills phải tồn tại trong catalog                                       |
 | `GET`    | `/projects/status/{status}` | Không | Path `status`                                                               | `ProjectResponse[]` | `status` hợp lệ: `open`, `in_progress`, `completed`, `cancelled`                                 |
 | `GET`    | `/projects/search`          | Không | Query `skills?`, `status?`                                                  | `ProjectResponse[]` | Skill-based search (tên kỹ năng), optional status                                                |
 | `GET`    | `/projects/my`              | Có    | Không                                                                       | `ProjectResponse[]` | Dự án của user hiện tại                                                                          |
@@ -154,8 +175,9 @@ Quy tắc payload:
 
 - Nếu `messageType` trống, backend mặc định `text`
 - `text` bắt buộc có `content`
-- `file` bắt buộc có `attachments`
+- `file` bắt buộc có `attachments` dạng `FileAttachmentRequest[]`
 - Client không gửi `senderId`
+- `ProjectResponse`, `BidResponse`, `MessageResponse` luôn trả `attachments` dạng list metadata; không trả raw string JSON.
 
 ## 8. Review
 
@@ -324,6 +346,7 @@ Các lỗi cần ưu tiên xử lý theo `code`, không hardcode chuỗi `messag
 - Bid: `ERR_BID_01`
 - Contract: `ERR_CONTRACT_01`, `ERR_CONTRACT_02`
 - Notification: `ERR_NOTIFICATION_01`
+- File: `ERR_FILE_01`, `ERR_FILE_02`, `ERR_FILE_03`
 - Validation/System: `ERR_SYS_02`, `ERR_SYS_01`
 
 Chi tiết đầy đủ xem tại [docs/architecture/error_codes.md](../architecture/error_codes.md).

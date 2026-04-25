@@ -1,6 +1,8 @@
 package com.thuetoi.dto.response.marketplace;
 
 import java.time.LocalDateTime;
+import java.util.List;
+import com.thuetoi.dto.request.FileAttachmentRequest;
 
 public record MessageResponse(
     Long id,
@@ -8,7 +10,7 @@ public record MessageResponse(
     Long senderId,
     String messageType,
     String content,
-    String attachments,
+    List<FileAttachmentRequest> attachments,
     LocalDateTime sentAt
 ) {
 }

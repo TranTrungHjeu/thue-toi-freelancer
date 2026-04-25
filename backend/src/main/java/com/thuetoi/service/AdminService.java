@@ -6,10 +6,16 @@ import java.util.Set;
 import java.util.stream.Collectors;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import com.thuetoi.dto.response.admin.AdminUserPageResponse;
+import com.thuetoi.dto.response.admin.AdminUserSummaryStatsResponse;
 import com.thuetoi.dto.response.admin.AdminStatsResponse;
 import com.thuetoi.dto.response.admin.UserAdminResponse;
 import com.thuetoi.entity.KycRequest;
@@ -21,6 +27,7 @@ import com.thuetoi.entity.WithdrawalRequest;
 import com.thuetoi.enums.ProjectStatus;
 import com.thuetoi.exception.BusinessException;
 import com.thuetoi.repository.ContractRepository;
+import com.thuetoi.repository.BidRepository;
 import com.thuetoi.repository.KycRequestRepository;
 import com.thuetoi.repository.ProjectRepository;
 import com.thuetoi.repository.ReportRepository;
@@ -43,6 +50,9 @@ public class AdminService {
 
     @Autowired
     private ContractRepository contractRepository;
+
+    @Autowired
+    private BidRepository bidRepository;
 
     @Autowired
     private NotificationService notificationService;
@@ -111,25 +121,52 @@ public class AdminService {
 
     @Transactional(readOnly = true)
     public List<UserAdminResponse> getAllUsers() {
-        return userRepository.findAll().stream().map(user -> {
-            Set<String> screenSkills = user.getSkills().stream()
-                .map(s -> s.getName())
-                .collect(Collectors.toSet());
+        return userRepository.findAll().stream()
+            .map(user -> toUserAdminResponse(user, false))
+            .collect(Collectors.toList());
+    }
 
-            return UserAdminResponse.builder()
-                .id(user.getId())
-                .email(user.getEmail())
-                .fullName(user.getFullName())
-                .role(user.getRole())
-                .avatarUrl(user.getAvatarUrl())
-                .isActive(user.getIsActive())
-                .verified(user.getVerified())
-                .createdAt(user.getCreatedAt())
-                .updatedAt(user.getUpdatedAt())
-                .skills(screenSkills)
-                .balance(user.getBalance())
-                .build();
-        }).collect(Collectors.toList());
+    @Transactional(readOnly = true)
+    public AdminUserPageResponse getUserPage(
+        int page,
+        int size,
+        String query,
+        String role,
+        String status,
+        Boolean verified,
+        String sort,
+        String direction
+    ) {
+        Pageable pageable = PageRequest.of(
+            Math.max(page, 0),
+            Math.min(Math.max(size, 1), 100),
+            buildAdminUserSort(sort, direction)
+        );
+        Page<User> usersPage = userRepository.searchAdminUsers(
+            normalizeSearchQuery(query),
+            normalizeOptionalRole(role),
+            normalizeOptionalActiveStatus(status),
+            verified,
+            pageable
+        );
+
+        return AdminUserPageResponse.builder()
+            .content(usersPage.getContent().stream()
+                .map(user -> toUserAdminResponse(user, false))
+                .collect(Collectors.toList()))
+            .page(usersPage.getNumber())
+            .size(usersPage.getSize())
+            .totalElements(usersPage.getTotalElements())
+            .totalPages(usersPage.getTotalPages())
+            .summary(buildUserSummary())
+            .build();
+    }
+
+    @Transactional(readOnly = true)
+    public UserAdminResponse getUserDetail(Long userId) {
+        User user = userRepository.findById(userId)
+            .orElseThrow(() -> new BusinessException("ERR_USER_01", "User not found", HttpStatus.NOT_FOUND));
+        return toUserAdminResponse(user, true);
     }
 
     @Transactional
@@ -343,6 +380,103 @@ public class AdminService {
 
         setting.setValue(value);
         return systemSettingRepository.save(setting);
+    }
+
+    private UserAdminResponse toUserAdminResponse(User user, boolean includeStats) {
+        Set<String> screenSkills = user.getSkills().stream()
+            .map(skill -> skill.getName())
+            .collect(Collectors.toSet());
+
+        UserAdminResponse.UserAdminResponseBuilder builder = UserAdminResponse.builder()
+            .id(user.getId())
+            .email(user.getEmail())
+            .fullName(user.getFullName())
+            .role(user.getRole())
+            .avatarUrl(user.getAvatarUrl())
+            .profileDescription(user.getProfileDescription())
+            .isActive(user.getIsActive())
+            .verified(user.getVerified())
+            .createdAt(user.getCreatedAt())
+            .updatedAt(user.getUpdatedAt())
+            .skills(screenSkills)
+            .balance(user.getBalance());
+
+        if (includeStats) {
+            builder
+                .projectCount(projectRepository.countByUserId(user.getId()))
+                .bidCount(bidCountForUser(user))
+                .contractCount(contractRepository.countByClientIdOrFreelancerId(user.getId(), user.getId()));
+        }
+
+        return builder.build();
+    }
+
+    private long bidCountForUser(User user) {
+        if ("freelancer".equalsIgnoreCase(user.getRole())) {
+            return bidRepositoryCountByFreelancer(user.getId());
+        }
+        return 0L;
+    }
+
+    private long bidRepositoryCountByFreelancer(Long userId) {
+        return bidRepository.countByFreelancerId(userId);
+    }
+
+    private AdminUserSummaryStatsResponse buildUserSummary() {
+        return AdminUserSummaryStatsResponse.builder()
+            .totalUsers(userRepository.count())
+            .activeUsers(userRepository.countByIsActiveTrue())
+            .lockedUsers(userRepository.countByIsActiveFalse())
+            .verifiedUsers(userRepository.countByVerifiedTrue())
+            .customerUsers(userRepository.countByRole("customer"))
+            .freelancerUsers(userRepository.countByRole("freelancer"))
+            .adminUsers(userRepository.countByRole("admin"))
+            .build();
+    }
+
+    private Sort buildAdminUserSort(String sort, String direction) {
+        String property = switch (sort == null ? "" : sort.trim()) {
+            case "name", "fullName" -> "fullName";
+            case "email" -> "email";
+            case "role" -> "role";
+            case "status", "isActive" -> "isActive";
+            case "verified" -> "verified";
+            case "balance" -> "balance";
+            case "updatedAt" -> "updatedAt";
+            default -> "createdAt";
+        };
+        Sort.Direction sortDirection = "asc".equalsIgnoreCase(direction)
+            ? Sort.Direction.ASC
+            : Sort.Direction.DESC;
+        return Sort.by(sortDirection, property);
+    }
+
+    private String normalizeSearchQuery(String query) {
+        if (query == null || query.trim().isEmpty()) {
+            return null;
+        }
+        return query.trim().toLowerCase(Locale.ROOT);
+    }
+
+    private String normalizeOptionalRole(String role) {
+        if (role == null || role.trim().isEmpty() || "all".equalsIgnoreCase(role.trim())) {
+            return null;
+        }
+        return normalizeManagedRole(role);
+    }
+
+    private Boolean normalizeOptionalActiveStatus(String status) {
+        if (status == null || status.trim().isEmpty() || "all".equalsIgnoreCase(status.trim())) {
+            return null;
+        }
+        String normalizedStatus = status.trim().toLowerCase(Locale.ROOT);
+        if ("active".equals(normalizedStatus)) {
+            return true;
+        }
+        if ("locked".equals(normalizedStatus) || "inactive".equals(normalizedStatus)) {
+            return false;
+        }
+        throw new BusinessException("ERR_SYS_02", "Trạng thái người dùng không hợp lệ", HttpStatus.BAD_REQUEST);
     }
 
     private String normalizeManagedRole(String role) {
