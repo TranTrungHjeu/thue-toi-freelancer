@@ -27,6 +27,7 @@ import com.thuetoi.dto.response.admin.AdminKycResponse;
 import com.thuetoi.dto.response.admin.AdminProjectResponse;
 import com.thuetoi.dto.response.admin.AdminReportResponse;
 import com.thuetoi.dto.response.admin.AdminStatsResponse;
+import com.thuetoi.dto.response.admin.AdminUserPageResponse;
 import com.thuetoi.dto.response.admin.AdminWithdrawalResponse;
 import com.thuetoi.dto.response.admin.NotificationDeliveryLogResponse;
 import com.thuetoi.dto.response.admin.SystemHealthResponse;
@@ -111,6 +112,28 @@ public class AdminController {
     @GetMapping("/users")
     public ApiResponse<List<UserAdminResponse>> getAllUsers() {
         return ApiResponse.success("Danh sách người dùng", adminService.getAllUsers());
+    }
+
+    @GetMapping("/users/page")
+    public ApiResponse<AdminUserPageResponse> getUserPage(
+        @RequestParam(defaultValue = "0") int page,
+        @RequestParam(defaultValue = "20") int size,
+        @RequestParam(required = false) String q,
+        @RequestParam(required = false) String role,
+        @RequestParam(required = false) String status,
+        @RequestParam(required = false) Boolean verified,
+        @RequestParam(defaultValue = "createdAt") String sort,
+        @RequestParam(defaultValue = "desc") String direction
+    ) {
+        return ApiResponse.success(
+            "Danh sách người dùng",
+            adminService.getUserPage(page, size, q, role, status, verified, sort, direction)
+        );
+    }
+
+    @GetMapping("/users/{userId}")
+    public ApiResponse<UserAdminResponse> getUserDetail(@PathVariable Long userId) {
+        return ApiResponse.success("Chi tiết người dùng", adminService.getUserDetail(userId));
     }
 
     @PutMapping("/users/{userId}/toggle-status")

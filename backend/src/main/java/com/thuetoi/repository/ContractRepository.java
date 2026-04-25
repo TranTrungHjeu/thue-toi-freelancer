@@ -11,6 +11,7 @@ import java.util.Optional;
 public interface ContractRepository extends JpaRepository<Contract, Long> {
     List<Contract> findByClientIdOrFreelancerId(Long clientId, Long freelancerId);
     Optional<Contract> findByProjectId(Long projectId);
+    long countByClientIdOrFreelancerId(Long clientId, Long freelancerId);
 
     @Query("SELECT COALESCE(SUM(c.totalAmount), 0) FROM Contract c WHERE c.status <> 'cancelled'")
     BigDecimal calculateTotalGmv();

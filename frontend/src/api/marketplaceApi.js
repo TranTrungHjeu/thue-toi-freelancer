@@ -25,6 +25,14 @@ export const marketplaceApi = {
   getProjectsByUser: (userId) => axiosClient.get(`/v1/projects/user/${userId}`),
   createProject: (payload) => axiosClient.post('/v1/projects', payload),
   updateProject: (projectId, payload) => axiosClient.put(`/v1/projects/${projectId}`, payload),
+  uploadFiles: (context, files, params = {}) => {
+    const formData = new FormData();
+    files.forEach((file) => formData.append('files', file));
+    return axiosClient.post(`/v1/files/${context}`, formData, {
+      params,
+      headers: { 'Content-Type': 'multipart/form-data' },
+    });
+  },
   getSkillCatalog: () => axiosClient.get('/v1/skills'),
   getBidsByProject: (projectId) => axiosClient.get(`/v1/bids/project/${projectId}`),
   getMyBids: () => axiosClient.get('/v1/bids/my'),

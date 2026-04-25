@@ -72,6 +72,7 @@ CREATE TABLE projects (
     budget_min DECIMAL(12, 2) COMMENT 'Ngân sách tối thiểu',
     budget_max DECIMAL(12, 2) COMMENT 'Ngân sách tối đa',
     deadline DATETIME COMMENT 'Thời hạn hoàn thành mong muốn',
+    attachments TEXT COMMENT 'File đính kèm của project',
     status ENUM(
         'open',
         'in_progress',

@@ -10,6 +10,7 @@ Tài liệu này chốt các rule nghiệp vụ chính cho các module `project`
 - `in_progress` và `completed` được đồng bộ từ luồng hợp đồng.
 - Admin chỉ được moderation project về `open` hoặc `cancelled`.
 - Admin không được ép project sang `in_progress` hoặc `completed`, vì đây là trạng thái do contract flow quản lý.
+- Project có thể có tối đa 5 file đính kèm, chỉ owner customer được upload/cập nhật metadata.
 
 ## 2. Bid
 
@@ -20,6 +21,7 @@ Tài liệu này chốt các rule nghiệp vụ chính cho các module `project`
 - `accepted` chỉ được tạo ra từ endpoint chấp nhận bid của customer.
 - Freelancer chỉ được rút bid của chính mình (`withdrawn`) khi bid còn `pending`.
 - Khách hàng chỉ được từ chối bid (`rejected`) khi bid còn `pending`.
+- Bid có thể có tối đa 5 file đính kèm; chỉ freelancer được upload cho project đang `open` và không phải project của chính mình.
 
 ## 3. Contract
 
@@ -46,6 +48,17 @@ Tài liệu này chốt các rule nghiệp vụ chính cho các module `project`
 - Chỉ hợp đồng đang `in_progress` mới cho phép gửi tin nhắn mới.
 - `message_type` hợp lệ cho client gồm: `text`, `file`.
 - Client không được tự gửi `sender_id`; backend phải lấy từ JWT principal.
+- Tin nhắn `file` bắt buộc có metadata file thật trong `attachments`; chỉ participant của contract `in_progress` được upload/gửi file.
+
+## 5.1. File Attachments
+
+- Frontend không nhập URL thủ công cho project, bid hoặc chat file.
+- Upload file phải đi qua `POST /api/v1/files/{context}` trước, sau đó gửi `FileUploadResponse[]` vào request nghiệp vụ.
+- `context` hợp lệ: `projects`, `bids`, `messages`.
+- Metadata lưu trong cột `attachments` dạng JSON `TEXT`, gồm `url`, `name`, `contentType`, `size`.
+- File hợp lệ: `jpg`, `jpeg`, `png`, `webp`, `pdf`, `docx`, `xlsx`, `pptx`, `txt`.
+- Mỗi file tối đa 5 MB; mỗi entity tối đa 5 file; request multipart tối đa 10 MB.
+- Backend phải trả `ERR_FILE_01` cho file/metadata không hợp lệ, `ERR_FILE_02` khi storage upload thất bại, `ERR_FILE_03` khi context không hợp lệ.
 
 ## 6. Review
 

@@ -15,6 +15,14 @@ const adminApi = {
     return axiosClient.get('/v1/admin/users');
   },
 
+  getUserPage: (params = {}) => {
+    return axiosClient.get('/v1/admin/users/page', { params });
+  },
+
+  getUserDetail: (userId) => {
+    return axiosClient.get(`/v1/admin/users/${userId}`);
+  },
+
   /**
    * Khóa hoặc mở khóa tài khoản
    * @param {number} userId ID người dùng

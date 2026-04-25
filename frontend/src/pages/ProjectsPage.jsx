@@ -9,6 +9,7 @@ import InlineErrorBlock from '../components/common/InlineErrorBlock';
 import SearchInput from '../components/common/SearchInput';
 import Select from '../components/common/Select';
 import TagInput from '../components/common/TagInput';
+import FileUpload from '../components/common/FileUpload';
 import StatMetricCard from '../components/common/StatMetricCard';
 import InfoPanel from '../components/common/InfoPanel';
 import Spinner from '../components/common/Spinner';
@@ -26,6 +27,7 @@ import {
   getBidStatusMeta,
   getProjectStatusMeta,
 } from '../utils/formatters';
+import { formatAttachmentSize, normalizeAttachments } from '../utils/attachments';
 import { splitApiFormError } from '../utils/formError';
 import ReportModal from '../components/common/ReportModal';
 import { WarningTriangle } from 'iconoir-react';
@@ -37,12 +39,15 @@ const initialProjectForm = {
   budgetMax: '',
   deadline: '',
   skills: [],
+  attachments: [],
+  existingAttachments: [],
 };
 
 const initialBidForm = {
   price: '',
   estimatedTime: '',
   message: '',
+  attachments: [],
 };
 
 const getProjectsSupplementaryCopy = (locale) => {
@@ -65,6 +70,9 @@ const getProjectsSupplementaryCopy = (locale) => {
       marketplaceLoading: 'Refreshing marketplace data...',
       skillCatalogLoading: 'Loading skill catalog...',
       skillsCaption: 'Skills',
+      attachmentsCaption: 'Attachments',
+      projectAttachmentsLabel: 'Project attachments',
+      bidAttachmentsLabel: 'Proposal attachments',
       marketplaceFiltersEmptyTitle: 'No matching projects',
       marketplaceFiltersEmptyDescription: 'Try clearing some filters or choosing a different status and skill combination.',
     };
@@ -88,6 +96,9 @@ const getProjectsSupplementaryCopy = (locale) => {
     marketplaceLoading: 'Đang làm mới dữ liệu marketplace...',
     skillCatalogLoading: 'Đang tải danh mục kỹ năng...',
     skillsCaption: 'Kỹ năng',
+    attachmentsCaption: 'Tệp đính kèm',
+    projectAttachmentsLabel: 'Tệp đính kèm dự án',
+    bidAttachmentsLabel: 'Tệp đính kèm báo giá',
     marketplaceFiltersEmptyTitle: 'Không có dự án phù hợp',
     marketplaceFiltersEmptyDescription: 'Hãy thử bỏ bớt bộ lọc hoặc chọn tổ hợp trạng thái và kỹ năng khác.',
   };
@@ -143,6 +154,38 @@ const toIsoDateOrNull = (value) => {
   return date.toISOString();
 };
 
+const AttachmentLinks = ({ attachments, caption }) => {
+  const normalizedAttachments = normalizeAttachments(attachments);
+
+  if (normalizedAttachments.length === 0) {
+    return null;
+  }
+
+  return (
+    <div className="mt-4 flex flex-col gap-2">
+      {caption && (
+        <Caption className="text-[11px] uppercase tracking-[0.18em] text-slate-500">
+          {caption}
+        </Caption>
+      )}
+      <div className="flex flex-wrap gap-2">
+        {normalizedAttachments.map((attachment, index) => (
+          <a
+            key={`${attachment.url}-${index}`}
+            href={attachment.url}
+            target="_blank"
+            rel="noreferrer"
+            className="border border-slate-300 bg-white px-3 py-2 text-xs font-semibold text-primary-700 underline-offset-2 hover:border-primary-500 hover:underline"
+          >
+            {attachment.name}
+            {formatAttachmentSize(attachment.size) ? ` - ${formatAttachmentSize(attachment.size)}` : ''}
+          </a>
+        ))}
+      </div>
+    </div>
+  );
+};
+
 const buildProjectUpdatePayload = (project, statusOverride) => ({
   title: project.title,
   description: project.description || '',
@@ -151,6 +194,7 @@ const buildProjectUpdatePayload = (project, statusOverride) => ({
   deadline: toIsoDateOrNull(project.deadline),
   status: statusOverride ?? project.status,
   skills: normalizeSkillNames(project.skills),
+  attachments: normalizeAttachments(project.attachments),
 });
 
 const ProjectsPage = () => {
@@ -290,6 +334,7 @@ const ProjectsPage = () => {
     () => skillCatalog.filter((skill) => !marketplaceSkills.includes(skill)).slice(0, 10),
     [marketplaceSkills, skillCatalog],
   );
+  const projectAttachmentSlots = Math.max(0, 5 - normalizeAttachments(projectForm.existingAttachments).length);
 
   const handleProjectFieldChange = (field) => (event) => {
     setProjectForm((previous) => ({
@@ -309,6 +354,15 @@ const ProjectsPage = () => {
     setBidFormError('');
   };
 
+  const uploadSelectedFiles = useCallback(async (context, files, params = {}) => {
+    if (!files?.length) {
+      return [];
+    }
+
+    const response = await marketplaceApi.uploadFiles(context, files, params);
+    return normalizeAttachments(response.data || []);
+  }, []);
+
   const resetProjectComposer = () => {
     setProjectForm(initialProjectForm);
     setEditingProjectId(null);
@@ -325,6 +379,8 @@ const ProjectsPage = () => {
       budgetMax: project.budgetMax ?? '',
       deadline: formatDateForInput(project.deadline),
       skills: normalizeSkillNames(project.skills),
+      attachments: [],
+      existingAttachments: normalizeAttachments(project.attachments),
     });
     setProjectFieldErrors({});
     setProjectFormError('');
@@ -336,16 +392,25 @@ const ProjectsPage = () => {
     setProjectFieldErrors({});
     setProjectFormError('');
 
-    const payload = {
-      title: projectForm.title,
-      description: projectForm.description,
-      budgetMin: Number(projectForm.budgetMin),
-      budgetMax: Number(projectForm.budgetMax),
-      deadline: toIsoDateOrNull(projectForm.deadline),
-      skills: normalizeSkillNames(projectForm.skills),
-    };
-
     try {
+      const uploadedAttachments = await uploadSelectedFiles(
+        'projects',
+        projectForm.attachments,
+        editingProjectId ? { projectId: editingProjectId } : {},
+      );
+      const payload = {
+        title: projectForm.title,
+        description: projectForm.description,
+        budgetMin: Number(projectForm.budgetMin),
+        budgetMax: Number(projectForm.budgetMax),
+        deadline: toIsoDateOrNull(projectForm.deadline),
+        skills: normalizeSkillNames(projectForm.skills),
+        attachments: [
+          ...normalizeAttachments(projectForm.existingAttachments),
+          ...uploadedAttachments,
+        ],
+      };
+
       if (editingProjectId) {
         await marketplaceApi.updateProject(editingProjectId, payload);
         addToast(t('toasts.projects.updateSuccess'), 'success');
@@ -439,12 +504,17 @@ const ProjectsPage = () => {
     setBidFieldErrors({});
     setBidFormError('');
     try {
+      const uploadedAttachments = await uploadSelectedFiles(
+        'bids',
+        bidForm.attachments,
+        { projectId: selectedProject.id },
+      );
       await marketplaceApi.createBid({
         projectId: selectedProject.id,
         price: Number(bidForm.price),
         estimatedTime: bidForm.estimatedTime,
         message: bidForm.message,
-        attachments: '',
+        attachments: uploadedAttachments,
       });
       addToast(t('toasts.projects.submitSuccess'), 'success');
       setBidForm(initialBidForm);
@@ -580,6 +650,24 @@ const ProjectsPage = () => {
                     </div>
                   </div>
                 )}
+                {editingProjectId && (
+                  <AttachmentLinks
+                    attachments={projectForm.existingAttachments}
+                    caption={extraCopy.attachmentsCaption}
+                  />
+                )}
+                <FileUpload
+                  label={extraCopy.projectAttachmentsLabel}
+                  value={projectForm.attachments}
+                  onChange={(attachments) => {
+                    setProjectForm((previous) => ({ ...previous, attachments }));
+                    setProjectFieldErrors((previous) => ({ ...previous, attachments: '' }));
+                    setProjectFormError('');
+                  }}
+                  maxFiles={projectAttachmentSlots}
+                  disabled={submittingProject || projectAttachmentSlots === 0}
+                  error={projectFieldErrors.attachments}
+                />
                 <Button type="submit" disabled={submittingProject}>
                   {submittingProject
                     ? (editingProjectId ? copy.customerComposer.submitUpdating : copy.customerComposer.submitCreating)
@@ -640,6 +728,10 @@ const ProjectsPage = () => {
                           </div>
                         </div>
                       )}
+                      <AttachmentLinks
+                        attachments={project.attachments}
+                        caption={extraCopy.attachmentsCaption}
+                      />
                       <div className="mt-4 flex flex-wrap gap-3">
                         <Button variant="outline" onClick={() => loadProjectBids(project)}>
                           {copy.customerList.viewBids}
@@ -698,6 +790,10 @@ const ProjectsPage = () => {
                   {getProjectStatusMeta(selectedProject.status, locale).label}
                 </Badge>
               </div>
+              <AttachmentLinks
+                attachments={selectedProject.attachments}
+                caption={extraCopy.attachmentsCaption}
+              />
               <div className="mt-5 flex flex-col gap-3">
                 {visibleProjectBidsLoading && (
                   <Text className="text-sm text-slate-500">
@@ -734,6 +830,10 @@ const ProjectsPage = () => {
                       <Text className="mt-2 text-sm text-slate-500">
                         {t('projectsPage.projectBids.estimatedTime', { value: bid.estimatedTime || copy.projectBids.estimatedFallback })}
                       </Text>
+                      <AttachmentLinks
+                        attachments={bid.attachments}
+                        caption={extraCopy.attachmentsCaption}
+                      />
                       {canProcessBid && (
                         <div className="mt-4 flex flex-wrap gap-3">
                           <Button disabled={isHandlingBid} onClick={() => handleAcceptBid(bid.id)}>
@@ -873,6 +973,10 @@ const ProjectsPage = () => {
                           </div>
                         </div>
                       )}
+                      <AttachmentLinks
+                        attachments={project.attachments}
+                        caption={extraCopy.attachmentsCaption}
+                      />
                       <div className="mt-4">
                         <Button variant="outline" onClick={() => setSelectedProject(project)}>
                           {copy.marketplace.select}
@@ -917,6 +1021,18 @@ const ProjectsPage = () => {
                   <Input label={copy.bidComposer.priceLabel} type="number" min="0" value={bidForm.price} onChange={handleBidFieldChange('price')} error={bidFieldErrors.price} />
                   <Input label={copy.bidComposer.estimatedLabel} placeholder={copy.bidComposer.estimatedPlaceholder} value={bidForm.estimatedTime} onChange={handleBidFieldChange('estimatedTime')} error={bidFieldErrors.estimatedTime} />
                   <Textarea label={copy.bidComposer.messageLabel} placeholder={copy.bidComposer.messagePlaceholder} value={bidForm.message} onChange={handleBidFieldChange('message')} error={bidFieldErrors.message} />
+                  <FileUpload
+                    label={extraCopy.bidAttachmentsLabel}
+                    value={bidForm.attachments}
+                    onChange={(attachments) => {
+                      setBidForm((previous) => ({ ...previous, attachments }));
+                      setBidFieldErrors((previous) => ({ ...previous, attachments: '' }));
+                      setBidFormError('');
+                    }}
+                    maxFiles={5}
+                    disabled={submittingBid}
+                    error={bidFieldErrors.attachments}
+                  />
                   <Button type="submit" disabled={submittingBid}>
                     {submittingBid ? copy.bidComposer.submitting : copy.bidComposer.submit}
                   </Button>
@@ -957,6 +1073,10 @@ const ProjectsPage = () => {
                       <Text className="mt-2 text-sm text-slate-500">
                         {t('projectsPage.myBids.estimatedTime', { value: bid.estimatedTime || copy.myBids.estimatedFallback })}
                       </Text>
+                      <AttachmentLinks
+                        attachments={bid.attachments}
+                        caption={extraCopy.attachmentsCaption}
+                      />
                       {bid.status === 'pending' && (
                         <div className="mt-4">
                           <Button disabled={isHandlingBid} variant="danger" onClick={() => handleWithdrawBid(bid.id)}>

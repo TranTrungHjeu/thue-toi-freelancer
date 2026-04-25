@@ -3,6 +3,8 @@ package com.thuetoi.dto.request;
 import jakarta.validation.constraints.NotNull;
 import lombok.Data;
 
+import java.util.List;
+
 /**
  * DTO gửi tin nhắn trong hợp đồng.
  */
@@ -13,5 +15,5 @@ public class MessageRequest {
 
     private String messageType;
     private String content;
-    private String attachments;
+    private List<FileAttachmentRequest> attachments;
 }

@@ -1,6 +1,7 @@
 package com.thuetoi.service;
 
 import com.thuetoi.dto.request.MessageRequest;
+import com.thuetoi.dto.request.FileAttachmentRequest;
 import com.thuetoi.entity.Contract;
 import com.thuetoi.entity.Message;
 import com.thuetoi.exception.BusinessException;
@@ -19,6 +20,8 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import java.util.List;
+
 @ExtendWith(MockitoExtension.class)
 class MessageServiceTest {
 
@@ -30,6 +33,9 @@ class MessageServiceTest {
 
     @Mock
     private NotificationService notificationService;
+
+    @Mock
+    private AttachmentMetadataService attachmentMetadataService;
 
     @InjectMocks
     private MessageService messageService;
@@ -84,7 +90,6 @@ class MessageServiceTest {
         MessageRequest request = new MessageRequest();
         request.setContractId(5L);
         request.setMessageType("file");
-        request.setAttachments("   ");
 
         when(contractAccessService.requireAccessibleContract(5L, 9L)).thenReturn(contract(5L, "in_progress"));
 
@@ -99,6 +104,31 @@ class MessageServiceTest {
         verify(messageRepository, never()).save(any(Message.class));
     }
 
+    @Test
+    void sendMessageStoresFileMetadataJsonForFileMessage() {
+        MessageRequest request = new MessageRequest();
+        request.setContractId(5L);
+        request.setMessageType("file");
+        request.setAttachments(List.of(attachment()));
+
+        Contract contract = contract(5L, "in_progress");
+        when(contractAccessService.requireAccessibleContract(5L, 9L)).thenReturn(contract);
+        when(attachmentMetadataService.serialize(request.getAttachments())).thenReturn("[{\"url\":\"https://res.cloudinary.com/demo/file.pdf\"}]");
+        when(messageRepository.save(any(Message.class))).thenAnswer(invocation -> invocation.getArgument(0));
+
+        Message message = messageService.sendMessage(9L, request);
+
+        assertThat(message.getMessageType()).isEqualTo("file");
+        assertThat(message.getAttachments()).isEqualTo("[{\"url\":\"https://res.cloudinary.com/demo/file.pdf\"}]");
+        verify(notificationService).createNotificationForUser(
+            1L,
+            "contract",
+            "Tin nhắn mới trong hợp đồng",
+            "Bạn có tin nhắn mới trong contract #5.",
+            "/workspace/contracts"
+        );
+    }
+
     private Contract contract(Long id, String status) {
         Contract contract = new Contract();
         contract.setId(id);
@@ -106,5 +136,14 @@ class MessageServiceTest {
         contract.setClientId(1L);
         contract.setFreelancerId(9L);
         return contract;
+    }
+
+    private FileAttachmentRequest attachment() {
+        FileAttachmentRequest attachment = new FileAttachmentRequest();
+        attachment.setUrl("https://res.cloudinary.com/demo/file.pdf");
+        attachment.setName("file.pdf");
+        attachment.setContentType("application/pdf");
+        attachment.setSize(1200L);
+        return attachment;
     }
 }

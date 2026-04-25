@@ -30,6 +30,9 @@ public class Project extends BaseEntity {
 
     private LocalDateTime deadline;
 
+    @Column(columnDefinition = "TEXT")
+    private String attachments;
+
     @Column(nullable = false)
     private String status; // open, in_progress, completed, cancelled
 
