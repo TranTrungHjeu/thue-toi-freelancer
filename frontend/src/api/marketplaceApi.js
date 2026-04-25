@@ -59,6 +59,10 @@ export const marketplaceApi = {
   // --- KYC (User-side) ---
   requestKyc: () => axiosClient.post('/v1/kyc/request'),
   getKycStatus: () => axiosClient.get('/v1/kyc/my-status'),
+
+  // --- Wallet (SePay-funded escrow + balance) ---
+  getWalletMe: () => axiosClient.get('/v1/wallet/me'),
+  getWalletLedger: () => axiosClient.get('/v1/wallet/me/ledger'),
 };
 
 export default marketplaceApi;

@@ -17,7 +17,7 @@ import { useToast } from '../hooks/useToast';
 import { useI18n } from '../hooks/useI18n';
 import authApi from '../api/authApi';
 import marketplaceApi from '../api/marketplaceApi';
-import { formatDateTime, formatRole } from '../utils/formatters';
+import { formatCurrency, formatDateTime, formatRole } from '../utils/formatters';
 import { splitApiFormError } from '../utils/formError';
 
 const MAX_SKILLS = 15;
@@ -51,6 +51,7 @@ const getProfilePageCopy = (locale) => {
       refreshing: 'Reloading profile...',
       tabPublic: 'Public Profile',
       tabSecurity: 'Security & Identity',
+      tabWallet: 'Wallet & Escrow',
       editorCaption: 'Editable profile',
       editorTitle: 'Public Information',
       editorErrorTitle: 'Could not save profile details',
@@ -113,6 +114,7 @@ const getProfilePageCopy = (locale) => {
     refreshing: 'Đang tải lại...',
     tabPublic: 'Hồ sơ công khai',
     tabSecurity: 'Tài khoản & Bảo mật',
+    tabWallet: 'Ví & Escrow',
     editorCaption: 'Hồ sơ có thể chỉnh sửa',
     editorTitle: 'Thông tin công khai',
     editorErrorTitle: 'Không thể lưu biểu mẫu',
@@ -208,6 +210,11 @@ const ProfilePage = () => {
   const [emailFieldErrors, setEmailFieldErrors] = useState({});
   const [emailFormError, setEmailFormError] = useState('');
 
+  const [walletBalance, setWalletBalance] = useState(null);
+  const [walletLedger, setWalletLedger] = useState([]);
+  const [walletLoading, setWalletLoading] = useState(false);
+  const [walletError, setWalletError] = useState('');
+
   const fetchKycStatus = useCallback(async () => {
     try {
       const res = await marketplaceApi.getKycStatus();
@@ -256,6 +263,29 @@ const ProfilePage = () => {
   useEffect(() => {
     loadSkillCatalog();
   }, [loadSkillCatalog]);
+
+  const loadWallet = useCallback(async () => {
+    setWalletLoading(true);
+    setWalletError('');
+    try {
+      const [me, ledger] = await Promise.all([
+        marketplaceApi.getWalletMe(),
+        marketplaceApi.getWalletLedger(),
+      ]);
+      setWalletBalance(me?.data?.balance ?? 0);
+      setWalletLedger(Array.isArray(ledger?.data) ? ledger.data : []);
+    } catch (error) {
+      setWalletError(error?.response?.data?.message || 'Không thể tải ví.');
+    } finally {
+      setWalletLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    if (activeTab === 'WALLET') {
+      loadWallet();
+    }
+  }, [activeTab, loadWallet]);
 
   const handleRequestKyc = async () => {
     setRequestingKyc(true);
@@ -497,6 +527,16 @@ const ProfilePage = () => {
               }`}
             >
               {copy.tabSecurity}
+            </button>
+            <button
+              onClick={() => setActiveTab('WALLET')}
+              className={`px-4 py-3 text-sm font-bold uppercase tracking-wider transition-colors border-b-2 -mb-[2px] ${
+                activeTab === 'WALLET'
+                  ? 'border-primary-600 text-primary-700 bg-primary-50/50'
+                  : 'border-transparent text-slate-500 hover:text-slate-800 hover:bg-slate-50'
+              }`}
+            >
+              {copy.tabWallet}
             </button>
           </div>
         </Card>
@@ -813,6 +853,116 @@ const ProfilePage = () => {
             </Card>
           </section>
         </div>
+        )}
+
+        {activeTab === 'WALLET' && (
+          <section className="flex flex-col gap-6">
+            <Card className="border-2 border-slate-200 bg-white p-6 md:p-8">
+              <div className="flex items-start justify-between gap-4">
+                <div>
+                  <Caption className="text-[11px] uppercase tracking-[0.18em] text-primary-700">
+                    {locale === 'en' ? 'SePay-funded balance' : 'Số dư từ SePay'}
+                  </Caption>
+                  <H2 className="mt-2 text-2xl">{copy.tabWallet}</H2>
+                  <Text className="mt-2 text-sm text-slate-500">
+                    {locale === 'en'
+                      ? 'Funds released to you from completed milestones, after platform fees.'
+                      : 'Số tiền được giải ngân cho bạn từ các milestone đã hoàn thành, sau khi trừ phí sàn.'}
+                  </Text>
+                </div>
+                <Button type="button" variant="outline" onClick={loadWallet} disabled={walletLoading}>
+                  {walletLoading ? copy.refreshing : copy.refresh}
+                </Button>
+              </div>
+
+              {walletError && (
+                <InlineErrorBlock title={locale === 'en' ? 'Wallet error' : 'Lỗi ví'}>
+                  {walletError}
+                </InlineErrorBlock>
+              )}
+
+              <div className="mt-6 grid gap-4 sm:grid-cols-2">
+                <InfoPanel className="border-2 border-primary-200 bg-primary-50/50">
+                  <Caption className="text-[11px] uppercase tracking-[0.18em] text-primary-700">
+                    {locale === 'en' ? 'Available balance' : 'Số dư khả dụng'}
+                  </Caption>
+                  <div className="mt-2 text-3xl font-bold tracking-tight text-secondary-900">
+                    {walletLoading && walletBalance == null ? '...' : formatCurrency(walletBalance ?? 0, locale)}
+                  </div>
+                  <Text className="mt-2 text-xs text-slate-500">
+                    {locale === 'en'
+                      ? 'Withdrawal requests are processed by the admin team.'
+                      : 'Yêu cầu rút tiền được xử lý bởi đội ngũ quản trị.'}
+                  </Text>
+                </InfoPanel>
+                <InfoPanel>
+                  <Caption className="text-[11px] uppercase tracking-[0.18em] text-slate-500">
+                    {locale === 'en' ? 'Ledger entries' : 'Số mục sổ cái'}
+                  </Caption>
+                  <div className="mt-2 text-3xl font-bold tracking-tight text-secondary-900">
+                    {walletLedger.length}
+                  </div>
+                  <Text className="mt-2 text-xs text-slate-500">
+                    {locale === 'en'
+                      ? 'Immutable accounting log of every escrow movement.'
+                      : 'Nhật ký kế toán bất biến cho mọi giao dịch escrow.'}
+                  </Text>
+                </InfoPanel>
+              </div>
+            </Card>
+
+            <Card className="border-2 border-slate-200 bg-white p-6 md:p-8">
+              <Caption className="text-[11px] uppercase tracking-[0.18em] text-primary-700">
+                {locale === 'en' ? 'Ledger' : 'Sổ cái'}
+              </Caption>
+              <H2 className="mt-2 text-xl">
+                {locale === 'en' ? 'Wallet ledger entries' : 'Lịch sử biến động ví'}
+              </H2>
+              <div className="mt-5 flex flex-col gap-3">
+                {walletLoading && walletLedger.length === 0 && (
+                  <Text className="text-sm text-slate-500">
+                    {locale === 'en' ? 'Loading wallet activity...' : 'Đang tải lịch sử ví...'}
+                  </Text>
+                )}
+                {!walletLoading && walletLedger.length === 0 && !walletError && (
+                  <InfoPanel>
+                    <Text className="text-sm text-slate-500">
+                      {locale === 'en'
+                        ? 'No ledger entries yet. Once a milestone is released, entries will appear here.'
+                        : 'Chưa có biến động. Khi milestone được giải ngân, các mục sẽ hiển thị tại đây.'}
+                    </Text>
+                  </InfoPanel>
+                )}
+                {walletLedger.map((entry, index) => {
+                  const type = (entry.entryType || '').toLowerCase();
+                  const badgeColor =
+                    type === 'release_milestone' ? 'success'
+                      : type === 'platform_fee' ? 'warning'
+                      : type === 'escrow_in' ? 'info'
+                      : 'info';
+                  return (
+                    <InfoPanel key={`${entry.contractId || 'x'}-${entry.createdAt}-${index}`}>
+                      <div className="flex items-start justify-between gap-3">
+                        <div>
+                          <Badge color={badgeColor}>{entry.entryType}</Badge>
+                          <Text className="mt-2 text-sm text-slate-700">{entry.description}</Text>
+                          <Caption className="mt-2 text-xs text-slate-500">
+                            {entry.contractId
+                              ? `${locale === 'en' ? 'Contract' : 'Hợp đồng'} #${entry.contractId} · `
+                              : ''}
+                            {formatDateTime(entry.createdAt, locale)}
+                          </Caption>
+                        </div>
+                        <div className="text-right text-sm font-bold text-secondary-900">
+                          {formatCurrency(entry.amount, locale)}
+                        </div>
+                      </div>
+                    </InfoPanel>
+                  );
+                })}
+              </div>
+            </Card>
+          </section>
         )}
       </div>
     </div>

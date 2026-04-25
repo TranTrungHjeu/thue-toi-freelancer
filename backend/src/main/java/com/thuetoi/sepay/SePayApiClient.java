@@ -43,8 +43,44 @@ public class SePayApiClient {
         this.restTemplate.setUriTemplateHandler(new DefaultUriBuilderFactory(props.getBaseUrl()));
     }
 
+    public boolean isQrOnly() {
+        return "qr".equalsIgnoreCase(props.getMode());
+    }
+
+    public SePayProperties getProps() {
+        return props;
+    }
+
     public boolean isConfigured() {
+        if (isQrOnly()) {
+            return !props.getAccountNumber().isBlank()
+                && !props.getBankCode().isBlank()
+                && !props.getWebhookApiKey().isBlank();
+        }
         return !props.getApiToken().isBlank() && !props.getBankAccountXid().isBlank();
+    }
+
+    /**
+     * QR-only mode: build a VietQR image URL (e.g. https://qr.sepay.vn/img?...).
+     * Customer pays by scanning; SePay webhook confirms via order_code memo.
+     */
+    public String buildVietQrUrl(String orderCode, long amountVnd) {
+        StringBuilder sb = new StringBuilder(props.getQrImageBaseUrl());
+        sb.append("?acc=").append(urlEncode(props.getAccountNumber()));
+        sb.append("&bank=").append(urlEncode(props.getBankCode()));
+        sb.append("&amount=").append(amountVnd);
+        sb.append("&des=").append(urlEncode(orderCode));
+        sb.append("&template=compact");
+        return sb.toString();
+    }
+
+    private static String urlEncode(String s) {
+        if (s == null) return "";
+        try {
+            return java.net.URLEncoder.encode(s, java.nio.charset.StandardCharsets.UTF_8);
+        } catch (Exception e) {
+            return s;
+        }
     }
 
     /**

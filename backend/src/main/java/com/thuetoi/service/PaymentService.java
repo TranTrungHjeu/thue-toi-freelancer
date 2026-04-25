@@ -65,7 +65,10 @@ public class PaymentService {
      */
     public PaymentOrder startCheckoutForBid(long bidId, long customerId) {
         if (!sePayApiClient.isConfigured()) {
-            throw new BusinessException("ERR_PAYMENT_03", "Thiếu cấu hình SePay (API token, bank account xid).", HttpStatus.SERVICE_UNAVAILABLE);
+            String hint = sePayApiClient.isQrOnly()
+                ? "Thiếu cấu hình SePay QR (account number, bank code, webhook secret)."
+                : "Thiếu cấu hình SePay (API token, bank account xid).";
+            throw new BusinessException("ERR_PAYMENT_03", hint, HttpStatus.SERVICE_UNAVAILABLE);
         }
         JsonNode sepay;
         String orderCode;
@@ -118,13 +121,15 @@ public class PaymentService {
                 project.getId(), List.of(ST_PENDING)
             );
             for (PaymentOrder p : oldPend) {
-                if (p.getSepayOrderXid() != null) {
+                if (!sePayApiClient.isQrOnly() && p.getSepayOrderXid() != null) {
                     sePayApiClient.cancelOrder(p.getSepayOrderXid());
                 }
                 p.setStatus(ST_CANCELLED);
                 paymentOrderRepository.save(p);
             }
-            sepay = sePayApiClient.createOrder(orderCode, amountVnd);
+            sepay = sePayApiClient.isQrOnly()
+                ? null
+                : sePayApiClient.createOrder(orderCode, amountVnd);
         }
         return persistCheckoutInTx(bidId, customerId, orderCode, sepay);
     }
@@ -136,30 +141,42 @@ public class PaymentService {
         User customer = getRequiredUser(customerId);
         ensureCustomerRole(customer);
         Project project = bid.getProject();
-        String resolvedCode = (sepay.get("order_code") != null && !sepay.get("order_code").isNull())
-            ? sepay.get("order_code").asText()
-            : null;
         PaymentOrder po = new PaymentOrder();
-        po.setOrderCode(resolvedCode != null ? resolvedCode : requestedOrderCode);
         po.setProvider("sepay");
         po.setBid(bid);
         po.setProjectId(project.getId());
         po.setCustomer(customer);
         po.setAmount(bid.getPrice());
         po.setStatus(ST_PENDING);
-        po.setSepayOrderXid(getText(sepay, "id"));
-        po.setVaNumber(getText(sepay, "va_number"));
-        po.setVaHolderName(getText(sepay, "va_holder_name"));
-        po.setBankName(getText(sepay, "bank_name"));
-        po.setAccountNumber(getText(sepay, "account_number"));
-        if (sepay.get("qr_code") != null && !sepay.get("qr_code").isNull()) {
-            po.setQrCode(sepay.get("qr_code").asText());
-        }
-        if (sepay.get("qr_code_url") != null && !sepay.get("qr_code_url").isNull()) {
-            po.setQrCodeUrl(sepay.get("qr_code_url").asText());
-        }
-        if (sepay.get("expired_at") != null && !sepay.get("expired_at").isNull()) {
-            po.setExpiredAt(parseSePayTime(getText(sepay, "expired_at")));
+        if (sepay != null) {
+            // VA mode (SePay v2 returned an order)
+            String resolvedCode = (sepay.get("order_code") != null && !sepay.get("order_code").isNull())
+                ? sepay.get("order_code").asText()
+                : null;
+            po.setOrderCode(resolvedCode != null ? resolvedCode : requestedOrderCode);
+            po.setSepayOrderXid(getText(sepay, "id"));
+            po.setVaNumber(getText(sepay, "va_number"));
+            po.setVaHolderName(getText(sepay, "va_holder_name"));
+            po.setBankName(getText(sepay, "bank_name"));
+            po.setAccountNumber(getText(sepay, "account_number"));
+            if (sepay.get("qr_code") != null && !sepay.get("qr_code").isNull()) {
+                po.setQrCode(sepay.get("qr_code").asText());
+            }
+            if (sepay.get("qr_code_url") != null && !sepay.get("qr_code_url").isNull()) {
+                po.setQrCodeUrl(sepay.get("qr_code_url").asText());
+            }
+            if (sepay.get("expired_at") != null && !sepay.get("expired_at").isNull()) {
+                po.setExpiredAt(parseSePayTime(getText(sepay, "expired_at")));
+            }
+        } else {
+            // QR-only mode: generate VietQR locally, rely on webhook to confirm by order_code memo
+            long amountVnd = bid.getPrice().setScale(0, RoundingMode.HALF_UP).longValueExact();
+            po.setOrderCode(requestedOrderCode);
+            po.setBankName(sePayApiClient.getProps().getBankCode());
+            po.setAccountNumber(sePayApiClient.getProps().getAccountNumber());
+            po.setVaHolderName(sePayApiClient.getProps().getAccountHolderName());
+            po.setQrCodeUrl(sePayApiClient.buildVietQrUrl(requestedOrderCode, amountVnd));
+            po.setExpiredAt(LocalDateTime.now().plusSeconds(sePayApiClient.getProps().getOrderDurationSeconds()));
         }
         paymentOrderRepository.save(po);
         project.setStatus(ProjectStatus.PENDING_PAYMENT.getValue());
@@ -229,6 +246,13 @@ public class PaymentService {
             .orElseThrow(() -> new BusinessException("ERR_PAYMENT_02", "Không tìm thấy đơn thanh toán", HttpStatus.NOT_FOUND));
         if (ST_PENDING.equals(p.getStatus()) && p.getSepayOrderXid() != null && sePayApiClient.isConfigured()) {
             syncAndMaybeFulfill(p);
+        }
+        // QR-only: enforce local expiry since SePay doesn't track the order server-side.
+        if (ST_PENDING.equals(p.getStatus())
+            && p.getExpiredAt() != null
+            && LocalDateTime.now().isAfter(p.getExpiredAt())) {
+            p.setStatus(ST_EXPIRED);
+            paymentOrderRepository.save(p);
         }
         return toResponse(paymentOrderRepository.findByOrderCode(orderCode).orElse(p));
     }

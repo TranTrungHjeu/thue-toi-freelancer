@@ -903,6 +903,15 @@ const ProjectsPage = () => {
                           />
                         </div>
                       )}
+                      {activePayment.qrCodeUrl && !activePayment.qrCodeData && (
+                        <div className="mt-3">
+                          <img
+                            src={activePayment.qrCodeUrl}
+                            alt="VietQR"
+                            className="max-w-[220px] border border-slate-200 bg-white p-2"
+                          />
+                        </div>
+                      )}
                       {activePayment.qrCodeUrl && (
                         <a
                           href={activePayment.qrCodeUrl}
