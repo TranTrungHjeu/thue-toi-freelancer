@@ -18,6 +18,8 @@ import java.time.LocalDateTime;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 /**
  * Webhook giao dịch SePay — trường {@code code} khớp {@code order_code} đơn VA (tài liệu SePay v2).
@@ -67,6 +69,12 @@ public class SePayWebhookService {
             return;
         }
         String code = asString(body.get("code"));
+        if (code == null || code.isBlank()) {
+            // SePay only fills `code` when a dashboard pattern matches the memo.
+            // Fall back to scanning the raw memo for our deterministic order code
+            // format produced by PaymentService#buildOrderCode: TTB<bidId>P<projectId>X<8 hex>.
+            code = extractOrderCodeFromMemo(body);
+        }
         if (code == null || code.isBlank()) {
             tryPersistEvent(txId, null, null, null, null, body);
             return;
@@ -145,6 +153,22 @@ public class SePayWebhookService {
 
     private static String asString(Object o) {
         return o == null ? null : o.toString();
+    }
+
+    private static final Pattern ORDER_CODE_PATTERN =
+        Pattern.compile("TTB\\d+P\\d+X[0-9A-Fa-f]{8}");
+
+    private static String extractOrderCodeFromMemo(Map<String, Object> body) {
+        String[] fields = { "content", "description", "transferContent", "memo", "remark", "note" };
+        for (String f : fields) {
+            String v = asString(body.get(f));
+            if (v == null || v.isBlank()) continue;
+            Matcher m = ORDER_CODE_PATTERN.matcher(v);
+            if (m.find()) {
+                return m.group().toUpperCase(java.util.Locale.ROOT);
+            }
+        }
+        return null;
     }
 
     private static BigDecimal toAmount(Object o) {
