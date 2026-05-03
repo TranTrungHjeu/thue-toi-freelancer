@@ -13,6 +13,7 @@ import com.thuetoi.repository.ContractRepository;
 import com.thuetoi.repository.PaymentOrderRepository;
 import com.thuetoi.repository.ProjectRepository;
 import com.thuetoi.repository.UserRepository;
+import com.thuetoi.config.SePayProperties;
 import com.thuetoi.dto.response.PaymentOrderResponse;
 import com.thuetoi.sepay.SePayApiClient;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -59,6 +60,9 @@ public class PaymentService {
 
     @Autowired
     private ContractService contractService;
+
+    @Autowired
+    private SePayProperties sePayProperties;
 
     /**
      * Customer tạo đơn VA (checkout) cho bid đang chờ, chuyển project sang pending_payment.
@@ -197,8 +201,25 @@ public class PaymentService {
             p.getQrCodeUrl(),
             p.getExpiredAt(),
             p.getPaidAt(),
-            p.getProjectId()
+            p.getProjectId(),
+            buildVietQrUrl(p)
         );
+    }
+
+    private String buildVietQrUrl(PaymentOrder p) {
+        String bankId = sePayProperties.getVietqrBankId();
+        String account = p.getAccountNumber();
+        if (bankId == null || bankId.isBlank() || account == null || account.isBlank()) {
+            return null;
+        }
+        long amountVnd = p.getAmount() == null ? 0
+            : p.getAmount().setScale(0, RoundingMode.HALF_UP).longValue();
+        String holderName = p.getVaHolderName() != null ? p.getVaHolderName() : "";
+        String orderCode = p.getOrderCode() != null ? p.getOrderCode() : "";
+        return "https://img.vietqr.io/image/" + bankId + "-" + account + "-compact2.png"
+            + "?amount=" + amountVnd
+            + "&addInfo=" + java.net.URLEncoder.encode(orderCode, java.nio.charset.StandardCharsets.UTF_8)
+            + "&accountName=" + java.net.URLEncoder.encode(holderName, java.nio.charset.StandardCharsets.UTF_8);
     }
 
     @Transactional

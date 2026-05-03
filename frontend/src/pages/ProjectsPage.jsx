@@ -894,16 +894,16 @@ const ProjectsPage = () => {
                           </div>
                         )}
                       </div>
-                      {activePayment.qrCodeData && String(activePayment.qrCodeData).startsWith('data:image') && (
+                      {(activePayment.vietqrUrl || (activePayment.qrCodeData && String(activePayment.qrCodeData).startsWith('data:image'))) && (
                         <div className="mt-3">
                           <img
-                            src={activePayment.qrCodeData}
+                            src={activePayment.vietqrUrl || activePayment.qrCodeData}
                             alt="VietQR"
                             className="max-w-[220px] border border-slate-200 bg-white p-2"
                           />
                         </div>
                       )}
-                      {activePayment.qrCodeUrl && (
+                      {!activePayment.vietqrUrl && activePayment.qrCodeUrl && (
                         <a
                           href={activePayment.qrCodeUrl}
                           className="mt-2 inline-block text-sm font-semibold text-primary-700 underline"

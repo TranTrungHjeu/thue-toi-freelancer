@@ -15,6 +15,7 @@ public record PaymentOrderResponse(
     String qrCodeUrl,
     LocalDateTime expiredAt,
     LocalDateTime paidAt,
-    Long projectId
+    Long projectId,
+    String vietqrUrl
 ) {
 }
