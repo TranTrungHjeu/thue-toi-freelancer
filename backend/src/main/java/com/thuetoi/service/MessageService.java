@@ -1,12 +1,15 @@
 package com.thuetoi.service;
 
 import com.thuetoi.dto.request.MessageRequest;
+import com.thuetoi.dto.response.marketplace.MessageResponse;
 import com.thuetoi.entity.Contract;
 import com.thuetoi.entity.Message;
 import com.thuetoi.enums.ContractStatus;
 import com.thuetoi.enums.MessageType;
 import com.thuetoi.exception.BusinessException;
+import com.thuetoi.mapper.MarketplaceResponseMapper;
 import com.thuetoi.repository.MessageRepository;
+import com.thuetoi.websocket.ContractMessageWebSocketHandler;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
@@ -22,10 +25,10 @@ public class MessageService {
     private ContractAccessService contractAccessService;
 
     @Autowired
-    private ContractRealtimePublisher contractRealtimePublisher;
+    private MarketplaceResponseMapper marketplaceResponseMapper;
 
     @Autowired
-    private NotificationService notificationService;
+    private ContractMessageWebSocketHandler contractMessageWebSocketHandler;
 
     @Autowired
     private AttachmentMetadataService attachmentMetadataService;
@@ -54,22 +57,8 @@ public class MessageService {
         message.setContent(normalizedContent);
         message.setAttachments(normalizedAttachments);
         Message savedMessage = messageRepository.save(message);
-
-        if (contractRealtimePublisher != null) {
-            contractRealtimePublisher.publish(request.getContractId(), "message.created", savedMessage);
-        }
-
-        Long recipientId = contract.getClientId().equals(currentUserId)
-            ? contract.getFreelancerId()
-            : contract.getClientId();
-        notificationService.createNotificationForUser(
-            recipientId,
-            "contract",
-            "Tin nhắn mới trong hợp đồng",
-            "Bạn có tin nhắn mới trong contract #" + request.getContractId() + ".",
-            "/workspace/contracts"
-        );
-
+        MessageResponse response = marketplaceResponseMapper.toMessageResponse(savedMessage);
+        contractMessageWebSocketHandler.broadcast(response);
         return savedMessage;
     }
 

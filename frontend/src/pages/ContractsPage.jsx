@@ -1,4 +1,5 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import Card from '../components/common/Card';
 import Button from '../components/common/Button';
 import Badge from '../components/common/Badge';
@@ -17,6 +18,7 @@ import { useToast } from '../hooks/useToast';
 import { useI18n } from '../hooks/useI18n';
 import { useWebSocket } from '../hooks/useWebSocket';
 import marketplaceApi from '../api/marketplaceApi';
+import { createMessageRealtimeClient } from '../api/realtimeClient';
 import {
   formatCurrency,
   formatDate,
@@ -176,6 +178,7 @@ const getTransactionStatusMeta = (status, copy) => {
 
 const ContractsPage = () => {
   const { user } = useAuth();
+  const [searchParams, setSearchParams] = useSearchParams();
   const { addToast } = useToast();
   const { locale, t } = useI18n();
   const copy = t('contractsPage');
@@ -195,6 +198,7 @@ const ContractsPage = () => {
   const [messageForm, setMessageForm] = useState(initialMessageForm);
   const [reviewForm, setReviewForm] = useState(initialReviewForm);
   const [reviewComposerKey, setReviewComposerKey] = useState(0);
+  const [messageRealtimeStatus, setMessageRealtimeStatus] = useState('disconnected');
   const [submittingMilestone, setSubmittingMilestone] = useState(false);
   const [submittingMessage, setSubmittingMessage] = useState(false);
   const [submittingReview, setSubmittingReview] = useState(false);
@@ -304,6 +308,39 @@ const ContractsPage = () => {
     }
   }, []);
 
+  useEffect(() => {
+    if (!selectedContractId) {
+      setMessageRealtimeStatus('disconnected');
+      return undefined;
+    }
+
+    const realtimeClient = createMessageRealtimeClient({
+      contractId: selectedContractId,
+      onStatusChange: setMessageRealtimeStatus,
+      onMessage: (incomingMessage) => {
+        setMessages((previous) => {
+          if (previous.some((message) => message.id === incomingMessage.id)) {
+            return previous;
+          }
+          const next = [...previous, incomingMessage];
+          next.sort((first, second) => {
+            const firstSentAt = new Date(first.sentAt || 0).getTime();
+            const secondSentAt = new Date(second.sentAt || 0).getTime();
+            if (firstSentAt === secondSentAt) {
+              return (first.id || 0) - (second.id || 0);
+            }
+            return firstSentAt - secondSentAt;
+          });
+          return next;
+        });
+      },
+    });
+
+    return () => {
+      realtimeClient.close();
+    };
+  }, [selectedContractId]);
+
   const loadReviews = useCallback(async (contractId) => {
     if (!contractId) {
       setReviews([]);
@@ -354,7 +391,19 @@ const ContractsPage = () => {
     const loadPage = async () => {
       setLoading(true);
       try {
-        await loadContracts();
+        const nextContracts = await loadContracts();
+        const requestedContractId = Number(searchParams.get('contractId'));
+        if (requestedContractId && nextContracts.some((contract) => contract.id === requestedContractId)) {
+          const targetContract = nextContracts.find((contract) => contract.id === requestedContractId);
+          if (targetContract) {
+            selectedContractIdRef.current = targetContract.id;
+            setSelectedContractId(targetContract.id);
+            resetMilestoneForm();
+            resetMessageForm();
+            resetReviewComposer();
+            await loadContractWorkspace(targetContract.id);
+          }
+        }
       } catch (error) {
         addToast(error?.message || t('toasts.contracts.loadListError'), 'error');
       } finally {
@@ -362,7 +411,7 @@ const ContractsPage = () => {
       }
     };
     loadPage();
-  }, [addToast, loadContracts, t, user?.id]);
+  }, [addToast, loadContractWorkspace, loadContracts, searchParams, t, user?.id]);
 
   const resetMilestoneForm = () => {
     setMilestoneForm(initialMilestoneForm);
@@ -391,6 +440,11 @@ const ContractsPage = () => {
   }, []);
 
   const handleSelectContract = async (contract) => {
+    setSearchParams((previous) => {
+      const next = new URLSearchParams(previous);
+      next.set('contractId', String(contract.id));
+      return next;
+    });
     selectedContractIdRef.current = contract.id;
     setSelectedContractId(contract.id);
     resetMilestoneForm();
@@ -777,6 +831,11 @@ const ContractsPage = () => {
                     </div>
                   ) : <Callout className="mt-5" type="info" title={copy.messages.lockedTitle}>{copy.messages.lockedDescription}</Callout>}
                   <div className="mt-5 flex flex-col gap-4">
+                    {selectedContract && messageRealtimeStatus !== 'connected' && (
+                      <Callout type="info" title={copy.messages.realtimeFallbackTitle || 'Realtime đang kết nối lại'}>
+                        {copy.messages.realtimeFallbackDescription || 'Tin nhắn mới có thể đến chậm vài giây trong lúc kết nối lại.'}
+                      </Callout>
+                    )}
                     {loadingMessages && <Text className="text-sm text-slate-500">{copy.messages.loading}</Text>}
                     {!loadingMessages && messages.map((message) => {
                       const isSender = message.senderId === user?.id;

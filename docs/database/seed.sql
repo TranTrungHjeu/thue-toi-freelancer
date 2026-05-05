@@ -1,9 +1,10 @@
--- File import dữ liệu mẫu cho database, phục vụ test nghiệp vụ
+﻿-- File import dữ liệu mẫu cho database, phục vụ test nghiệp vụ
 -- Thêm user (freelancer, customer, admin)
 -- Tài khoản demo sau khi import DB sạch:
 --   freelancer1@gmail.com / Demo@123
 --   customer1@gmail.com   / Demo@123
---   admin@gmail.com       / Demo@123
+SET NAMES utf8mb4;
+
 INSERT INTO users (
         email,
         password_hash,
@@ -284,3 +285,4 @@ VALUES (
         FALSE,
         '2026-03-30'
     );
+
