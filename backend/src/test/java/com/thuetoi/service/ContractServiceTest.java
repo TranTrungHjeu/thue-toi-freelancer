@@ -3,6 +3,7 @@ package com.thuetoi.service;
 import com.thuetoi.entity.Bid;
 import com.thuetoi.entity.Contract;
 import com.thuetoi.entity.Milestone;
+import com.thuetoi.entity.PaymentOrder;
 import com.thuetoi.entity.Project;
 import com.thuetoi.entity.User;
 import com.thuetoi.exception.BusinessException;
@@ -26,6 +27,7 @@ import java.math.BigDecimal;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.never;
@@ -59,21 +61,30 @@ class ContractServiceTest {
     @Mock
     private TransactionService transactionService;
 
+    @Mock
+    private WalletService walletService;
+
     @InjectMocks
     private ContractService contractService;
 
     @Test
-    void createContractFromBidCreatesContractAndUpdatesProjectState() {
+    void fulfillAfterPaymentCreatesContractAndUpdatesProjectState() {
         User customer = user(1L, "customer");
         User selectedFreelancer = user(2L, "freelancer");
         User rejectedFreelancer = user(3L, "freelancer");
 
-        Project project = project(10L, customer, "Landing page", "open");
+        Project project = project(10L, customer, "Landing page", "pending_payment");
         Bid selectedBid = bid(100L, project, selectedFreelancer, BigDecimal.valueOf(250), "pending");
         Bid rejectedBid = bid(101L, project, rejectedFreelancer, BigDecimal.valueOf(300), "pending");
 
-        when(userRepository.findById(1L)).thenReturn(Optional.of(customer));
-        when(bidRepository.findById(100L)).thenReturn(Optional.of(selectedBid));
+        PaymentOrder order = new PaymentOrder();
+        order.setId(50L);
+        order.setOrderCode("TTX");
+        order.setBid(selectedBid);
+        order.setProjectId(10L);
+        order.setCustomer(customer);
+        order.setAmount(BigDecimal.valueOf(250));
+
         when(contractRepository.findByProjectId(10L)).thenReturn(Optional.empty());
         when(bidRepository.findByProjectId(10L)).thenReturn(List.of(selectedBid, rejectedBid));
         when(contractRepository.save(any(Contract.class))).thenAnswer(invocation -> {
@@ -82,7 +93,7 @@ class ContractServiceTest {
             return contract;
         });
 
-        Contract contract = contractService.createContractFromBid(1L, 100L);
+        Contract contract = contractService.fulfillContractAfterPayment(order);
 
         assertThat(contract.getId()).isEqualTo(999L);
         assertThat(contract.getProjectId()).isEqualTo(10L);
@@ -99,11 +110,13 @@ class ContractServiceTest {
         verify(bidRepository).saveAll(List.of(selectedBid, rejectedBid));
         verify(projectRepository).save(project);
         verify(contractRepository).save(any(Contract.class));
+        verify(transactionService).createTransaction(999L, BigDecimal.valueOf(250), "sepay_checkout", "completed");
+        verify(walletService).recordEscrowIn(eq(2L), eq(999L), eq(50L), eq(BigDecimal.valueOf(250)), eq("Landing page"));
         verify(notificationService).createNotificationForUser(
             eq(2L),
             eq("contract"),
             eq("Bạn có hợp đồng mới"),
-            eq("Khách hàng đã chấp nhận bid của bạn cho project \"Landing page\"."),
+            any(),
             eq("/workspace/contracts")
         );
         verify(notificationService).createNotificationForUser(
@@ -116,18 +129,20 @@ class ContractServiceTest {
     }
 
     @Test
-    void createContractFromBidRejectsCustomerWhoDoesNotOwnProject() {
+    void fulfillAfterPaymentRejectsMismatchedCustomer() {
         User customer = user(1L, "customer");
         User projectOwner = user(9L, "customer");
         User freelancer = user(2L, "freelancer");
 
-        Project project = project(10L, projectOwner, "API project", "open");
+        Project project = project(10L, projectOwner, "API project", "pending_payment");
         Bid selectedBid = bid(100L, project, freelancer, BigDecimal.valueOf(180), "pending");
 
-        when(userRepository.findById(1L)).thenReturn(Optional.of(customer));
-        when(bidRepository.findById(100L)).thenReturn(Optional.of(selectedBid));
+        PaymentOrder order = new PaymentOrder();
+        order.setBid(selectedBid);
+        order.setProjectId(10L);
+        order.setCustomer(customer);
 
-        assertThatThrownBy(() -> contractService.createContractFromBid(1L, 100L))
+        assertThatThrownBy(() -> contractService.fulfillContractAfterPayment(order))
             .isInstanceOf(BusinessException.class)
             .satisfies(throwable -> {
                 BusinessException ex = (BusinessException) throwable;
@@ -141,22 +156,25 @@ class ContractServiceTest {
     }
 
     @Test
-    void createContractFromBidKeepsWithdrawnBidUnchanged() {
+    void fulfillAfterPaymentKeepsWithdrawnBidUnchanged() {
         User customer = user(1L, "customer");
         User selectedFreelancer = user(2L, "freelancer");
         User withdrawnFreelancer = user(3L, "freelancer");
 
-        Project project = project(10L, customer, "Mobile app", "open");
+        Project project = project(10L, customer, "Mobile app", "pending_payment");
         Bid selectedBid = bid(100L, project, selectedFreelancer, BigDecimal.valueOf(400), "pending");
         Bid withdrawnBid = bid(101L, project, withdrawnFreelancer, BigDecimal.valueOf(520), "withdrawn");
 
-        when(userRepository.findById(1L)).thenReturn(Optional.of(customer));
-        when(bidRepository.findById(100L)).thenReturn(Optional.of(selectedBid));
+        PaymentOrder order = new PaymentOrder();
+        order.setBid(selectedBid);
+        order.setProjectId(10L);
+        order.setCustomer(customer);
+
         when(contractRepository.findByProjectId(10L)).thenReturn(Optional.empty());
         when(bidRepository.findByProjectId(10L)).thenReturn(List.of(selectedBid, withdrawnBid));
         when(contractRepository.save(any(Contract.class))).thenAnswer(invocation -> invocation.getArgument(0));
 
-        Contract contract = contractService.createContractFromBid(1L, 100L);
+        Contract contract = contractService.fulfillContractAfterPayment(order);
 
         assertThat(contract.getStatus()).isEqualTo("in_progress");
         assertThat(selectedBid.getStatus()).isEqualTo("accepted");

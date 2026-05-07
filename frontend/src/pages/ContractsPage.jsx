@@ -696,6 +696,60 @@ const ContractsPage = () => {
                   </div>
                 </div>
 
+                {(() => {
+                  const totalAmount = Number(selectedContract.totalAmount || 0);
+                  const releasedGross = milestones
+                    .filter((m) => (m.status || '').toLowerCase() === 'completed')
+                    .reduce((sum, m) => sum + Number(m.amount || 0), 0);
+                  const heldInEscrow = Math.max(totalAmount - releasedGross, 0);
+                  return (
+                    <div className="border border-slate-200 bg-white p-5">
+                      <Caption className="text-[11px] uppercase tracking-[0.18em] text-primary-700">
+                        {locale === 'en' ? 'SePay escrow' : 'Quỹ tạm giữ SePay'}
+                      </Caption>
+                      <H2 className="mt-2 text-xl">
+                        {locale === 'en' ? 'Escrow summary' : 'Tóm tắt escrow'}
+                      </H2>
+                      <Text className="mt-2 text-sm text-slate-500">
+                        {locale === 'en'
+                          ? 'Funds were locked via SePay when the bid was accepted. Escrow releases as milestones complete.'
+                          : 'Số tiền được khóa qua SePay khi bid được chấp nhận. Mỗi milestone hoàn thành sẽ giải ngân từ escrow.'}
+                      </Text>
+                      <div className="mt-5 grid gap-4 sm:grid-cols-3">
+                        <InfoPanel>
+                          <Caption className="text-[11px] uppercase tracking-[0.18em] text-slate-500">
+                            {locale === 'en' ? 'Total amount' : 'Tổng giá trị'}
+                          </Caption>
+                          <div className="mt-2 text-2xl font-bold tracking-tight text-secondary-900">
+                            {formatCurrency(totalAmount, locale)}
+                          </div>
+                        </InfoPanel>
+                        <InfoPanel className="border-2 border-emerald-200 bg-emerald-50/50">
+                          <Caption className="text-[11px] uppercase tracking-[0.18em] text-emerald-700">
+                            {locale === 'en' ? 'Released (gross)' : 'Đã giải ngân (gộp)'}
+                          </Caption>
+                          <div className="mt-2 text-2xl font-bold tracking-tight text-secondary-900">
+                            {formatCurrency(releasedGross, locale)}
+                          </div>
+                        </InfoPanel>
+                        <InfoPanel className="border-2 border-amber-200 bg-amber-50/40">
+                          <Caption className="text-[11px] uppercase tracking-[0.18em] text-amber-700">
+                            {locale === 'en' ? 'Held in escrow' : 'Đang giữ trong escrow'}
+                          </Caption>
+                          <div className="mt-2 text-2xl font-bold tracking-tight text-secondary-900">
+                            {formatCurrency(heldInEscrow, locale)}
+                          </div>
+                        </InfoPanel>
+                      </div>
+                      <Text className="mt-3 text-xs text-slate-500">
+                        {locale === 'en'
+                          ? 'Platform fee is deducted from each release before crediting the freelancer balance.'
+                          : 'Phí sàn được trừ trước khi cộng vào số dư freelancer cho mỗi đợt giải ngân.'}
+                      </Text>
+                    </div>
+                  );
+                })()}
+
                 <div className="border border-slate-200 bg-white p-5">
                   <Caption className="text-[11px] uppercase tracking-[0.18em] text-primary-700">{extraCopy.transactionsCaption}</Caption>
                   <H2 className="mt-2 text-xl">{extraCopy.transactionsTitle}</H2>

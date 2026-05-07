@@ -35,9 +35,6 @@ public class BidService {
     private UserRepository userRepository;
 
     @Autowired
-    private ContractService contractService;
-
-    @Autowired
     private NotificationService notificationService;
 
     /**
@@ -107,15 +104,6 @@ public class BidService {
         }
         getRequiredUser(currentUserId);
         return bidRepository.findByFreelancerIdOrderByCreatedAtDesc(freelancerId);
-    }
-
-    /**
-     * Chọn bid (customer accept) và tạo hợp đồng theo luồng chuẩn.
-     */
-    @Transactional
-    public Bid acceptBid(Long bidId, Long currentUserId) {
-        contractService.createContractFromBid(currentUserId, bidId);
-        return getRequiredBid(bidId);
     }
 
     /**
