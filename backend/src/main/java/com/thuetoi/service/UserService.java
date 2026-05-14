@@ -1,9 +1,11 @@
 package com.thuetoi.service;
 
+import com.thuetoi.dto.profile.CvExtractedData;
 import com.thuetoi.dto.response.AuthUserResponse;
 import com.thuetoi.entity.RefreshToken;
 import com.thuetoi.entity.User;
 import com.thuetoi.exception.BusinessException;
+import com.thuetoi.repository.KycRequestRepository;
 import com.thuetoi.repository.RefreshTokenRepository;
 import com.thuetoi.repository.UserRepository;
 import com.thuetoi.security.JwtTokenProvider;
@@ -41,6 +43,9 @@ public class UserService {
 
     @Autowired
     private RefreshTokenRepository refreshTokenRepository;
+
+    @Autowired
+    private KycRequestRepository kycRequestRepository;
 
     @Autowired
     private JwtTokenProvider jwtTokenProvider;
@@ -140,6 +145,78 @@ public class UserService {
         }
 
         User savedUser = userRepository.save(user);
+        return toAuthUserResponse(savedUser);
+    }
+
+    /**
+     * Cập nhật hồ sơ từ dữ liệu CV đã được người dùng xác nhận (chỉ ghi field có giá trị khác null).
+     */
+    @Transactional
+    public AuthUserResponse updateProfileFromCv(Long userId, CvExtractedData cvData) {
+        User user = getRequiredUser(userId);
+        if (cvData == null) {
+            return toAuthUserResponse(user);
+        }
+
+        boolean emailChangedNeedingReverify = false;
+
+        if (cvData.getFullName() != null && !cvData.getFullName().trim().isEmpty()) {
+            user.setFullName(cvData.getFullName().trim());
+        }
+
+        if (cvData.getEmail() != null && !cvData.getEmail().trim().isEmpty()) {
+            String normalizedEmail = normalizeEmail(cvData.getEmail());
+            String currentEmail = user.getEmail() == null ? "" : normalizeEmail(user.getEmail());
+            if (!normalizedEmail.equals(currentEmail)) {
+                User existingUser = userRepository.findByEmail(normalizedEmail);
+                if (existingUser != null && !existingUser.getId().equals(userId)) {
+                    throw new BusinessException("ERR_AUTH_05", "Email đã tồn tại", HttpStatus.CONFLICT);
+                }
+                user.setEmail(normalizedEmail);
+                user.setVerified(false);
+                emailChangedNeedingReverify = true;
+            }
+        }
+
+        if (cvData.getPhone() != null) {
+            user.setPhone(normalizeOptionalText(cvData.getPhone()));
+        }
+
+        if (cvData.getLocation() != null) {
+            user.setLocation(normalizeOptionalText(cvData.getLocation()));
+        }
+
+        if (cvData.getBio() != null) {
+            user.setProfileDescription(normalizeProfileDescription(cvData.getBio()));
+        }
+
+        if (cvData.getSkills() != null) {
+            user.setSkills(skillService.resolveSkills(cvData.getSkills()));
+        }
+
+        if (cvData.getExperienceYears() != null) {
+            user.setExperienceYears(cvData.getExperienceYears());
+        }
+
+        if (cvData.getEducation() != null) {
+            user.setEducation(normalizeOptionalText(cvData.getEducation()));
+        }
+
+        User savedUser = userRepository.save(user);
+
+        if (emailChangedNeedingReverify) {
+            cancelPendingKycIfAny(userId);
+            refreshTokenRepository.revokeAllByUserId(userId);
+            try {
+                otpService.sendVerificationOtp(savedUser.getEmail());
+                log.info("Đã gửi OTP xác thực email sau khi cập nhật email từ CV (user {}).", userId);
+            } catch (BusinessException ex) {
+                log.warn("Không thể gửi OTP xác thực sau khi đổi email từ CV (user {}): {}", userId, ex.getMessage());
+            } catch (Exception ex) {
+                log.warn("Lỗi khi gửi OTP xác thực sau khi đổi email từ CV (user {})", userId, ex);
+            }
+        }
+
         return toAuthUserResponse(savedUser);
     }
 
@@ -267,6 +344,7 @@ public class UserService {
 
         // Revoke toàn bộ refresh token vì email (định danh trong JWT) đã thay đổi
         refreshTokenRepository.revokeAllByUserId(userId);
+        cancelPendingKycIfAny(userId);
 
         log.info("Email của user ID {} đã được thay đổi thành công. Toàn bộ session cũ bị thu hồi.", userId);
         return toAuthUserResponse(savedUser);
@@ -287,6 +365,10 @@ public class UserService {
             user.getAvatarUrl(),
             user.getProfileDescription(),
             skills,
+            user.getPhone(),
+            user.getLocation(),
+            user.getExperienceYears(),
+            user.getEducation(),
             user.getIsActive(),
             user.getVerified(),
             user.getCreatedAt(),
@@ -325,5 +407,18 @@ public class UserService {
         }
         String normalized = value.trim();
         return normalized.isEmpty() ? null : normalized;
+    }
+
+    /**
+     * Yêu cầu KYC ở trạng thái PENDING gắn với tài khoản hiện tại; khi đổi email đăng nhập phải hủy
+     * để tránh admin duyệt trên hồ sơ/email không còn khớp và để người dùng gửi lại KYC sau.
+     */
+    private void cancelPendingKycIfAny(Long userId) {
+        kycRequestRepository.findByUserId(userId).ifPresent(request -> {
+            if (request.getStatus() != null && "PENDING".equalsIgnoreCase(request.getStatus().trim())) {
+                kycRequestRepository.delete(request);
+                log.info("Đã xóa yêu cầu KYC PENDING của user {} do thay đổi email đăng nhập.", userId);
+            }
+        });
     }
 }

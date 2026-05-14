@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { clearAccessToken } from '../api/axiosClient';
 import authApi from '../api/authApi';
+import { clearAiChatHistoryForUser } from '../utils/sessionAiChat';
 import { AuthContext } from './auth-context';
 
 const CURRENT_USER_STORAGE_KEY = 'currentUser';
@@ -64,9 +65,11 @@ export const AuthProvider = ({ children }) => {
     };
 
     const logout = async () => {
+        const uid = user?.id;
         try {
             await authApi.logout();
         } finally {
+            clearAiChatHistoryForUser(uid);
             clearAccessToken();
             persistUser(null);
             setUser(null);

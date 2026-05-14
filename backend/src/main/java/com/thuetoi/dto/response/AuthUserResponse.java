@@ -11,6 +11,10 @@ public class AuthUserResponse {
     private String avatarUrl;
     private String profileDescription;
     private List<String> skills;
+    private String phone;
+    private String location;
+    private Integer experienceYears;
+    private String education;
     private Boolean isActive;
     private Boolean verified;
     private LocalDateTime createdAt;
@@ -20,10 +24,14 @@ public class AuthUserResponse {
     }
 
     public AuthUserResponse(Long id, String email, String fullName, String role, String avatarUrl, String profileDescription, Boolean isActive, Boolean verified, LocalDateTime createdAt, LocalDateTime updatedAt) {
-        this(id, email, fullName, role, avatarUrl, profileDescription, null, isActive, verified, createdAt, updatedAt);
+        this(id, email, fullName, role, avatarUrl, profileDescription, null, null, null, null, null, isActive, verified, createdAt, updatedAt);
     }
 
     public AuthUserResponse(Long id, String email, String fullName, String role, String avatarUrl, String profileDescription, List<String> skills, Boolean isActive, Boolean verified, LocalDateTime createdAt, LocalDateTime updatedAt) {
+        this(id, email, fullName, role, avatarUrl, profileDescription, skills, null, null, null, null, isActive, verified, createdAt, updatedAt);
+    }
+
+    public AuthUserResponse(Long id, String email, String fullName, String role, String avatarUrl, String profileDescription, List<String> skills, String phone, String location, Integer experienceYears, String education, Boolean isActive, Boolean verified, LocalDateTime createdAt, LocalDateTime updatedAt) {
         this.id = id;
         this.email = email;
         this.fullName = fullName;
@@ -31,6 +39,10 @@ public class AuthUserResponse {
         this.avatarUrl = avatarUrl;
         this.profileDescription = profileDescription;
         this.skills = skills;
+        this.phone = phone;
+        this.location = location;
+        this.experienceYears = experienceYears;
+        this.education = education;
         this.isActive = isActive;
         this.verified = verified;
         this.createdAt = createdAt;
@@ -99,6 +111,38 @@ public class AuthUserResponse {
 
     public void setSkills(List<String> skills) {
         this.skills = skills;
+    }
+
+    public String getPhone() {
+        return phone;
+    }
+
+    public void setPhone(String phone) {
+        this.phone = phone;
+    }
+
+    public String getLocation() {
+        return location;
+    }
+
+    public void setLocation(String location) {
+        this.location = location;
+    }
+
+    public Integer getExperienceYears() {
+        return experienceYears;
+    }
+
+    public void setExperienceYears(Integer experienceYears) {
+        this.experienceYears = experienceYears;
+    }
+
+    public String getEducation() {
+        return education;
+    }
+
+    public void setEducation(String education) {
+        this.education = education;
     }
 
     public Boolean getVerified() {

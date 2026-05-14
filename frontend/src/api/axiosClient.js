@@ -15,6 +15,44 @@ function resolveApiBaseUrl() {
 
 const API_BASE_URL = resolveApiBaseUrl();
 
+function buildRequestUrl(config) {
+    if (!config) {
+        return undefined;
+    }
+    const base = (config.baseURL || '').replace(/\/$/, '');
+    const path = config.url || '';
+    if (!path) {
+        return base || undefined;
+    }
+    if (path.startsWith('http')) {
+        return path;
+    }
+    return base ? `${base}${path}` : path;
+}
+
+function logApiFailure(error) {
+    const isDev =
+        (typeof process !== 'undefined' && process.env.NODE_ENV === 'development')
+        || (typeof import.meta !== 'undefined' && import.meta.env && import.meta.env.DEV);
+    if (!isDev) {
+        return;
+    }
+    const cfg = error?.config;
+    const line = [
+        error?.message || 'Request failed',
+        error?.response?.status != null && `HTTP ${error.response.status}`,
+        error?.code && `transport=${error.code}`,
+        cfg && `${String(cfg.method || 'get').toUpperCase()} ${buildRequestUrl(cfg)}`,
+        error?.response?.data?.code && `apiCode=${error.response.data.code}`,
+    ].filter(Boolean).join(' | ');
+    const body = error?.response?.data;
+    if (body && typeof body === 'object' && Object.keys(body).length > 0) {
+        console.error(line, body);
+    } else {
+        console.error(line);
+    }
+}
+
 export const getAccessToken = () => {
     if (typeof window === 'undefined') return null;
     return localStorage.getItem(ACCESS_TOKEN_STORAGE_KEY);
@@ -148,16 +186,12 @@ axiosClient.interceptors.response.use(
                 refreshPromise = null;
                 clearAccessToken();
                 localStorage.removeItem('currentUser');
+                logApiFailure(refreshError);
                 return Promise.reject(createApiError(refreshError));
             }
         }
 
-        console.error('API Error', {
-            status: error.response ? error.response.status : undefined,
-            url: error.config ? error.config.url : undefined,
-            method: error.config ? error.config.method : undefined,
-            data: error.response ? error.response.data : undefined,
-        });
+        logApiFailure(error);
         return Promise.reject(createApiError(error.response?.data || error));
     }
 );

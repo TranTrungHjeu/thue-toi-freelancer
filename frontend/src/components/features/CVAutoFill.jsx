@@ -1,5 +1,5 @@
 import React from 'react';
-import { Upload, Xmark, Check } from 'iconoir-react';
+import { Upload, Xmark, Check, Mail } from 'iconoir-react';
 import Card from '../common/Card';
 import Button from '../common/Button';
 import Badge from '../common/Badge';
@@ -49,7 +49,10 @@ const formatValue = (key, value) => {
   return `${value}`;
 };
 
-const CVAutoFill = () => {
+/**
+ * @param {{ onSuggestEmailForChange?: (email: string) => void }} props
+ */
+const CVAutoFill = ({ onSuggestEmailForChange }) => {
   const { user, refreshProfile } = useAuth();
   const { addToast } = useToast();
   const { t } = useI18n();
@@ -150,9 +153,17 @@ const CVAutoFill = () => {
 
     setIsUpdating(true);
     try {
+      const hadEmailChangeIntent = selectedFields.includes('email')
+        && hasValue(extractedData?.email)
+        && user?.email
+        && String(extractedData.email).trim().toLowerCase() !== String(user.email).trim().toLowerCase();
+
       await profileApi.updateFromCv(payload);
       await refreshProfile();
       addToast(t('toasts.profile.cvUpdateSuccess'), 'success');
+      if (hadEmailChangeIntent) {
+        addToast(t('toasts.profile.cvEmailReverify'), 'warning');
+      }
       handleClear();
     } catch (error) {
       addToast(error?.message || t('toasts.profile.cvUpdateError'), 'error');
@@ -162,6 +173,22 @@ const CVAutoFill = () => {
   };
 
   const selectedCount = selectedFields.length;
+
+  const cvEmailRaw = extractedData?.email != null && hasValue(extractedData.email)
+    ? String(extractedData.email).trim()
+    : '';
+  const cvEmailSameAsLogin = Boolean(
+    cvEmailRaw
+    && user?.email
+    && cvEmailRaw.toLowerCase() === String(user.email).toLowerCase()
+  );
+
+  const handleUseCvEmailForChange = () => {
+    if (!onSuggestEmailForChange || !cvEmailRaw || cvEmailSameAsLogin) {
+      return;
+    }
+    onSuggestEmailForChange(cvEmailRaw);
+  };
 
   return (
     <Card className="border-2 border-slate-200 bg-white p-6 md:p-8">
@@ -266,6 +293,27 @@ const CVAutoFill = () => {
                   </>
                 )}
               />
+            </div>
+          )}
+
+          {extractedData && cvEmailRaw && onSuggestEmailForChange && (
+            <div className="mt-4 border border-primary-200 bg-primary-50/50 p-4">
+              <Text className="text-sm text-slate-700">
+                {cvCopy.useCvEmailForChangeHint}
+              </Text>
+              <div className="mt-3">
+                <Button
+                  type="button"
+                  variant="outline"
+                  className="gap-2"
+                  disabled={isExtracting || isUpdating || cvEmailSameAsLogin}
+                  title={cvEmailSameAsLogin ? (cvCopy.useCvEmailSameAsCurrent || '') : undefined}
+                  onClick={handleUseCvEmailForChange}
+                >
+                  <Mail className="h-4 w-4" />
+                  {cvCopy.useCvEmailForChangeButton}
+                </Button>
+              </div>
             </div>
           )}
 

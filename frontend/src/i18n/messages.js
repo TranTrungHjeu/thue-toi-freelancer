@@ -141,6 +141,18 @@ export const messages = {
         finance: "Tài chính & Thu nhập",
         system: "Quản trị hệ thống",
       },
+      aiChat: {
+        openLabel: "Mở trợ lý AI",
+        title: "Trợ lý Thuê Tôi",
+        subtitle: "Gợi ý theo dự án đang mở và đang làm trên nền tảng",
+        placeholder: "Hỏi về workspace, dự án, hồ sơ…",
+        send: "Gửi",
+        thinking: "Đang trả lời…",
+        empty: "Xin chào! Mình có thể gợi ý cách dùng nền tảng, không thay bạn thao tác bảo mật.",
+        close: "Đóng",
+        error: "Không nhận được phản hồi. Thử lại sau.",
+        configMissing: "Chưa cấu hình GEMINI_API_KEY trên máy chủ.",
+      },
     },
     landing: {
       tagline: "Nền tảng kết nối Khách hàng và Freelancer",
@@ -360,6 +372,10 @@ export const messages = {
           current: "Hiện tại",
           newValue: "Từ CV",
         },
+        useCvEmailForChangeButton: "Dùng email trong CV cho ô Email mới",
+        useCvEmailForChangeHint:
+          "Chỉ điền sẵn ô đổi email và chuyển sang tab bảo mật. Bạn vẫn phải nhập mật khẩu, gửi OTP và xác nhận.",
+        useCvEmailSameAsCurrent: "Email trong CV trùng với email đăng nhập hiện tại.",
       },
     },
     toasts: {
@@ -388,6 +404,11 @@ export const messages = {
         cvFileTooLarge: "File PDF vượt quá 1000 KB. Vui lòng chọn file nhỏ hơn.",
         cvUpdateSuccess: "Đã cập nhật hồ sơ từ CV thành công.",
         cvUpdateError: "Không thể cập nhật hồ sơ từ CV.",
+        cvEmailPrefilledForChange:
+          "Đã điền email mới từ CV. Vui lòng nhập mật khẩu và gửi OTP tới email mới.",
+        cvEmailSameAsCurrent: "Email trong CV trùng với email đăng nhập hiện tại.",
+        cvEmailReverify:
+          "Email đăng nhập đã đổi từ CV: tài khoản tạm chưa xác thực. Kiểm tra hộp thư email mới để lấy OTP, dùng mục xác thực email hoặc \"Gửi lại mã\". Các phiên đăng nhập khác có thể đã bị đăng xuất.",
       },
       dashboard: {
         loadError: "Không thể tải trang tổng quan.",
@@ -986,6 +1007,18 @@ export const messages = {
         finance: "Finance & Revenue",
         system: "System Administration",
       },
+      aiChat: {
+        openLabel: "Open AI assistant",
+        title: "Thuê Tôi assistant",
+        subtitle: "Uses live open and in-progress projects on the platform",
+        placeholder: "Ask about the workspace, projects, profile…",
+        send: "Send",
+        thinking: "Thinking…",
+        empty: "Hi! I can explain how the platform works; I cannot act on security steps for you.",
+        close: "Close",
+        error: "No response. Please try again.",
+        configMissing: "GEMINI_API_KEY is not configured on the server.",
+      },
     },
     landing: {
       tagline: "A platform connecting customers and freelancers",
@@ -1205,6 +1238,10 @@ export const messages = {
           current: "Current",
           newValue: "From CV",
         },
+        useCvEmailForChangeButton: "Use CV email for new email field",
+        useCvEmailForChangeHint:
+          "This only prefills the change-email form and opens the Security tab. You must still enter your password, send OTP, and confirm.",
+        useCvEmailSameAsCurrent: "The CV email matches your current login email.",
       },
     },
     toasts: {
@@ -1233,6 +1270,11 @@ export const messages = {
         cvFileTooLarge: "This PDF is larger than 1000 KB. Please choose a smaller file.",
         cvUpdateSuccess: "Profile updated from CV successfully.",
         cvUpdateError: "Could not update the profile from CV.",
+        cvEmailPrefilledForChange:
+          "New email field filled from your CV. Enter your password and send OTP to the new address.",
+        cvEmailSameAsCurrent: "The CV email matches your current login email.",
+        cvEmailReverify:
+          "Your login email was updated from the CV: the account is unverified until you confirm. Check the new inbox for the verification OTP (or use resend). Other sessions may have been signed out.",
       },
       dashboard: {
         loadError: "Could not load the dashboard.",

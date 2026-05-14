@@ -9,6 +9,7 @@ import java.nio.charset.StandardCharsets;
 import java.time.Duration;
 import java.util.Base64;
 import java.util.List;
+import java.util.Objects;
 
 import org.apache.pdfbox.pdmodel.PDDocument;
 import org.apache.pdfbox.text.PDFTextStripper;
@@ -50,12 +51,16 @@ public class ProfileCvService {
 
     private final DataSize cvMaxFileSize;
 
+    private final SkillService skillService;
+
     public ProfileCvService(
         ObjectMapper objectMapper,
-        @Value("${app.profile.cv.max-file-size:1000KB}") DataSize cvMaxFileSize
+        @Value("${app.profile.cv.max-file-size:1000KB}") DataSize cvMaxFileSize,
+        SkillService skillService
     ) {
         this.objectMapper = objectMapper;
         this.cvMaxFileSize = cvMaxFileSize;
+        this.skillService = skillService;
     }
 
     public CvExtractedData extractFromPdf(MultipartFile file) {
@@ -68,14 +73,23 @@ public class ProfileCvService {
         }
 
         String pdfText = extractPlainTextIfPossible(pdfBytes);
+        List<String> canonicalSkillNames = skillService.getAllSkills().stream()
+            .map(skill -> skill.getName())
+            .filter(Objects::nonNull)
+            .map(String::trim)
+            .filter(name -> !name.isEmpty())
+            .distinct()
+            .sorted(String.CASE_INSENSITIVE_ORDER)
+            .toList();
+
         String rawJson;
         if (!pdfText.isBlank()) {
-            rawJson = callGeminiWithTextPrompt(CvExtractionPrompt.buildForPlainText(pdfText));
+            rawJson = callGeminiWithTextPrompt(CvExtractionPrompt.buildForPlainText(pdfText, canonicalSkillNames));
         } else {
             log.info("CV PDF has no text layer (scan/image-only); using Gemini with PDF attachment");
             rawJson = callGeminiWithPdfAttachment(
                 pdfBytes,
-                CvExtractionPrompt.buildForPdfAttachment()
+                CvExtractionPrompt.buildForPdfAttachment(canonicalSkillNames)
             );
         }
         return parseExtractedData(rawJson);
