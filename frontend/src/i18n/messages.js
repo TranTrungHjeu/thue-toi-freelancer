@@ -28,6 +28,7 @@ export const messages = {
     status: {
       project: {
         open: "Đang tìm đối tác",
+        pending_payment: "Chờ thanh toán",
         in_progress: "Đang triển khai",
         completed: "Đã hoàn thành",
         cancelled: "Đã hủy",
@@ -304,6 +305,8 @@ export const messages = {
         loadError: "Không thể tải thông báo.",
         markReadSuccess: "Đã cập nhật thông báo sang trạng thái đã đọc.",
         markAllReadSuccess: "Đã đánh dấu tất cả thông báo là đã đọc.",
+        archiveSuccess: "Đã lưu trữ thông báo.",
+        deleteSuccess: "Đã xóa thông báo.",
         realtimeReceived: "Có thông báo mới.",
         updateError: "Không thể cập nhật thông báo.",
       },
@@ -815,6 +818,7 @@ export const messages = {
     status: {
       project: {
         open: "Open",
+        pending_payment: "Pending payment",
         in_progress: "In progress",
         completed: "Completed",
         cancelled: "Cancelled",
@@ -1055,6 +1059,8 @@ export const messages = {
         loadError: "Could not load notifications.",
         markReadSuccess: "Notification has been marked as read.",
         markAllReadSuccess: "All notifications have been marked as read.",
+        archiveSuccess: "Notification has been archived.",
+        deleteSuccess: "Notification has been deleted.",
         realtimeReceived: "New notification received.",
         updateError: "Could not update the notification.",
       },

@@ -1,10 +1,14 @@
+"use client";
+
 import React from 'react';
-import { Link } from 'react-router-dom';
+import Link from 'next/link';
+
 import { Menu } from 'iconoir-react';
 import { H2 } from '../common/Typography';
 import UserDropdown from './UserDropdown';
 import LanguageSwitcher from '../common/LanguageSwitcher';
 import ConversationInbox from './ConversationInbox';
+import NotificationBell from './NotificationBell';
 import { useI18n } from '../../hooks/useI18n';
 
 const Header = ({ user, onOpenMenu }) => {
@@ -20,7 +24,7 @@ const Header = ({ user, onOpenMenu }) => {
         >
           <Menu className="h-6 w-6 text-secondary-900" />
         </button>
-        <Link to="/workspace" className="flex items-center gap-3">
+        <Link href="/workspace" className="flex items-center gap-3">
           <div className="bg-secondary-900 p-1.5 text-xl font-bold leading-none text-white">TT</div>
           <div className="hidden sm:flex flex-col">
             <H2 className="!mb-0 text-xl tracking-tight uppercase">{t('app.brand')}</H2>
@@ -33,6 +37,7 @@ const Header = ({ user, onOpenMenu }) => {
 
       <div className="flex items-center gap-4">
         <LanguageSwitcher className="hidden md:inline-flex" />
+        {user && <NotificationBell />}
         {user && <ConversationInbox />}
         {user ? (
           <UserDropdown user={user} />

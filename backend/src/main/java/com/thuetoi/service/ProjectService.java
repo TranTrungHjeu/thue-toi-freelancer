@@ -23,6 +23,8 @@ import java.util.Optional;
  */
 @Service
 public class ProjectService {
+    private static final BigDecimal MAX_PROJECT_BUDGET = new BigDecimal("9999999999.99");
+
     @Autowired
     private ProjectRepository projectRepository;
 
@@ -83,7 +85,7 @@ public class ProjectService {
     ) {
         User user = getRequiredUser(userId);
         ensureCustomer(user);
-        validateProjectPayload(title, budgetMin != null ? budgetMin.doubleValue() : null, budgetMax != null ? budgetMax.doubleValue() : null);
+        validateProjectPayload(title, budgetMin, budgetMax);
 
         Project project = new Project();
         project.setUser(user);
@@ -168,7 +170,8 @@ public class ProjectService {
         List<FileAttachmentRequest> attachments
     ) {
         Project project = getOwnedProject(id, userId);
-        validateProjectPayload(title, budgetMin != null ? budgetMin.doubleValue() : null, budgetMax != null ? budgetMax.doubleValue() : null);
+        ensureProjectCanBeEditedByOwner(project);
+        validateProjectPayload(title, budgetMin, budgetMax);
 
         project.setTitle(title.trim());
         project.setDescription(normalizeText(description));
@@ -192,6 +195,7 @@ public class ProjectService {
     @Transactional
     public void deleteProject(Long id, Long userId) {
         Project project = getOwnedProject(id, userId);
+        ensureProjectCanBeEditedByOwner(project);
         projectRepository.delete(project);
     }
 
@@ -236,17 +240,24 @@ public class ProjectService {
         return attachmentMetadataService.serialize(attachments);
     }
 
-    private void validateProjectPayload(String title, Double budgetMin, Double budgetMax) {
+    private void validateProjectPayload(String title, BigDecimal budgetMin, BigDecimal budgetMax) {
         if (title == null || title.trim().isEmpty()) {
             throw new BusinessException("ERR_SYS_02", "Tiêu đề dự án không được để trống", HttpStatus.BAD_REQUEST);
         }
         if (budgetMin == null || budgetMax == null) {
             throw new BusinessException("ERR_SYS_02", "Ngân sách dự án không được để trống", HttpStatus.BAD_REQUEST);
         }
-        if (budgetMin < 0 || budgetMax < 0) {
+        if (budgetMin.signum() < 0 || budgetMax.signum() < 0) {
             throw new BusinessException("ERR_SYS_02", "Ngân sách dự án không được âm", HttpStatus.BAD_REQUEST);
         }
-        if (budgetMin > budgetMax) {
+        if (budgetMin.compareTo(MAX_PROJECT_BUDGET) > 0 || budgetMax.compareTo(MAX_PROJECT_BUDGET) > 0) {
+            throw new BusinessException(
+                "ERR_SYS_02",
+                "Ngân sách tối đa cho phép là 9,999,999,999.99",
+                HttpStatus.BAD_REQUEST
+            );
+        }
+        if (budgetMin.compareTo(budgetMax) > 0) {
             throw new BusinessException("ERR_SYS_02", "Ngân sách tối thiểu không được lớn hơn ngân sách tối đa", HttpStatus.BAD_REQUEST);
         }
     }
@@ -260,8 +271,9 @@ public class ProjectService {
     }
 
     private String normalizeStatus(String status, String fallbackStatus) {
+        ProjectStatus currentStatus = normalizeStoredStatus(fallbackStatus);
         if (status == null || status.trim().isEmpty()) {
-            return fallbackStatus;
+            return currentStatus.getValue();
         }
         ProjectStatus normalizedStatus = ProjectStatus.fromValue(status)
             .orElseThrow(() -> new BusinessException("ERR_SYS_02", "Trạng thái dự án không hợp lệ", HttpStatus.BAD_REQUEST));
@@ -272,7 +284,39 @@ public class ProjectService {
                 HttpStatus.BAD_REQUEST
             );
         }
-        return normalizedStatus.getValue();
+
+        if (normalizedStatus == currentStatus) {
+            return currentStatus.getValue();
+        }
+
+        if (currentStatus == ProjectStatus.OPEN && normalizedStatus == ProjectStatus.CANCELLED) {
+            return normalizedStatus.getValue();
+        }
+
+        throw new BusinessException(
+            "ERR_SYS_02",
+            "Customer chỉ có thể hủy project đang mở; trạng thái còn lại do contract flow hoặc admin quản lý",
+            HttpStatus.BAD_REQUEST
+        );
+    }
+
+    private void ensureProjectCanBeEditedByOwner(Project project) {
+        ProjectStatus currentStatus = normalizeStoredStatus(project.getStatus());
+        if (currentStatus == ProjectStatus.IN_PROGRESS || currentStatus == ProjectStatus.COMPLETED) {
+            throw new BusinessException(
+                "ERR_SYS_02",
+                "Project đang có contract hoặc đã hoàn thành không thể cập nhật thủ công",
+                HttpStatus.BAD_REQUEST
+            );
+        }
+    }
+
+    private ProjectStatus normalizeStoredStatus(String status) {
+        if (status == null || status.trim().isEmpty()) {
+            return ProjectStatus.OPEN;
+        }
+        return ProjectStatus.fromValue(status)
+            .orElseThrow(() -> new BusinessException("ERR_SYS_02", "Trạng thái dự án hiện tại không hợp lệ", HttpStatus.BAD_REQUEST));
     }
 
     /**

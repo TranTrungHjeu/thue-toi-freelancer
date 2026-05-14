@@ -3,12 +3,14 @@ package com.thuetoi.controller;
 import com.thuetoi.dto.request.BidRequest;
 import com.thuetoi.dto.request.BidStatusRequest;
 import com.thuetoi.dto.response.ApiResponse;
+import com.thuetoi.dto.response.PaymentOrderResponse;
 import com.thuetoi.dto.response.marketplace.BidResponse;
 import com.thuetoi.entity.Bid;
 import com.thuetoi.exception.BusinessException;
 import com.thuetoi.mapper.MarketplaceResponseMapper;
 import com.thuetoi.security.CurrentUserProvider;
 import com.thuetoi.service.BidService;
+import com.thuetoi.service.PaymentService;
 import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
@@ -31,6 +33,9 @@ public class BidController {
 
     @Autowired
     private MarketplaceResponseMapper marketplaceResponseMapper;
+
+    @Autowired
+    private PaymentService paymentService;
 
     /**
      * Lấy tất cả bid mà user hiện tại được phép xem
@@ -90,13 +95,21 @@ public class BidController {
     }
 
     /**
-     * Chọn bid (customer accept)
+     * Tạo đơn thanh toán SePay (VA) cho bid — tương đương chấp nhận bid sau khi trả tiền.
+     */
+    @PostMapping("/{bidId}/checkout")
+    public ApiResponse<PaymentOrderResponse> checkoutBid(@PathVariable Long bidId, Principal principal) {
+        Long currentUserId = currentUserProvider.requireCurrentUserId(principal);
+        com.thuetoi.entity.PaymentOrder order = paymentService.startCheckoutForBid(bidId, currentUserId);
+        return ApiResponse.success("Tạo đơn thanh toán thành công", paymentService.toResponse(order));
+    }
+
+    /**
+     * @deprecated Dùng {@code POST /{bidId}/checkout}
      */
     @PostMapping("/{bidId}/accept")
-    public ApiResponse<BidResponse> acceptBid(@PathVariable Long bidId, Principal principal) {
-        Long currentUserId = currentUserProvider.requireCurrentUserId(principal);
-        Bid bid = bidService.acceptBid(bidId, currentUserId);
-        return ApiResponse.success("Chọn báo giá thành công", marketplaceResponseMapper.toBidResponse(bid));
+    public ApiResponse<PaymentOrderResponse> acceptBid(@PathVariable Long bidId, Principal principal) {
+        return checkoutBid(bidId, principal);
     }
 
     /**

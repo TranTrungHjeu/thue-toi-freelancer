@@ -1,7 +1,9 @@
 "use client";
 
 import React, { useEffect, useRef, useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import Link from 'next/link';
+import { useRouter } from 'next/navigation';
+
 import { AnimatePresence } from 'motion/react';
 import { Bell, LogOut, Page, Settings, User } from 'iconoir-react';
 import { Caption } from '../common/Typography';
@@ -14,7 +16,7 @@ import { formatRole } from '../../utils/formatters';
 const UserDropdown = ({ user }) => {
   const [isOpen, setIsOpen] = useState(false);
   const dropdownRef = useRef(null);
-  const navigate = useNavigate();
+  const router = useRouter();
   const { logout } = useAuth();
   const { locale, t } = useI18n();
   const { unreadCount } = useNotifications();
@@ -59,7 +61,7 @@ const UserDropdown = ({ user }) => {
               {menuItems.map((item) => (
                 <Link
                   key={item.path}
-                  to={item.path}
+                  href={item.path}
                   onClick={() => setIsOpen(false)}
                   className="flex items-center gap-3 px-3 py-2.5 text-sm text-slate-600 transition-colors hover:bg-slate-50 hover:text-secondary-900"
                 >
@@ -81,7 +83,7 @@ const UserDropdown = ({ user }) => {
                 className="flex w-full items-center gap-3 px-3 py-2.5 text-sm text-red-600 transition-colors hover:bg-red-50"
                 onClick={async () => {
                   await logout();
-                  navigate('/auth/login', { replace: true });
+                  router.replace('/auth/login');
                 }}
               >
                 <LogOut className="h-5 w-5" />

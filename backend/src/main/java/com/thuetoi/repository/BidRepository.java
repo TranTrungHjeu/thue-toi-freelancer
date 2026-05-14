@@ -31,6 +31,6 @@ public interface BidRepository extends JpaRepository<Bid, Long> {
     List<Bid> findByProjectUserIdOrderByCreatedAtDesc(Long userId);
 
     @Override
-    @EntityGraph(attributePaths = {"project", "freelancer.skills"})
+    @EntityGraph(attributePaths = {"project", "project.user", "freelancer", "freelancer.skills"})
     Optional<Bid> findById(Long id);
 }

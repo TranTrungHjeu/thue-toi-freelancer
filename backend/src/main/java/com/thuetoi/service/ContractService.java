@@ -3,6 +3,7 @@ package com.thuetoi.service;
 import com.thuetoi.entity.Bid;
 import com.thuetoi.entity.Contract;
 import com.thuetoi.entity.Milestone;
+import com.thuetoi.entity.PaymentOrder;
 import com.thuetoi.entity.Project;
 import com.thuetoi.entity.User;
 import com.thuetoi.enums.BidStatus;
@@ -55,6 +56,9 @@ public class ContractService {
     @Autowired
     private ContractRealtimePublisher contractRealtimePublisher;
 
+    @Autowired
+    private WalletService walletService;
+
     /**
      * Lấy tất cả hợp đồng mà user hiện tại được phép xem.
      */
@@ -63,36 +67,39 @@ public class ContractService {
     }
 
     /**
-     * Tạo hợp đồng từ bid đã được customer chọn.
+     * Tạo hợp đồng sau khi SePay xác nhận thanh toán (gọi từ webhook, idempotent).
      */
     @Transactional
-    public Contract createContractFromBid(Long currentUserId, Long bidId) {
-        User customer = getRequiredUser(currentUserId);
-        ensureCustomer(customer);
-
-        Bid selectedBid = bidRepository.findById(bidId)
-            .orElseThrow(() -> new BusinessException("ERR_BID_01", "Không tìm thấy báo giá", HttpStatus.NOT_FOUND));
-
+    public Contract fulfillContractAfterPayment(PaymentOrder paymentOrder) {
+        Bid selectedBid = paymentOrder.getBid();
+        if (selectedBid == null) {
+            throw new BusinessException("ERR_PAYMENT_02", "Đơn thanh toán thiếu thông tin bid", HttpStatus.BAD_REQUEST);
+        }
         Project project = selectedBid.getProject();
-        if (!project.getUser().getId().equals(currentUserId)) {
-            throw new BusinessException("ERR_AUTH_04", "Bạn không có quyền tạo hợp đồng cho project này", HttpStatus.FORBIDDEN);
+        if (!java.util.Objects.equals(project.getId(), paymentOrder.getProjectId())) {
+            throw new BusinessException("ERR_PAYMENT_02", "Dự án không khớp với bid thanh toán", HttpStatus.BAD_REQUEST);
         }
-        if (!ProjectStatus.OPEN.matches(project.getStatus())) {
-            throw new BusinessException("ERR_SYS_02", "Project này không còn ở trạng thái mở để tạo hợp đồng", HttpStatus.BAD_REQUEST);
+        if (!project.getUser().getId().equals(paymentOrder.getCustomer().getId())) {
+            throw new BusinessException("ERR_AUTH_04", "Không khớp chủ sở hữu dự án với thanh toán", HttpStatus.FORBIDDEN);
         }
-        if (contractRepository.findByProjectId(project.getId()).isPresent()) {
-            throw new BusinessException("ERR_CONTRACT_02", "Project này đã có hợp đồng", HttpStatus.CONFLICT);
+        if (!ProjectStatus.PENDING_PAYMENT.matches(project.getStatus())) {
+            throw new BusinessException("ERR_SYS_02", "Dự án không ở trạng thái chờ thanh toán", HttpStatus.BAD_REQUEST);
+        }
+        var existing = contractRepository.findByProjectId(project.getId());
+        if (existing.isPresent()) {
+            return existing.get();
         }
 
         User freelancer = selectedBid.getFreelancer();
         ensureFreelancer(freelancer);
-        if (!BidStatus.PENDING.matches(selectedBid.getStatus()) && !BidStatus.ACCEPTED.matches(selectedBid.getStatus())) {
-            throw new BusinessException("ERR_SYS_02", "Chỉ có thể tạo hợp đồng từ bid đang chờ hoặc đã được chọn", HttpStatus.BAD_REQUEST);
+        if (!BidStatus.PENDING.matches(selectedBid.getStatus())) {
+            throw new BusinessException("ERR_SYS_02", "Chỉ bid đang chờ mới kích hoạt sau thanh toán", HttpStatus.BAD_REQUEST);
         }
 
+        Long selectedBidId = selectedBid.getId();
         List<Bid> projectBids = bidRepository.findByProjectId(project.getId());
         for (Bid currentBid : projectBids) {
-            if (currentBid.getId().equals(bidId)) {
+            if (currentBid.getId().equals(selectedBidId)) {
                 currentBid.setStatus(BidStatus.ACCEPTED.getValue());
                 continue;
             }
@@ -122,12 +129,20 @@ public class ContractService {
         contract.setStartDate(LocalDateTime.now());
 
         Contract createdContract = contractRepository.save(contract);
+        transactionService.createTransaction(createdContract.getId(), selectedBid.getPrice(), "sepay_checkout", "completed");
+        walletService.recordEscrowIn(
+            freelancer.getId(),
+            createdContract.getId(),
+            paymentOrder.getId(),
+            selectedBid.getPrice(),
+            project.getTitle()
+        );
         publishContractEvent(createdContract.getId(), "contract.created", createdContract);
         notificationService.createNotificationForUser(
             freelancer.getId(),
             "contract",
             "Bạn có hợp đồng mới",
-            "Khách hàng đã chấp nhận bid của bạn cho project \"" + project.getTitle() + "\".",
+            "Khách hàng đã thanh toán via SePay cho project \"" + project.getTitle() + "\".",
             "/workspace/contracts"
         );
         return createdContract;
@@ -318,13 +333,16 @@ public class ContractService {
         if (current != MilestoneStatus.PENDING) {
             throw new BusinessException("ERR_SYS_02", "Milestone đã ở trạng thái kết thúc không thể cập nhật lại", HttpStatus.BAD_REQUEST);
         }
+        if (normalized != MilestoneStatus.PENDING) {
+            ensureContractInProgress(contract, "Chỉ có thể cập nhật milestone khi contract đang tiến hành");
+        }
 
         milestone.setStatus(normalized.getValue());
         Milestone updatedMilestone = milestoneRepository.save(milestone);
 
         if (normalized == MilestoneStatus.COMPLETED) {
-            ensureContractInProgress(contract, "Chỉ có thể hoàn thành milestone khi contract đang tiến hành");
             transactionService.createTransaction(milestone.getContractId(), milestone.getAmount(), "milestone_completion", "completed");
+            walletService.applyMilestoneNetToFreelancer(contract, milestone.getAmount());
             notificationService.createNotificationForUser(
                 contract.getFreelancerId(),
                 "contract",

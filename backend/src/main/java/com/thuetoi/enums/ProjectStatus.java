@@ -9,6 +9,7 @@ import java.util.Optional;
 @RequiredArgsConstructor
 public enum ProjectStatus implements StringValuedEnum {
     OPEN("open"),
+    PENDING_PAYMENT("pending_payment"),
     IN_PROGRESS("in_progress"),
     COMPLETED("completed"),
     CANCELLED("cancelled");

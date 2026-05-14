@@ -1,15 +1,17 @@
+"use client";
+
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Client } from "@stomp/stompjs";
 import SockJS from "sockjs-client";
 import { useAuth } from "./useAuth";
 import { getAccessToken } from "../api/axiosClient";
 
-const API_BASE_URL =
-  import.meta.env.VITE_API_BASE_URL || "/api";
-const DEFAULT_WS_BASE_URL = API_BASE_URL.replace(/\/api\/?$/, "");
-const WS_BASE_URL = (
-  import.meta.env.VITE_WS_BASE_URL || DEFAULT_WS_BASE_URL
-).replace(/\/$/, "");
+const DEFAULT_HTTP_BASE_URL =
+  process.env.NEXT_PUBLIC_API_BASE_URL || "/api";
+
+const WS_URL =
+  process.env.NEXT_PUBLIC_WS_BASE_URL || DEFAULT_HTTP_BASE_URL.replace(/\/api\/?$/, "");
+
 const NOTIFICATION_TOPIC_PREFIX = "/user/queue/notifications";
 
 const parseMessagePayload = (body) => {
@@ -39,7 +41,7 @@ export const useWebSocket = (onMessage, topics = []) => {
     }
 
     const client = new Client({
-      webSocketFactory: () => new SockJS(`${WS_BASE_URL}/ws`),
+      webSocketFactory: () => new SockJS(`${WS_URL}/ws`),
       beforeConnect: () => {
         const accessToken = getAccessToken();
         client.connectHeaders = accessToken

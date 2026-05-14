@@ -72,6 +72,7 @@ export const formatRole = (role, locale = getActiveLocale()) => {
 export const getProjectStatusMeta = (status, locale = getActiveLocale()) => {
   const mapping = {
     open: { label: t('status.project.open', {}, locale), color: 'success' },
+    pending_payment: { label: t('status.project.pending_payment', {}, locale), color: 'warning' },
     in_progress: { label: t('status.project.in_progress', {}, locale), color: 'info' },
     completed: { label: t('status.project.completed', {}, locale), color: 'success' },
     cancelled: { label: t('status.project.cancelled', {}, locale), color: 'error' },

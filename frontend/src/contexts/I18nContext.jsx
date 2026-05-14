@@ -1,3 +1,5 @@
+"use client";
+
 import { useEffect, useMemo, useState } from 'react';
 import { I18nContext } from './i18n-context';
 import {
