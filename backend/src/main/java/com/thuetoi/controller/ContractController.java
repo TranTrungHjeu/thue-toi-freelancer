@@ -47,9 +47,11 @@ public class ContractController {
 
     @PostMapping
     public ApiResponse<ContractResponse> createContract(@Valid @RequestBody ContractCreateRequest request, Principal principal) {
-        Long currentUserId = currentUserProvider.requireCurrentUserId(principal);
-        Contract created = contractService.createContractFromBid(currentUserId, request.getBidId());
-        return ApiResponse.success("Tạo hợp đồng thành công", marketplaceResponseMapper.toContractResponse(created));
+        throw new BusinessException(
+            "ERR_PAYMENT_01",
+            "Hợp đồng chỉ được tạo sau khi thanh toán SePay. Dùng POST /api/v1/bids/{bidId}/checkout rồi quét VA/QR.",
+            HttpStatus.BAD_REQUEST
+        );
     }
 
     @GetMapping("/my")

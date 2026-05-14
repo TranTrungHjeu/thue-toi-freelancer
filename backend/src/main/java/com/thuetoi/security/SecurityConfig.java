@@ -65,6 +65,7 @@ public class SecurityConfig {
                     "/api/v1/auth/resend-verification-otp",
                     "/api/v1/auth/verification-otp-status",
                     "/api/v1/skills",
+                    "/api/v1/payments/sepay/webhook",
                     "/ws/**",
                     "/v3/api-docs/**",
                     "/swagger-ui.html",

@@ -38,7 +38,10 @@ export const marketplaceApi = {
   getMyBids: () => axiosClient.get('/v1/bids/my'),
   getBidsByFreelancer: (freelancerId) => axiosClient.get(`/v1/bids/freelancer/${freelancerId}`),
   createBid: (payload) => axiosClient.post('/v1/bids', payload),
+  checkoutBid: (bidId) => axiosClient.post(`/v1/bids/${bidId}/checkout`),
   acceptBid: (bidId) => axiosClient.post(`/v1/bids/${bidId}/accept`),
+  getPaymentByOrderCode: (orderCode) => axiosClient.get(`/v1/payments/${orderCode}`),
+  cancelPaymentByOrderCode: (orderCode) => axiosClient.post(`/v1/payments/${orderCode}/cancel`),
   updateBidStatus: (bidId, status) => axiosClient.put(`/v1/bids/${bidId}/status`, { status }),
   getMyContracts: () => axiosClient.get('/v1/contracts/my'),
   getContractsByUser: (userId) => axiosClient.get(`/v1/contracts/user/${userId}`),
@@ -68,6 +71,10 @@ export const marketplaceApi = {
   // --- KYC (User-side) ---
   requestKyc: () => axiosClient.post('/v1/kyc/request'),
   getKycStatus: () => axiosClient.get('/v1/kyc/my-status'),
+
+  // --- Wallet (SePay-funded escrow + balance) ---
+  getWalletMe: () => axiosClient.get('/v1/wallet/me'),
+  getWalletLedger: () => axiosClient.get('/v1/wallet/me/ledger'),
 };
 
 export default marketplaceApi;

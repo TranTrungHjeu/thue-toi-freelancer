@@ -23,6 +23,8 @@ import java.util.Optional;
  */
 @Service
 public class ProjectService {
+    private static final BigDecimal MAX_PROJECT_BUDGET = new BigDecimal("9999999999.99");
+
     @Autowired
     private ProjectRepository projectRepository;
 
@@ -83,7 +85,7 @@ public class ProjectService {
     ) {
         User user = getRequiredUser(userId);
         ensureCustomer(user);
-        validateProjectPayload(title, budgetMin != null ? budgetMin.doubleValue() : null, budgetMax != null ? budgetMax.doubleValue() : null);
+        validateProjectPayload(title, budgetMin, budgetMax);
 
         Project project = new Project();
         project.setUser(user);
@@ -169,7 +171,7 @@ public class ProjectService {
     ) {
         Project project = getOwnedProject(id, userId);
         ensureProjectCanBeEditedByOwner(project);
-        validateProjectPayload(title, budgetMin != null ? budgetMin.doubleValue() : null, budgetMax != null ? budgetMax.doubleValue() : null);
+        validateProjectPayload(title, budgetMin, budgetMax);
 
         project.setTitle(title.trim());
         project.setDescription(normalizeText(description));
@@ -238,17 +240,24 @@ public class ProjectService {
         return attachmentMetadataService.serialize(attachments);
     }
 
-    private void validateProjectPayload(String title, Double budgetMin, Double budgetMax) {
+    private void validateProjectPayload(String title, BigDecimal budgetMin, BigDecimal budgetMax) {
         if (title == null || title.trim().isEmpty()) {
             throw new BusinessException("ERR_SYS_02", "Tiêu đề dự án không được để trống", HttpStatus.BAD_REQUEST);
         }
         if (budgetMin == null || budgetMax == null) {
             throw new BusinessException("ERR_SYS_02", "Ngân sách dự án không được để trống", HttpStatus.BAD_REQUEST);
         }
-        if (budgetMin < 0 || budgetMax < 0) {
+        if (budgetMin.signum() < 0 || budgetMax.signum() < 0) {
             throw new BusinessException("ERR_SYS_02", "Ngân sách dự án không được âm", HttpStatus.BAD_REQUEST);
         }
-        if (budgetMin > budgetMax) {
+        if (budgetMin.compareTo(MAX_PROJECT_BUDGET) > 0 || budgetMax.compareTo(MAX_PROJECT_BUDGET) > 0) {
+            throw new BusinessException(
+                "ERR_SYS_02",
+                "Ngân sách tối đa cho phép là 9,999,999,999.99",
+                HttpStatus.BAD_REQUEST
+            );
+        }
+        if (budgetMin.compareTo(budgetMax) > 0) {
             throw new BusinessException("ERR_SYS_02", "Ngân sách tối thiểu không được lớn hơn ngân sách tối đa", HttpStatus.BAD_REQUEST);
         }
     }

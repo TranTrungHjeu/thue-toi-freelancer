@@ -1,6 +1,7 @@
 package com.thuetoi.dto.request;
 
 import jakarta.validation.constraints.DecimalMin;
+import jakarta.validation.constraints.Digits;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import lombok.Data;
@@ -21,10 +22,12 @@ public class ProjectRequest {
 
     @NotNull(message = "Ngân sách tối thiểu không được để trống")
     @DecimalMin(value = "0.0", message = "Ngân sách tối thiểu không được âm")
+    @Digits(integer = 10, fraction = 2, message = "Ngân sách tối thiểu tối đa 9,999,999,999.99")
     private BigDecimal budgetMin;
 
     @NotNull(message = "Ngân sách tối đa không được để trống")
     @DecimalMin(value = "0.0", message = "Ngân sách tối đa không được âm")
+    @Digits(integer = 10, fraction = 2, message = "Ngân sách tối đa tối đa 9,999,999,999.99")
     private BigDecimal budgetMax;
 
     private LocalDateTime deadline;
