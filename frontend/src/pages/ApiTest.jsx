@@ -1,3 +1,5 @@
+"use client";
+
 import React, { useEffect, useState } from 'react';
 import axios from '../api/axiosClient';
 import Button from '../components/common/Button';
@@ -29,6 +31,7 @@ function ApiTest() {
   const [loginPassword, setLoginPassword] = useState("");
   const [loginStatus, setLoginStatus] = useState(null);
   const [currentUser, setCurrentUser] = useState(() => {
+    if (typeof window === 'undefined') return null;
     try {
       const user = localStorage.getItem('currentUser');
       return user ? JSON.parse(user) : null;

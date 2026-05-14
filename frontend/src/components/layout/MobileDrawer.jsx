@@ -1,7 +1,10 @@
 "use client";
 
+import Link from 'next/link';
+
+
 import React from 'react';
-import { NavLink } from 'react-router-dom';
+
 import { AnimatePresence, motion } from 'motion/react';
 import { LogOut, Xmark } from 'iconoir-react';
 import { H2 } from '../common/Typography';
@@ -70,11 +73,11 @@ const MobileDrawer = ({
                     </div>
                     <div className="mt-3 flex flex-col gap-1">
                       {group.items.map((item) => {
-                        const isActive = currentPath === item.to;
+                        const isActive = currentPath === item.href;
                         return (
-                          <NavLink
-                            key={item.to}
-                            to={item.to}
+                          <Link
+                            key={item.href}
+                            href={item.href}
                             onClick={onClose}
                             className={`flex items-center gap-3 border-l-4 px-3 py-3 text-sm font-semibold ${
                               isActive
@@ -94,7 +97,7 @@ const MobileDrawer = ({
                               )}
                             </span>
                             <span className="flex-1">{item.label}</span>
-                          </NavLink>
+                          </Link>
                         );
                       })}
                     </div>

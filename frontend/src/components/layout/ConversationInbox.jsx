@@ -1,5 +1,8 @@
+"use client";
+
 ﻿import React, { useEffect, useMemo, useRef, useState } from 'react';
-import { Link } from 'react-router-dom';
+import Link from 'next/link';
+
 import { ChatBubble, Attachment, SendSolid } from 'iconoir-react';
 import marketplaceApi from '../../api/marketplaceApi';
 import { formatDateTime } from '../../utils/formatters';
@@ -179,7 +182,7 @@ const ConversationInbox = () => {
             <div className="flex h-full flex-col border-r border-slate-200">
               <div className="flex items-center justify-between border-b border-slate-100 px-3 py-3">
                 <span className="text-xs font-bold uppercase tracking-[0.14em] text-slate-500">Trò chuyện</span>
-                <Link to="/workspace/contracts" onClick={() => setIsOpen(false)} className="text-xs font-semibold text-primary-700 hover:underline">
+                <Link href="/workspace/contracts" onClick={() => setIsOpen(false)} className="text-xs font-semibold text-primary-700 hover:underline">
                   Mở trang đầy đủ
                 </Link>
               </div>

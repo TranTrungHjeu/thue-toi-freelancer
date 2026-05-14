@@ -249,9 +249,19 @@ public class UserService {
             throw new BusinessException("ERR_AUTH_02", "Mật khẩu hiện tại không chính xác", HttpStatus.UNAUTHORIZED);
         }
 
-        otpService.verifyEmailChangeOtp(newEmail, otp);
+        String normalizedEmail = normalizeEmail(newEmail);
+        if (normalizedEmail.equalsIgnoreCase(user.getEmail())) {
+            throw new BusinessException("ERR_AUTH_05", "Email mới không được trùng với email hiện tại", HttpStatus.BAD_REQUEST);
+        }
 
-        user.setEmail(normalizeEmail(newEmail));
+        User existingUser = userRepository.findByEmail(normalizedEmail);
+        if (existingUser != null && !userId.equals(existingUser.getId())) {
+            throw new BusinessException("ERR_AUTH_05", "Email này đã được sử dụng bởi một tài khoản khác", HttpStatus.CONFLICT);
+        }
+
+        otpService.verifyEmailChangeOtp(normalizedEmail, otp);
+
+        user.setEmail(normalizedEmail);
         user.setVerified(true);
         User savedUser = userRepository.save(user);
 

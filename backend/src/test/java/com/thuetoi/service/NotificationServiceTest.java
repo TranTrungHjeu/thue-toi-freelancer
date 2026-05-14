@@ -22,6 +22,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import org.mockito.junit.jupiter.MockitoSettings;
 import org.mockito.quality.Strictness;
 import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
@@ -121,6 +122,49 @@ class NotificationServiceTest {
         assertThat(response.notifications().get(0).type()).isEqualTo("bid");
         assertThat(response.totalNotifications()).isEqualTo(12L);
         assertThat(response.unreadCount()).isEqualTo(5L);
+    }
+
+    @Test
+    void getNotificationPageDelegatesArchivedAndQueryFilters() {
+        when(notificationRepository.searchUserNotifications(
+            eq(7L), eq(null), eq(false), eq(true), eq("contract"), any(Pageable.class)))
+            .thenReturn(new PageImpl<>(List.of(), PageRequest.of(0, 100), 0));
+        when(notificationRepository.countByUserIdAndDeletedAtIsNullAndArchivedAtIsNull(7L)).thenReturn(12L);
+        when(notificationRepository.countByUserIdAndIsReadFalseAndDeletedAtIsNullAndArchivedAtIsNull(7L)).thenReturn(5L);
+
+        NotificationPageResponse response = notificationService.getNotificationPage(7L, -1, 200, "all", false, true, " contract ");
+
+        assertThat(response.page()).isZero();
+        assertThat(response.size()).isEqualTo(100);
+        verify(notificationRepository).searchUserNotifications(
+            eq(7L), eq(null), eq(false), eq(true), eq("contract"), any(Pageable.class)
+        );
+    }
+
+    @Test
+    void archiveNotificationSetsArchivedAtForOwner() {
+        Notification notification = notification(1L, 7L, false);
+
+        when(notificationRepository.findById(1L)).thenReturn(Optional.of(notification));
+        when(notificationRepository.save(any(Notification.class))).thenAnswer(invocation -> invocation.getArgument(0));
+
+        Notification archived = notificationService.archiveNotification(1L, 7L);
+
+        assertThat(archived.getArchivedAt()).isNotNull();
+        verify(notificationRepository).save(notification);
+    }
+
+    @Test
+    void deleteNotificationSetsDeletedAtForOwner() {
+        Notification notification = notification(1L, 7L, false);
+
+        when(notificationRepository.findById(1L)).thenReturn(Optional.of(notification));
+        when(notificationRepository.save(any(Notification.class))).thenAnswer(invocation -> invocation.getArgument(0));
+
+        notificationService.deleteNotification(1L, 7L);
+
+        assertThat(notification.getDeletedAt()).isNotNull();
+        verify(notificationRepository).save(notification);
     }
 
     @Test

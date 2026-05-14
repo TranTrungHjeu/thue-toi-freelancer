@@ -1,11 +1,14 @@
+"use client";
+
 import React from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useRouter } from 'next/navigation';
+
 import Card from '../components/common/Card';
 import Button from '../components/common/Button';
 import { H1, Text } from '../components/common/Typography';
 
 const NotFoundPage = () => {
-  const navigate = useNavigate();
+  const router = useRouter();
 
   return (
     <div className="flex min-h-screen items-center justify-center bg-slate-50 px-4">
@@ -20,10 +23,10 @@ const NotFoundPage = () => {
           Hãy quay về trang chủ hoặc khu làm việc để tiếp tục sử dụng các luồng nghiệp vụ đã được hoàn thiện.
         </Text>
         <div className="mt-6 flex justify-center gap-3">
-          <Button variant="outline" onClick={() => navigate('/')}>
+          <Button variant="outline" onClick={() => router.push('/')}>
             Về trang chủ
           </Button>
-          <Button onClick={() => navigate('/workspace')}>
+          <Button onClick={() => router.push('/workspace')}>
             Vào khu làm việc
           </Button>
         </div>

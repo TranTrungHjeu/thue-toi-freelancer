@@ -1,5 +1,9 @@
+"use client";
+
 import React, { useMemo, useState } from 'react';
-import { Link, useLocation, useNavigate, useSearchParams } from 'react-router-dom';
+import Link from 'next/link';
+import { usePathname, useSearchParams, useRouter } from 'next/navigation';
+
 import Input from '../components/common/Input';
 import Button from '../components/common/Button';
 import Spinner from '../components/common/Spinner';
@@ -12,9 +16,9 @@ import { useI18n } from '../hooks/useI18n';
 import { splitApiFormError } from '../utils/formError';
 
 const LoginPage = () => {
-  const [searchParams] = useSearchParams();
-  const navigate = useNavigate();
-  const location = useLocation();
+  const searchParams = useSearchParams();
+  const router = useRouter();
+  const location = ({ pathname: usePathname(), search: useSearchParams().toString() });
   const { addToast } = useToast();
   const { login } = useAuth();
   const { t } = useI18n();
@@ -38,11 +42,11 @@ const LoginPage = () => {
     try {
       await login(email, password);
       addToast(t('toasts.auth.loginSuccess'), 'success');
-      navigate(nextPath, { replace: true });
+      router.replace(nextPath);
     } catch (error) {
       if (error?.code === 'ERR_AUTH_07') {
         addToast(t('toasts.auth.unverifiedRedirect'), 'warning');
-        navigate(`/auth/verify-email?email=${encodeURIComponent(email)}`);
+        router.push(`/auth/verify-email?email=${encodeURIComponent(email)}`);
         return;
       }
       const { fieldErrors: nextFieldErrors, formError: nextFormError } = splitApiFormError(error, t('toasts.auth.loginFormError'));
@@ -59,7 +63,7 @@ const LoginPage = () => {
       <div className="bg-noise pointer-events-none absolute inset-0 -z-10 opacity-[0.2]" />
 
       <header className="relative z-10 flex items-center justify-between px-8 py-4">
-        <Link to="/" className="flex items-center gap-2.5">
+        <Link href="/" className="flex items-center gap-2.5">
           <div className="border border-primary-400/50 bg-primary-500/12 px-2.5 py-1 text-xs font-black uppercase tracking-[0.22em] text-primary-200 backdrop-blur-sm">
             TT
           </div>
@@ -70,7 +74,7 @@ const LoginPage = () => {
         <div className="flex items-center gap-3">
           <LanguageSwitcher />
           <Link
-            to="/auth/register"
+            href="/auth/register"
             className="border border-white/20 bg-white/5 px-6 py-2 text-sm font-semibold text-white/90 transition-colors hover:border-white/35 hover:bg-white/10"
           >
             {t('authPages.login.navAction')}
@@ -133,7 +137,7 @@ const LoginPage = () => {
                 <span className="text-sm text-slate-300">{t('authPages.login.rememberMe')}</span>
               </label>
               <Link
-                to={`/auth/verify-email?email=${encodeURIComponent(email)}`}
+                href={`/auth/verify-email?email=${encodeURIComponent(email)}`}
                 className={`text-sm font-semibold text-primary-200 transition-colors hover:text-primary-100 ${submitting ? 'pointer-events-none opacity-60' : ''}`}
               >
                 {t('authPages.login.unverifiedLink')}
@@ -158,7 +162,7 @@ const LoginPage = () => {
             </div>
 
             <Link
-              to="/auth/register"
+              href="/auth/register"
               className={`flex w-full items-center justify-center gap-2 border border-white/20 bg-white/5 px-6 py-3.5 text-sm font-medium text-slate-100 transition-colors hover:border-white/35 hover:bg-white/10 ${submitting ? 'pointer-events-none opacity-60' : ''}`}
             >
               {t('authPages.login.navAction')}
@@ -168,7 +172,7 @@ const LoginPage = () => {
           <p className="mt-5 text-center text-sm text-slate-300/85">
             {t('authPages.login.footerPrompt')}{' '}
             <Link
-              to="/auth/register"
+              href="/auth/register"
               className={`font-semibold text-primary-200 transition-colors hover:text-primary-100 ${submitting ? 'pointer-events-none opacity-60' : ''}`}
             >
               {t('authPages.login.footerAction')}

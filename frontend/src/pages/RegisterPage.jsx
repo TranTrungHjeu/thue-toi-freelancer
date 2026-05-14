@@ -1,5 +1,9 @@
+"use client";
+
 import React, { useState } from 'react';
-import { Link, useNavigate, useSearchParams } from 'react-router-dom';
+import Link from 'next/link';
+import { useRouter, useSearchParams } from 'next/navigation';
+
 import Input from '../components/common/Input';
 import Select from '../components/common/Select';
 import Textarea from '../components/common/Textarea';
@@ -22,8 +26,8 @@ const initialFormState = {
 };
 
 const RegisterPage = () => {
-  const navigate = useNavigate();
-  const [searchParams] = useSearchParams();
+  const router = useRouter();
+  const searchParams = useSearchParams();
   const { addToast } = useToast();
   const { t } = useI18n();
   const initialRole = searchParams.get('role') === 'freelancer' ? 'freelancer' : 'customer';
@@ -50,7 +54,7 @@ const RegisterPage = () => {
     try {
       await authApi.register(form);
       addToast(t('toasts.auth.registerSuccess'), 'success');
-      navigate(`/auth/verify-email?email=${encodeURIComponent(form.email)}`);
+      router.push(`/auth/verify-email?email=${encodeURIComponent(form.email)}`);
     } catch (error) {
       const { fieldErrors: nextFieldErrors, formError: nextFormError } = splitApiFormError(error, t('toasts.auth.registerFormError'));
       setFieldErrors(nextFieldErrors);
@@ -66,7 +70,7 @@ const RegisterPage = () => {
       <div className="bg-noise pointer-events-none absolute inset-0 -z-10 opacity-[0.2]" />
 
       <header className="relative z-10 flex items-center justify-between px-8 py-4">
-        <Link to="/" className="flex items-center gap-2.5">
+        <Link href="/" className="flex items-center gap-2.5">
           <div className="border border-primary-400/50 bg-primary-500/12 px-2.5 py-1 text-xs font-black uppercase tracking-[0.22em] text-primary-200 backdrop-blur-sm">
             TT
           </div>
@@ -77,7 +81,7 @@ const RegisterPage = () => {
         <div className="flex items-center gap-3">
           <LanguageSwitcher />
           <Link
-            to="/auth/login"
+            href="/auth/login"
             className="border border-white/20 bg-white/5 px-6 py-2 text-sm font-semibold text-white/90 transition-colors hover:border-white/35 hover:bg-white/10"
           >
             {t('authPages.register.navAction')}
@@ -179,7 +183,7 @@ const RegisterPage = () => {
             <p className="text-center text-sm text-slate-300/85">
               {t('authPages.register.footerPrompt')}{' '}
               <Link
-                to="/auth/login"
+                href="/auth/login"
                 className={`font-semibold text-primary-200 transition-colors hover:text-primary-100 ${submitting ? 'pointer-events-none opacity-60' : ''}`}
               >
                 {t('authPages.register.footerAction')}

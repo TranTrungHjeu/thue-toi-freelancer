@@ -10,6 +10,7 @@ Checklist này dùng cho vòng QA local, review trước demo và regression sau
    - Frontend mở được tại `http://localhost:5173`
    - Backend health trả `200` tại `http://localhost:8080/api/v1/health`
 4. Xác nhận dữ liệu seed đã nạp khi volume DB rỗng.
+5. Ghi lại branch, commit và kết quả quality gate gần nhất để người review biết baseline đang dùng.
 
 ## 2. Tài khoản demo
 
@@ -34,6 +35,12 @@ Lưu ý:
    - Kỳ vọng: login thành công, profile role là `freelancer`.
 4. Tùy chọn: tạo 1 tài khoản mới bằng email thật rồi verify OTP.
    - Kỳ vọng: đăng ký gửi OTP, verify thành công, login được.
+5. Khi ở màn OTP, kiểm tra `GET /api/v1/auth/verification-otp-status?email=...`.
+   - Kỳ vọng: frontend hiển thị được thời gian hết hạn OTP và cooldown resend.
+6. Với user đã đăng nhập, gửi OTP đổi mật khẩu qua `POST /api/v1/users/me/password/otp`, sau đó đổi mật khẩu bằng `PUT /api/v1/users/me/password`.
+   - Kỳ vọng: backend yêu cầu `oldPassword`, `newPassword`, `otp`; đổi thành công thì trả access token mới và rotate refresh cookie.
+7. Với user đã đăng nhập, gửi OTP đổi email qua `POST /api/v1/users/me/email/otp`, sau đó xác nhận bằng `PUT /api/v1/users/me/email`.
+   - Kỳ vọng: email được cập nhật sau OTP hợp lệ; client đăng xuất hoặc yêu cầu đăng nhập lại để tránh giữ session cũ.
 
 ## 4. Khách hàng flow
 
@@ -139,8 +146,35 @@ Lưu ý:
    - Kỳ vọng: API trả `updatedCount`, unread badge về 0, các item chuyển trạng thái đã đọc.
 9. Nếu notification có `link`, bấm mở liên kết.
    - Kỳ vọng: item được mark read trước khi điều hướng đúng workspace liên quan.
+10. Kiểm tra lưu trữ notification nếu UI có hỗ trợ.
+   - Kỳ vọng: `PUT /api/v1/notifications/{id}/archive` chỉ lưu trữ notification của chính user; inbox mặc định không còn hiện item đã archive.
+11. Kiểm tra xóa notification nếu UI có hỗ trợ.
+   - Kỳ vọng: `DELETE /api/v1/notifications/{id}` soft-delete notification của chính user; item không còn trong inbox.
+12. Kiểm tra preferences ở `/api/v1/notifications/preferences`.
+   - Kỳ vọng: có đủ type `project`, `bid`, `contract`, `system`; cập nhật `inAppEnabled`, `emailEnabled`, `browserEnabled` không ảnh hưởng user khác.
 
-## 10. Regression technical gate
+## 10. Admin flow
+
+1. Login bằng `admin@gmail.com`.
+   - Kỳ vọng: vào được admin route; user thường bị chặn ở cả frontend guard và backend `/api/v1/admin/**`.
+2. Mở dashboard và health detailed.
+   - Kỳ vọng: `/admin/stats` và `/admin/health-detailed` trả dữ liệu hợp lệ.
+3. Mở Users.
+   - Kỳ vọng: `/admin/users/page` hỗ trợ phân trang, tìm kiếm, lọc role/status/verified và sort; `/admin/users/{id}` mở được chi tiết.
+4. Thử khóa/mở khóa hoặc đổi role user khác.
+   - Kỳ vọng: thao tác thành công với user khác; backend chặn admin tự khóa hoặc tự hạ quyền chính mình.
+5. Thử bulk status user.
+   - Kỳ vọng: backend chặn payload có chính admin hiện tại.
+6. Mở Projects moderation.
+   - Kỳ vọng: admin chỉ update project về `open` hoặc `cancelled`, không ép `in_progress`/`completed`.
+7. Mở Skills.
+   - Kỳ vọng: tạo/sửa/xóa skill catalog thành công và các form project/profile đọc catalog mới.
+8. Mở KYC, Reports, Withdrawals.
+   - Kỳ vọng: chỉ xử lý request đang chờ; status chỉ nhận tập giá trị hợp lệ theo API contract.
+9. Gửi broadcast.
+   - Kỳ vọng: từng user thuộc target role nhận in-app notification realtime; delivery log có bản ghi tương ứng ở `/admin/notifications/delivery-logs`.
+
+## 11. Regression technical gate
 
 Chạy các lệnh sau trước khi review hoặc demo:
 

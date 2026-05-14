@@ -1,3 +1,5 @@
+"use client";
+
 import React, { useEffect, useState, useMemo } from 'react';
 import { 
   Wallet, 
@@ -11,7 +13,8 @@ import {
   ArrowUp,
   RefreshDouble
 } from 'iconoir-react';
-import { useNavigate } from 'react-router-dom';
+import { useRouter } from 'next/navigation';
+
 import StatCard from '../../components/common/StatCard';
 import { H1, H2, Text, Caption } from '../../components/common/Typography';
 import Card from '../../components/common/Card';
@@ -26,7 +29,7 @@ const AdminFinancePage = () => {
   const [stats, setStats] = useState(null);
   const [loading, setLoading] = useState(true);
   const { addToast } = useToast();
-  const navigate = useNavigate();
+  const router = useRouter();
 
   useEffect(() => {
     const fetchStats = async () => {
@@ -156,7 +159,7 @@ const AdminFinancePage = () => {
           
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <button 
-              onClick={() => navigate('/workspace/admin/withdrawals')}
+              onClick={() => router.push('/workspace/admin/withdrawals')}
               className="flex items-center justify-between p-5 bg-slate-50 border border-slate-100 hover:border-primary-500 hover:bg-white transition-all group"
             >
               <div className="flex flex-col text-left">

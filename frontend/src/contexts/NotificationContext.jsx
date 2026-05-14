@@ -1,3 +1,5 @@
+"use client";
+
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import marketplaceApi from '../api/marketplaceApi';
 import { NotificationContext } from './notification-context';
@@ -14,6 +16,8 @@ const DEFAULT_PAGE_SIZE = 20;
 const DEFAULT_FILTERS = {
   type: 'all',
   readStatus: 'all',
+  archived: 'active',
+  q: '',
 };
 
 const DEFAULT_PAGE_INFO = {
@@ -58,6 +62,32 @@ const normalizePageData = (data = {}) => ({
   unreadCount: Number.isFinite(data.unreadCount) ? data.unreadCount : 0,
 });
 
+const matchesNotificationFilters = (notification, currentFilters) => {
+  if (!notification?.id) {
+    return false;
+  }
+  if (currentFilters.archived === 'archived') {
+    return false;
+  }
+  if (currentFilters.type !== 'all' && notification.type !== currentFilters.type) {
+    return false;
+  }
+  if (currentFilters.readStatus === 'unread' && notification.isRead) {
+    return false;
+  }
+
+  const query = `${currentFilters.q || ''}`.trim().toLowerCase();
+  if (!query) {
+    return true;
+  }
+
+  return [notification.title, notification.content]
+    .filter(Boolean)
+    .join(' ')
+    .toLowerCase()
+    .includes(query);
+};
+
 export const NotificationProvider = ({ children }) => {
   const { user } = useAuth();
   const { addToast } = useToast();
@@ -71,7 +101,14 @@ export const NotificationProvider = ({ children }) => {
   const [loading, setLoading] = useState(false);
   const [reloading, setReloading] = useState(false);
   const [updatingReadIds, setUpdatingReadIds] = useState([]);
+  const [archivingIds, setArchivingIds] = useState([]);
+  const [deletingIds, setDeletingIds] = useState([]);
   const [markingAllRead, setMarkingAllRead] = useState(false);
+  const notificationsRef = useRef([]);
+
+  useEffect(() => {
+    notificationsRef.current = notifications;
+  }, [notifications]);
 
   const reloadNotifications = useCallback(async ({
     manual = false,
@@ -97,6 +134,8 @@ export const NotificationProvider = ({ children }) => {
         size: pageSize,
         type: nextFilters.type === 'all' ? undefined : nextFilters.type,
         unreadOnly: nextFilters.readStatus === 'unread',
+        archived: nextFilters.archived === 'archived',
+        q: nextFilters.q || undefined,
       });
       const nextPageData = normalizePageData(response.data || {});
       setNotifications(nextPageData.notifications);
@@ -212,15 +251,22 @@ export const NotificationProvider = ({ children }) => {
       return;
     }
 
-    setNotifications((previous) => upsertNotification(previous, payload));
-    if (!payload.isRead) {
+    const alreadyVisible = notificationsRef.current.some((notification) => notification.id === payload.id);
+    const shouldShowInCurrentPage = matchesNotificationFilters(payload, filters);
+
+    if (shouldShowInCurrentPage) {
+      setNotifications((previous) => upsertNotification(previous, payload));
+    }
+
+    if (!alreadyVisible) {
       setPageInfo((prev) => ({
         ...prev,
-        unreadCount: Math.min((prev?.unreadCount || 0) + 1, 99),
+        unreadCount: (prev?.unreadCount || 0) + (payload.isRead ? 0 : 1),
         totalNotifications: (prev?.totalNotifications || 0) + 1,
+        totalElements: shouldShowInCurrentPage ? (prev?.totalElements || 0) + 1 : prev?.totalElements || 0,
       }));
     }
-  }, [setNotifications, setPageInfo]);
+  }, [filters, setNotifications, setPageInfo]);
 
   const notificationTopics = useMemo(() => (user?.id ? [NOTIFICATION_TOPIC, GLOBAL_NOTIFICATION_TOPIC] : []), [user?.id]);
 
@@ -290,6 +336,48 @@ export const NotificationProvider = ({ children }) => {
     }
   }, [addToast, postSyncEvent, reloadNotifications, t, user?.id]);
 
+  const archiveNotification = useCallback(async (notificationId) => {
+    if (!notificationId) {
+      return null;
+    }
+
+    setArchivingIds((previous) => [...new Set([...previous, notificationId])]);
+    try {
+      const response = await marketplaceApi.archiveNotification(notificationId);
+      setNotifications((previous) => previous.filter((notification) => notification.id !== notificationId));
+      await reloadNotifications({ silent: true });
+      postSyncEvent('notification-archived', { notificationId });
+      addToast(t('toasts.notifications.archiveSuccess'), 'success');
+      return response.data;
+    } catch (error) {
+      addToast(error?.message || t('toasts.notifications.updateError'), 'error');
+      throw error;
+    } finally {
+      setArchivingIds((previous) => previous.filter((id) => id !== notificationId));
+    }
+  }, [addToast, postSyncEvent, reloadNotifications, t]);
+
+  const deleteNotification = useCallback(async (notificationId) => {
+    if (!notificationId) {
+      return null;
+    }
+
+    setDeletingIds((previous) => [...new Set([...previous, notificationId])]);
+    try {
+      await marketplaceApi.deleteNotification(notificationId);
+      setNotifications((previous) => previous.filter((notification) => notification.id !== notificationId));
+      await reloadNotifications({ silent: true });
+      postSyncEvent('notification-deleted', { notificationId });
+      addToast(t('toasts.notifications.deleteSuccess'), 'success');
+      return true;
+    } catch (error) {
+      addToast(error?.message || t('toasts.notifications.updateError'), 'error');
+      throw error;
+    } finally {
+      setDeletingIds((previous) => previous.filter((id) => id !== notificationId));
+    }
+  }, [addToast, postSyncEvent, reloadNotifications, t]);
+
   const setNotificationPage = useCallback((nextPage) => {
     setPage(Math.max(0, Number(nextPage) || 0));
   }, []);
@@ -310,14 +398,22 @@ export const NotificationProvider = ({ children }) => {
     loading,
     reloading,
     updatingReadIds,
+    archivingIds,
+    deletingIds,
     markingAllRead,
     isRealtimeConnected,
     reloadNotifications,
     markAsRead,
     markAllAsRead,
+    archiveNotification,
+    deleteNotification,
     setNotificationPage,
     setNotificationFilters,
   }), [
+    archiveNotification,
+    archivingIds,
+    deleteNotification,
+    deletingIds,
     filters,
     isRealtimeConnected,
     loading,

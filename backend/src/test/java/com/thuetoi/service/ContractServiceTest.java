@@ -279,6 +279,7 @@ class ContractServiceTest {
             eq("Contract #70 vừa được cập nhật sang trạng thái \"completed\"."),
             eq("/workspace/contracts")
         );
+        verify(transactionService).createTransaction(70L, BigDecimal.valueOf(1000), "contract_completion", "completed");
     }
 
     @Test
@@ -317,6 +318,49 @@ class ContractServiceTest {
 
         verify(milestoneRepository, never()).save(any());
         verify(transactionService, never()).createTransaction(any(), any(), any(), any());
+    }
+
+    @Test
+    void updateMilestoneStatusRejectsTerminalUpdateWhenContractFinished() {
+        Contract contract = contract(70L, 10L, 1L, 2L, "completed");
+        Milestone milestone = milestone(301L, 70L, "Phase 1", BigDecimal.valueOf(1500000), "pending");
+
+        when(milestoneRepository.findById(301L)).thenReturn(Optional.of(milestone));
+        when(contractAccessService.requireCustomerContract(70L, 1L)).thenReturn(contract);
+
+        assertThatThrownBy(() -> contractService.updateMilestoneStatus(301L, 1L, "cancelled"))
+            .isInstanceOf(BusinessException.class)
+            .satisfies(throwable -> {
+                BusinessException ex = (BusinessException) throwable;
+                assertThat(ex.getCode()).isEqualTo("ERR_SYS_02");
+                assertThat(ex.getStatus()).isEqualTo(HttpStatus.BAD_REQUEST);
+            });
+
+        verify(milestoneRepository, never()).save(any());
+        verify(transactionService, never()).createTransaction(any(), any(), any(), any());
+        verify(notificationService, never()).createNotificationForUser(any(), any(), any(), any(), any());
+    }
+
+    @Test
+    void updateMilestoneStatusCompletesMilestoneAndCreatesTransaction() {
+        Contract contract = contract(70L, 10L, 1L, 2L, "in_progress");
+        Milestone milestone = milestone(301L, 70L, "Phase 1", BigDecimal.valueOf(1500000), "pending");
+
+        when(milestoneRepository.findById(301L)).thenReturn(Optional.of(milestone));
+        when(contractAccessService.requireCustomerContract(70L, 1L)).thenReturn(contract);
+        when(milestoneRepository.save(any(Milestone.class))).thenAnswer(invocation -> invocation.getArgument(0));
+
+        Milestone updated = contractService.updateMilestoneStatus(301L, 1L, "completed");
+
+        assertThat(updated.getStatus()).isEqualTo("completed");
+        verify(transactionService).createTransaction(70L, BigDecimal.valueOf(1500000), "milestone_completion", "completed");
+        verify(notificationService).createNotificationForUser(
+            eq(2L),
+            eq("contract"),
+            eq("Milestone đã hoàn thành"),
+            eq("Milestone \"Phase 1\" đã được hoàn thành."),
+            eq("/workspace/contracts")
+        );
     }
 
     @Test
@@ -368,6 +412,7 @@ class ContractServiceTest {
         contract.setFreelancerId(freelancerId);
         contract.setStatus(status);
         contract.setProgress(0);
+        contract.setTotalAmount(BigDecimal.valueOf(1000));
         contract.setStartDate(LocalDateTime.of(2026, 3, 24, 12, 0));
         return contract;
     }

@@ -1,5 +1,8 @@
+"use client";
+
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
-import { useSearchParams } from 'react-router-dom';
+import { useSearchParams, useRouter, usePathname } from 'next/navigation';
+
 import {
   Check,
   CheckCircle,
@@ -140,7 +143,9 @@ const AdminUsersPage = () => {
   const { t } = useI18n();
   const { user: currentUser } = useAuth();
   const { addToast } = useToast();
-  const [searchParams, setSearchParams] = useSearchParams();
+  const searchParams = useSearchParams();
+  const router = useRouter();
+  const pathname = usePathname();
   const filters = useMemo(() => normalizeFilters(searchParams), [searchParams]);
 
   const [users, setUsers] = useState([]);
@@ -176,8 +181,8 @@ const AdminUsersPage = () => {
         nextParams.set(key, String(value));
       }
     });
-    setSearchParams(nextParams, { replace: true });
-  }, [filters, setSearchParams]);
+    router.replace(`${pathname}?${nextParams.toString()}`, { scroll: false });
+  }, [filters, router, pathname]);
 
   const fetchUsers = useCallback(async ({ showLoading = true } = {}) => {
     if (showLoading) {

@@ -1,5 +1,8 @@
+"use client";
+
 import React, { useEffect, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useRouter } from 'next/navigation';
+
 import { Bell, PageSearch, StatsUpSquare, ViewGrid } from 'iconoir-react';
 import Card from '../components/common/Card';
 import Button from '../components/common/Button';
@@ -24,7 +27,7 @@ import {
 } from '../utils/formatters';
 
 const WorkspaceDashboardPage = () => {
-  const navigate = useNavigate();
+  const router = useRouter();
   const { user } = useAuth();
   const { addToast } = useToast();
   const { locale, t } = useI18n();
@@ -108,13 +111,13 @@ const WorkspaceDashboardPage = () => {
           </Text>
 
           <div className="mt-6 flex flex-wrap gap-3">
-            <Button onClick={() => navigate('/workspace/projects')}>
+            <Button onClick={() => router.push('/workspace/projects')}>
               {user?.role === 'customer' ? copy.hero.customerAction : copy.hero.freelancerAction}
             </Button>
-            <Button variant="outline" onClick={() => navigate('/workspace/contracts')}>
+            <Button variant="outline" onClick={() => router.push('/workspace/contracts')}>
               {copy.hero.contractsAction}
             </Button>
-            <Button variant="ghost" onClick={() => navigate('/workspace/profile')}>
+            <Button variant="ghost" onClick={() => router.push('/workspace/profile')}>
               {copy.hero.profileAction}
             </Button>
           </div>
@@ -144,7 +147,7 @@ const WorkspaceDashboardPage = () => {
                 {user?.role === 'customer' ? copy.projectsSection.customerTitle : copy.projectsSection.freelancerTitle}
               </H2>
             </div>
-            <Button variant="ghost" onClick={() => navigate('/workspace/projects')}>
+            <Button variant="ghost" onClick={() => router.push('/workspace/projects')}>
               {copy.projectsSection.viewAll}
             </Button>
           </div>
@@ -199,7 +202,7 @@ const WorkspaceDashboardPage = () => {
                 {copy.notificationsSection.title}
               </H2>
             </div>
-            <Button variant="ghost" onClick={() => navigate('/workspace/notifications')}>
+            <Button variant="ghost" onClick={() => router.push('/workspace/notifications')}>
               {copy.notificationsSection.manage}
             </Button>
           </div>

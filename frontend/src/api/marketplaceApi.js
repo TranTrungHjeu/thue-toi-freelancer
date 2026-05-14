@@ -57,6 +57,10 @@ export const marketplaceApi = {
   getNotificationsPage: (params = {}) => axiosClient.get('/v1/notifications/user/me/page', { params }),
   markNotificationAsRead: (notificationId) => axiosClient.put(`/v1/notifications/${notificationId}/read`),
   markAllNotificationsAsRead: () => axiosClient.put('/v1/notifications/read-all'),
+  archiveNotification: (notificationId) => axiosClient.put(`/v1/notifications/${notificationId}/archive`),
+  deleteNotification: (notificationId) => axiosClient.delete(`/v1/notifications/${notificationId}`),
+  getNotificationPreferences: () => axiosClient.get('/v1/notifications/preferences'),
+  updateNotificationPreference: (type, payload) => axiosClient.put(`/v1/notifications/preferences/${type}`, payload),
 
   // --- Reports ---
   submitReport: (payload) => axiosClient.post('/v1/reports', payload),

@@ -1,5 +1,7 @@
+"use client";
+
 import { useEffect, useRef, useState } from 'react';
-import { Link } from 'react-router-dom';
+import Link from 'next/link';
 import { motion, useInView, useScroll, useTransform, type MotionValue } from 'framer-motion';
 import { ArrowRight, Check } from 'lucide-react';
 import LoadingOverlay from '../components/common/LoadingOverlay';
@@ -328,7 +330,7 @@ const LandingPage = () => {
                   {user ? (
                     <>
                       <Link
-                        to={primaryAction}
+                        href={primaryAction}
                         className="group inline-flex max-w-full items-center gap-2 rounded-full bg-primary-600 px-5 py-2 text-sm font-medium text-white transition-all hover:bg-primary-700 hover:gap-3 sm:text-base"
                       >
                         <span>{primaryLabel}</span>
@@ -337,7 +339,7 @@ const LandingPage = () => {
                         </span>
                       </Link>
                       <Link
-                        to={secondaryAction}
+                        href={secondaryAction}
                         className="inline-flex items-center justify-center rounded-full border border-white/20 px-5 py-2 text-sm font-medium text-white/85 transition-colors hover:border-white/35 hover:bg-white/5 sm:text-base"
                       >
                         {secondaryLabel}

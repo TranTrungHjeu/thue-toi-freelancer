@@ -318,12 +318,14 @@ public class ContractService {
         if (current != MilestoneStatus.PENDING) {
             throw new BusinessException("ERR_SYS_02", "Milestone đã ở trạng thái kết thúc không thể cập nhật lại", HttpStatus.BAD_REQUEST);
         }
+        if (normalized != MilestoneStatus.PENDING) {
+            ensureContractInProgress(contract, "Chỉ có thể cập nhật milestone khi contract đang tiến hành");
+        }
 
         milestone.setStatus(normalized.getValue());
         Milestone updatedMilestone = milestoneRepository.save(milestone);
 
         if (normalized == MilestoneStatus.COMPLETED) {
-            ensureContractInProgress(contract, "Chỉ có thể hoàn thành milestone khi contract đang tiến hành");
             transactionService.createTransaction(milestone.getContractId(), milestone.getAmount(), "milestone_completion", "completed");
             notificationService.createNotificationForUser(
                 contract.getFreelancerId(),

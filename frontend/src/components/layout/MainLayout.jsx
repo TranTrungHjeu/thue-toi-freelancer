@@ -1,5 +1,8 @@
+"use client";
+
 import React, { useState, useMemo } from 'react';
-import { Outlet, useLocation } from 'react-router-dom';
+import { usePathname, useSearchParams } from 'next/navigation';
+
 import { Bell, Home, Page, PageSearch, ProfileCircle, ViewGrid, Group, Settings, Reports, Coins, ShieldCheck, Megaphone, WarningTriangle, Database } from 'iconoir-react';
 import Header from './Header';
 import Sidebar from './Sidebar';
@@ -9,10 +12,10 @@ import { useAuth } from '../../hooks/useAuth';
 import { useI18n } from '../../hooks/useI18n';
 import { useNotifications } from '../../hooks/useNotifications';
 
-const MainLayout = () => {
+const MainLayout = ({ children }) => {
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
   const { user, logout } = useAuth();
-  const location = useLocation();
+  const location = ({ pathname: usePathname(), search: useSearchParams().toString() });
   const { t } = useI18n();
   const { unreadCount } = useNotifications();
 
@@ -22,7 +25,7 @@ const MainLayout = () => {
   const navigation = useMemo(() => {
     const notificationItem = {
       label: t('layout.navigation.notifications'),
-      to: '/workspace/notifications',
+      href: '/workspace/notifications',
       icon: Bell,
       badge: notificationBadge,
       badgeLabel: t('notificationsCenter.unreadBadge', { count: unreadCount }),
@@ -30,7 +33,7 @@ const MainLayout = () => {
 
     const commonWorkspaceItems = [
       notificationItem,
-      { label: t('layout.navigation.profile'), to: '/workspace/profile', icon: ProfileCircle },
+      { label: t('layout.navigation.profile'), href: '/workspace/profile', icon: ProfileCircle },
     ];
 
     if (role === 'admin') {
@@ -38,27 +41,27 @@ const MainLayout = () => {
         {
           title: t('layout.adminSections.moderation'),
           items: [
-            { label: t('layout.navigation.adminDashboard'), to: '/workspace/admin/dashboard', icon: Home },
-            { label: t('layout.navigation.adminUsers'), to: '/workspace/admin/users', icon: Group },
-            { label: t('layout.navigation.adminProjects'), to: '/workspace/admin/projects', icon: ViewGrid },
-            { label: t('layout.navigation.adminKyc'), to: '/workspace/admin/kyc', icon: ShieldCheck },
-            { label: t('layout.navigation.adminReports'), to: '/workspace/admin/reports', icon: WarningTriangle },
+            { label: t('layout.navigation.adminDashboard'), href: '/workspace/admin/dashboard', icon: Home },
+            { label: t('layout.navigation.adminUsers'), href: '/workspace/admin/users', icon: Group },
+            { label: t('layout.navigation.adminProjects'), href: '/workspace/admin/projects', icon: ViewGrid },
+            { label: t('layout.navigation.adminKyc'), href: '/workspace/admin/kyc', icon: ShieldCheck },
+            { label: t('layout.navigation.adminReports'), href: '/workspace/admin/reports', icon: WarningTriangle },
           ],
         },
         {
           title: t('layout.adminSections.finance'),
           items: [
-            { label: t('layout.navigation.adminFinance'), to: '/workspace/admin/finance', icon: Coins },
-            { label: t('layout.navigation.adminWithdrawals'), to: '/workspace/admin/withdrawals', icon: Reports },
+            { label: t('layout.navigation.adminFinance'), href: '/workspace/admin/finance', icon: Coins },
+            { label: t('layout.navigation.adminWithdrawals'), href: '/workspace/admin/withdrawals', icon: Reports },
           ],
         },
         {
           title: t('layout.adminSections.system'),
           items: [
-            { label: t('layout.navigation.adminBroadcast'), to: '/workspace/admin/broadcast', icon: Megaphone },
-            { label: t('layout.navigation.adminSkills'), to: '/workspace/admin/skills', icon: Database },
-            { label: t('layout.navigation.adminSettings'), to: '/workspace/admin/settings', icon: Settings },
-            { label: t('layout.navigation.adminLogs'), to: '/workspace/admin/logs', icon: PageSearch },
+            { label: t('layout.navigation.adminBroadcast'), href: '/workspace/admin/broadcast', icon: Megaphone },
+            { label: t('layout.navigation.adminSkills'), href: '/workspace/admin/skills', icon: Database },
+            { label: t('layout.navigation.adminSettings'), href: '/workspace/admin/settings', icon: Settings },
+            { label: t('layout.navigation.adminLogs'), href: '/workspace/admin/logs', icon: PageSearch },
             ...commonWorkspaceItems,
           ],
         }
@@ -70,9 +73,9 @@ const MainLayout = () => {
         {
           title: t('roles.customer'),
           items: [
-            { label: t('layout.navigation.dashboard'), to: '/workspace', icon: Home },
-            { label: t('layout.navigation.projects'), to: '/workspace/projects', icon: ViewGrid },
-            { label: t('layout.navigation.contracts'), to: '/workspace/contracts', icon: PageSearch },
+            { label: t('layout.navigation.dashboard'), href: '/workspace', icon: Home },
+            { label: t('layout.navigation.projects'), href: '/workspace/projects', icon: ViewGrid },
+            { label: t('layout.navigation.contracts'), href: '/workspace/contracts', icon: PageSearch },
             ...commonWorkspaceItems,
           ],
         }
@@ -84,9 +87,9 @@ const MainLayout = () => {
       {
         title: t('roles.freelancer'),
         items: [
-          { label: t('layout.navigation.dashboard'), to: '/workspace', icon: Home },
-          { label: t('layout.navigation.findJobs'), to: '/workspace/projects', icon: PageSearch },
-          { label: t('layout.navigation.myContracts'), to: '/workspace/contracts', icon: ViewGrid },
+          { label: t('layout.navigation.dashboard'), href: '/workspace', icon: Home },
+          { label: t('layout.navigation.findJobs'), href: '/workspace/projects', icon: PageSearch },
+          { label: t('layout.navigation.myContracts'), href: '/workspace/contracts', icon: ViewGrid },
           ...commonWorkspaceItems,
         ],
       }
@@ -95,11 +98,11 @@ const MainLayout = () => {
 
   const mobileNavigation = useMemo(() => {
     const baseNav = [
-      { label: t('layout.navigation.dashboard'), to: '/workspace', icon: Home },
+      { label: t('layout.navigation.dashboard'), href: '/workspace', icon: Home },
     ];
     const notificationItem = {
       label: t('layout.navigation.notifications'),
-      to: '/workspace/notifications',
+      href: '/workspace/notifications',
       icon: Bell,
       badge: notificationBadge,
       badgeLabel: t('notificationsCenter.unreadBadge', { count: unreadCount }),
@@ -108,9 +111,9 @@ const MainLayout = () => {
     if (role === 'admin') {
       return [
         ...baseNav,
-        { label: t('layout.navigation.projects'), to: '/workspace/admin/projects', icon: ViewGrid },
-        { label: t('layout.navigation.adminUsers'), to: '/workspace/admin/users', icon: Group },
-        { label: t('layout.navigation.adminFinance'), to: '/workspace/admin/finance', icon: Reports },
+        { label: t('layout.navigation.projects'), href: '/workspace/admin/projects', icon: ViewGrid },
+        { label: t('layout.navigation.adminUsers'), href: '/workspace/admin/users', icon: Group },
+        { label: t('layout.navigation.adminFinance'), href: '/workspace/admin/finance', icon: Reports },
         notificationItem,
       ];
     }
@@ -118,19 +121,19 @@ const MainLayout = () => {
     if (role === 'customer') {
       return [
         ...baseNav,
-        { label: t('layout.navigation.projects'), to: '/workspace/projects', icon: ViewGrid },
-        { label: t('layout.navigation.rent'), to: '/workspace/contracts', icon: PageSearch },
+        { label: t('layout.navigation.projects'), href: '/workspace/projects', icon: ViewGrid },
+        { label: t('layout.navigation.rent'), href: '/workspace/contracts', icon: PageSearch },
         notificationItem,
-        { label: t('layout.navigation.profile'), to: '/workspace/profile', icon: ProfileCircle },
+        { label: t('layout.navigation.profile'), href: '/workspace/profile', icon: ProfileCircle },
       ];
     }
 
     return [
       ...baseNav,
-      { label: t('layout.navigation.findJobs'), to: '/workspace/projects', icon: PageSearch },
-      { label: t('layout.navigation.contracts'), to: '/workspace/contracts', icon: ViewGrid },
+      { label: t('layout.navigation.findJobs'), href: '/workspace/projects', icon: PageSearch },
+      { label: t('layout.navigation.contracts'), href: '/workspace/contracts', icon: ViewGrid },
       notificationItem,
-      { label: t('layout.navigation.profile'), to: '/workspace/profile', icon: ProfileCircle },
+      { label: t('layout.navigation.profile'), href: '/workspace/profile', icon: ProfileCircle },
     ];
   }, [notificationBadge, role, t, unreadCount]);
 
@@ -153,7 +156,7 @@ const MainLayout = () => {
         </div>
         <main className="flex-1 overflow-x-hidden p-4 pb-20 md:p-8 lg:pb-8">
           <div className="mx-auto flex max-w-6xl flex-col gap-8">
-            <Outlet />
+            {children}
           </div>
         </main>
       </div>

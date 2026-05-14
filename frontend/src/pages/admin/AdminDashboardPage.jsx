@@ -1,3 +1,5 @@
+"use client";
+
 import React, { useEffect, useState, useMemo } from 'react';
 import { 
   Group, 
@@ -29,7 +31,8 @@ import {
   Tooltip, 
   ResponsiveContainer 
 } from 'recharts';
-import { useNavigate } from 'react-router-dom';
+import { useRouter } from 'next/navigation';
+
 import StatCard from '../../components/common/StatCard';
 import { H1, H2, Text, Caption } from '../../components/common/Typography';
 import Card from '../../components/common/Card';
@@ -45,7 +48,7 @@ const AdminDashboardPage = () => {
   const [health, setHealth] = useState(null);
   const [loading, setLoading] = useState(true);
   const { addToast } = useToast();
-  const navigate = useNavigate();
+  const router = useRouter();
 
   useEffect(() => {
     const fetchStats = async () => {
@@ -388,7 +391,7 @@ const AdminDashboardPage = () => {
             <Card 
               key={idx}
               className="group p-5 bg-white border border-slate-100 shadow-premium hover:border-primary-500 transition-all cursor-pointer"
-              onClick={() => navigate(item.path)}
+              onClick={() => router.push(item.path)}
             >
               <div className="flex flex-col h-full">
                 <div className={`p-3 w-fit ${item.bgColor} ${item.color} mb-4 transition-transform group-hover:scale-110`}>

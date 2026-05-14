@@ -168,6 +168,7 @@ public class ProjectService {
         List<FileAttachmentRequest> attachments
     ) {
         Project project = getOwnedProject(id, userId);
+        ensureProjectCanBeEditedByOwner(project);
         validateProjectPayload(title, budgetMin != null ? budgetMin.doubleValue() : null, budgetMax != null ? budgetMax.doubleValue() : null);
 
         project.setTitle(title.trim());
@@ -192,6 +193,7 @@ public class ProjectService {
     @Transactional
     public void deleteProject(Long id, Long userId) {
         Project project = getOwnedProject(id, userId);
+        ensureProjectCanBeEditedByOwner(project);
         projectRepository.delete(project);
     }
 
@@ -260,8 +262,9 @@ public class ProjectService {
     }
 
     private String normalizeStatus(String status, String fallbackStatus) {
+        ProjectStatus currentStatus = normalizeStoredStatus(fallbackStatus);
         if (status == null || status.trim().isEmpty()) {
-            return fallbackStatus;
+            return currentStatus.getValue();
         }
         ProjectStatus normalizedStatus = ProjectStatus.fromValue(status)
             .orElseThrow(() -> new BusinessException("ERR_SYS_02", "Trạng thái dự án không hợp lệ", HttpStatus.BAD_REQUEST));
@@ -272,7 +275,39 @@ public class ProjectService {
                 HttpStatus.BAD_REQUEST
             );
         }
-        return normalizedStatus.getValue();
+
+        if (normalizedStatus == currentStatus) {
+            return currentStatus.getValue();
+        }
+
+        if (currentStatus == ProjectStatus.OPEN && normalizedStatus == ProjectStatus.CANCELLED) {
+            return normalizedStatus.getValue();
+        }
+
+        throw new BusinessException(
+            "ERR_SYS_02",
+            "Customer chỉ có thể hủy project đang mở; trạng thái còn lại do contract flow hoặc admin quản lý",
+            HttpStatus.BAD_REQUEST
+        );
+    }
+
+    private void ensureProjectCanBeEditedByOwner(Project project) {
+        ProjectStatus currentStatus = normalizeStoredStatus(project.getStatus());
+        if (currentStatus == ProjectStatus.IN_PROGRESS || currentStatus == ProjectStatus.COMPLETED) {
+            throw new BusinessException(
+                "ERR_SYS_02",
+                "Project đang có contract hoặc đã hoàn thành không thể cập nhật thủ công",
+                HttpStatus.BAD_REQUEST
+            );
+        }
+    }
+
+    private ProjectStatus normalizeStoredStatus(String status) {
+        if (status == null || status.trim().isEmpty()) {
+            return ProjectStatus.OPEN;
+        }
+        return ProjectStatus.fromValue(status)
+            .orElseThrow(() -> new BusinessException("ERR_SYS_02", "Trạng thái dự án hiện tại không hợp lệ", HttpStatus.BAD_REQUEST));
     }
 
     /**

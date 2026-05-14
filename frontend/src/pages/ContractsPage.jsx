@@ -1,5 +1,8 @@
+"use client";
+
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { useSearchParams } from 'react-router-dom';
+import { useSearchParams, useRouter, usePathname } from 'next/navigation';
+
 import Card from '../components/common/Card';
 import Button from '../components/common/Button';
 import Badge from '../components/common/Badge';
@@ -178,7 +181,9 @@ const getTransactionStatusMeta = (status, copy) => {
 
 const ContractsPage = () => {
   const { user } = useAuth();
-  const [searchParams, setSearchParams] = useSearchParams();
+  const searchParams = useSearchParams();
+  const router = useRouter();
+  const pathname = usePathname();
   const { addToast } = useToast();
   const { locale, t } = useI18n();
   const copy = t('contractsPage');
@@ -440,11 +445,9 @@ const ContractsPage = () => {
   }, []);
 
   const handleSelectContract = async (contract) => {
-    setSearchParams((previous) => {
-      const next = new URLSearchParams(previous);
-      next.set('contractId', String(contract.id));
-      return next;
-    });
+    const next = new URLSearchParams(searchParams);
+    next.set('contractId', String(contract.id));
+    router.replace(`${pathname}?${next.toString()}`, { scroll: false });
     selectedContractIdRef.current = contract.id;
     setSelectedContractId(contract.id);
     resetMilestoneForm();

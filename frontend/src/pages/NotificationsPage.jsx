@@ -1,11 +1,15 @@
+"use client";
+
 import React, { useMemo } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useRouter } from 'next/navigation';
+
 import Card from '../components/common/Card';
 import Button from '../components/common/Button';
 import Badge from '../components/common/Badge';
 import StatMetricCard from '../components/common/StatMetricCard';
 import InfoPanel from '../components/common/InfoPanel';
 import Spinner from '../components/common/Spinner';
+import SearchInput from '../components/common/SearchInput';
 import { H1, H2, Text, Caption } from '../components/common/Typography';
 import { useI18n } from '../hooks/useI18n';
 import useMinimumLoadingState from '../hooks/useMinimumLoadingState';
@@ -24,9 +28,13 @@ const getNotificationsPageCopy = (locale) => {
       inboxTitle: 'All notifications',
       filterType: 'Type',
       filterReadStatus: 'Read status',
+      filterArchiveStatus: 'Inbox state',
       filterAllTypes: 'All types',
       filterAllReadStates: 'All',
       filterUnreadOnly: 'Unread only',
+      filterActiveOnly: 'Active',
+      filterArchivedOnly: 'Archived',
+      searchPlaceholder: 'Search title or content',
       reload: 'Reload',
       reloadLoading: 'Reloading...',
       markAllRead: 'Mark all as read',
@@ -35,6 +43,10 @@ const getNotificationsPageCopy = (locale) => {
       openLink: 'Open link',
       markRead: 'Mark as read',
       markReadLoading: 'Updating...',
+      archive: 'Archive',
+      archiveLoading: 'Archiving...',
+      delete: 'Delete',
+      deleteLoading: 'Deleting...',
       emptyTitle: 'No notifications yet',
       emptyDescription: 'When there are updates related to your account, projects, or contracts, they will appear here.',
       readStatus: 'Read',
@@ -58,9 +70,13 @@ const getNotificationsPageCopy = (locale) => {
     inboxTitle: 'Tất cả thông báo',
     filterType: 'Loại thông báo',
     filterReadStatus: 'Trạng thái đọc',
+    filterArchiveStatus: 'Trạng thái hộp thư',
     filterAllTypes: 'Tất cả loại',
     filterAllReadStates: 'Tất cả',
     filterUnreadOnly: 'Chỉ chưa đọc',
+    filterActiveOnly: 'Đang hiển thị',
+    filterArchivedOnly: 'Đã lưu trữ',
+    searchPlaceholder: 'Tìm theo tiêu đề hoặc nội dung',
     reload: 'Tải lại',
     reloadLoading: 'Đang tải lại...',
     markAllRead: 'Đánh dấu tất cả đã đọc',
@@ -69,6 +85,10 @@ const getNotificationsPageCopy = (locale) => {
     openLink: 'Mở liên kết',
     markRead: 'Đánh dấu đã đọc',
     markReadLoading: 'Đang cập nhật...',
+    archive: 'Lưu trữ',
+    archiveLoading: 'Đang lưu trữ...',
+    delete: 'Xóa',
+    deleteLoading: 'Đang xóa...',
     emptyTitle: 'Chưa có thông báo',
     emptyDescription: 'Khi có cập nhật liên quan đến tài khoản, dự án hoặc hợp đồng, hệ thống sẽ hiển thị tại đây.',
     readStatus: 'Đã đọc',
@@ -83,7 +103,7 @@ const getNotificationsPageCopy = (locale) => {
 };
 
 const NotificationsPage = () => {
-  const navigate = useNavigate();
+  const router = useRouter();
   const { locale } = useI18n();
   const copy = useMemo(() => getNotificationsPageCopy(locale), [locale]);
   const {
@@ -96,11 +116,15 @@ const NotificationsPage = () => {
     loading,
     reloading,
     updatingReadIds,
+    archivingIds,
+    deletingIds,
     markingAllRead,
     isRealtimeConnected,
     reloadNotifications,
     markAsRead,
     markAllAsRead,
+    archiveNotification,
+    deleteNotification,
     setNotificationPage,
     setNotificationFilters,
   } = useNotifications();
@@ -127,7 +151,7 @@ const NotificationsPage = () => {
         // Navigation should not be blocked by a transient read-state update failure.
       }
     }
-    navigate(notification.link);
+    router.push(notification.link);
   };
 
   return (
@@ -176,7 +200,15 @@ const NotificationsPage = () => {
           </div>
         </div>
 
-        <div className="mt-5 grid gap-3 md:grid-cols-2">
+        <div className="mt-5 grid gap-3 lg:grid-cols-[1.4fr_1fr_1fr_1fr]">
+          <label className="flex flex-col gap-2 text-xs font-bold uppercase tracking-[0.14em] text-slate-500">
+            {copy.searchPlaceholder}
+            <SearchInput
+              value={filters.q || ''}
+              onChange={(event) => setNotificationFilters({ q: event.target.value })}
+              placeholder={copy.searchPlaceholder}
+            />
+          </label>
           <label className="flex flex-col gap-2 text-xs font-bold uppercase tracking-[0.14em] text-slate-500">
             {copy.filterType}
             <select
@@ -201,6 +233,17 @@ const NotificationsPage = () => {
               <option value="unread">{copy.filterUnreadOnly}</option>
             </select>
           </label>
+          <label className="flex flex-col gap-2 text-xs font-bold uppercase tracking-[0.14em] text-slate-500">
+            {copy.filterArchiveStatus}
+            <select
+              className="rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm font-semibold normal-case tracking-normal text-secondary-900 outline-none transition focus:border-primary-500 focus:ring-4 focus:ring-primary-100"
+              value={filters.archived || 'active'}
+              onChange={(event) => setNotificationFilters({ archived: event.target.value })}
+            >
+              <option value="active">{copy.filterActiveOnly}</option>
+              <option value="archived">{copy.filterArchivedOnly}</option>
+            </select>
+          </label>
         </div>
 
         <div className="mt-5 flex flex-col gap-3">
@@ -211,6 +254,12 @@ const NotificationsPage = () => {
           )}
 
           {notifications.map((notification) => (
+            (() => {
+              const isArchiving = archivingIds.includes(notification.id);
+              const isDeleting = deletingIds.includes(notification.id);
+              const isUpdating = updatingReadIds.includes(notification.id) || isArchiving || isDeleting;
+
+              return (
             <InfoPanel
               key={notification.id}
               className={`group rounded-3xl p-6 transition-all duration-300 hover:shadow-xl hover:-translate-y-px ${!notification.isRead
@@ -234,25 +283,41 @@ const NotificationsPage = () => {
                   </Text>
                 </div>
 
-              {(notification.link || !notification.isRead) && (
-                <div className="mt-6 flex flex-wrap gap-2 pt-4 border-t border-slate-100">
+              <div className="mt-6 flex flex-wrap gap-2 pt-4 border-t border-slate-100">
                   {notification.link && (
-                    <Button variant="outline" onClick={() => handleOpenLink(notification)}>
+                    <Button variant="outline" disabled={isUpdating} onClick={() => handleOpenLink(notification)}>
                       {copy.openLink}
                     </Button>
                   )}
                   {!notification.isRead && (
                     <Button
                       variant="ghost"
-                      disabled={updatingReadIds.includes(notification.id)}
+                      disabled={isUpdating}
                       onClick={() => markAsRead(notification.id)}
                     >
                       {updatingReadIds.includes(notification.id) ? copy.markReadLoading : copy.markRead}
                     </Button>
                   )}
-                </div>
-              )}
+                  {filters.archived !== 'archived' && (
+                    <Button
+                      variant="ghost"
+                      disabled={isUpdating}
+                      onClick={() => archiveNotification(notification.id)}
+                    >
+                      {isArchiving ? copy.archiveLoading : copy.archive}
+                    </Button>
+                  )}
+                  <Button
+                    variant="danger"
+                    disabled={isUpdating}
+                    onClick={() => deleteNotification(notification.id)}
+                  >
+                    {isDeleting ? copy.deleteLoading : copy.delete}
+                  </Button>
+              </div>
             </InfoPanel>
+              );
+            })()
           ))}
 
           {!visibleLoading && notifications.length === 0 && (

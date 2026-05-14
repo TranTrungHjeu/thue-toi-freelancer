@@ -2,11 +2,15 @@ import axios from 'axios';
 import { createApiError } from '../utils/apiError';
 
 const ACCESS_TOKEN_STORAGE_KEY = 'thuetoi_access_token';
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || '/api';
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || '/api';
 
-export const getAccessToken = () => localStorage.getItem(ACCESS_TOKEN_STORAGE_KEY);
+export const getAccessToken = () => {
+    if (typeof window === 'undefined') return null;
+    return localStorage.getItem(ACCESS_TOKEN_STORAGE_KEY);
+};
 
 export const setAccessToken = (token) => {
+    if (typeof window === 'undefined') return;
     if (!token) {
         localStorage.removeItem(ACCESS_TOKEN_STORAGE_KEY);
         return;
@@ -15,6 +19,7 @@ export const setAccessToken = (token) => {
 };
 
 export const clearAccessToken = () => {
+    if (typeof window === 'undefined') return;
     localStorage.removeItem(ACCESS_TOKEN_STORAGE_KEY);
 };
 
@@ -36,6 +41,24 @@ const refreshClient = axios.create({
 });
 
 let refreshPromise = null;
+
+const REFRESH_EXCLUDED_PATHS = [
+    '/v1/auth/login',
+    '/v1/auth/register',
+    '/v1/auth/refresh',
+    '/v1/auth/logout',
+    '/v1/auth/verify-email-otp',
+    '/v1/auth/resend-verification-otp',
+    '/v1/auth/verification-otp-status',
+];
+
+const isRefreshExcludedRequest = (url = '') =>
+    REFRESH_EXCLUDED_PATHS.some((path) => url.includes(path));
+
+const isAccessTokenError = (error) => {
+    const code = error?.response?.data?.code;
+    return code === 'ERR_AUTH_01' || code === 'ERR_AUTH_12';
+};
 
 axiosClient.interceptors.request.use(
     (config) => {
@@ -78,13 +101,14 @@ axiosClient.interceptors.response.use(
     },
     async (error) => {
         const originalRequest = error.config;
-        const isAuthRequest = originalRequest?.url?.includes('/v1/auth/login')
-            || originalRequest?.url?.includes('/v1/auth/register')
-            || originalRequest?.url?.includes('/v1/auth/refresh')
-            || originalRequest?.url?.includes('/v1/auth/verify-email-otp')
-            || originalRequest?.url?.includes('/v1/auth/resend-verification-otp');
 
-        if (error.response?.status === 401 && originalRequest && !originalRequest._retry && !isAuthRequest) {
+        if (
+            error.response?.status === 401
+            && isAccessTokenError(error)
+            && originalRequest
+            && !originalRequest._retry
+            && !isRefreshExcludedRequest(originalRequest.url)
+        ) {
             originalRequest._retry = true;
             try {
                 refreshPromise ??= refreshClient.post('/v1/auth/refresh');
@@ -106,7 +130,7 @@ axiosClient.interceptors.response.use(
             }
         }
 
-        console.error('API Error', error.response?.data);
+        console.warn('API Error', error.response?.data);
         return Promise.reject(createApiError(error.response?.data || error));
     }
 );
