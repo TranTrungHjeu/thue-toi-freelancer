@@ -46,6 +46,7 @@ const AdminSettingsPage = () => {
 
   useEffect(() => {
     fetchSettings();
+    // Giữ nguyên dependency mảng rỗng để tránh infinite loop vì fetchSettings bị re-create ở mỗi render
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 

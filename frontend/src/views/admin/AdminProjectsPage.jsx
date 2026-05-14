@@ -31,6 +31,30 @@ import Spinner from '../../components/common/Spinner';
 
 const getProjectBudgetUpperBound = (project) => Number(project?.budgetMax ?? project?.budgetMin ?? 0);
 
+/**
+ * Đảm bảo trường dữ liệu kỹ năng (skills) luôn trả về một mảng các chuỗi hợp lệ.
+ * Chống treo/crash ứng dụng React khi backend trả về dữ liệu lỗi dạng chuỗi thuần,
+ * chuỗi JSON thô, hoặc các giá trị rỗng/null từ database cũ.
+ * 
+ * @param {*} skills Dữ liệu kỹ năng đầu vào từ API
+ * @returns {string[]} Mảng danh sách tên kỹ năng đã được làm sạch
+ */
+const ensureSkillsArray = (skills) => {
+  if (Array.isArray(skills)) return skills;
+  if (typeof skills === 'string' && skills.trim()) {
+    if (skills.startsWith('[') && skills.endsWith(']')) {
+      try {
+        const parsed = JSON.parse(skills);
+        if (Array.isArray(parsed)) return parsed;
+      } catch (e) {}
+    }
+    return skills.includes(',') 
+      ? skills.split(',').map(s => s.trim()) 
+      : [skills.trim()];
+  }
+  return [];
+};
+
 const AdminProjectsPage = () => {
   const { t } = useI18n();
   const [projects, setProjects] = useState([]);
@@ -42,7 +66,11 @@ const AdminProjectsPage = () => {
   const [selectedIds, setSelectedIds] = useState([]);
   const [bulkActionLoading, setBulkActionLoading] = useState(false);
 
+  // State cho hộp thoại xác nhận bulk cancel — thay thế window.confirm để nhất quán với UI hệ thống
+
+  const [bulkConfirmOpen, setBulkConfirmOpen] = useState(false);
   const [isDetailModalOpen, setIsDetailModalOpen] = useState(false);
+
   const [projectDetail, setProjectDetail] = useState(null);
 
   const fetchProjects = useCallback(async () => {
@@ -60,7 +88,9 @@ const AdminProjectsPage = () => {
 
   useEffect(() => {
     fetchProjects();
-  }, [fetchProjects]);
+    // Giữ nguyên dependency mảng rỗng để tránh infinite loop vì fetchProjects là useCallback có tham chiếu thay đổi khi addToast/t đổi
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const handleExport = () => {
     const exportHeaders = [
@@ -104,10 +134,7 @@ const AdminProjectsPage = () => {
 
   const handleBulkCancel = async () => {
     if (selectedIds.length === 0 || bulkActionLoading) return;
-
-    const confirmMsg = t('common.bulk.confirmDesc', { count: selectedIds.length });
-    if (!window.confirm(confirmMsg)) return;
-
+    setBulkConfirmOpen(false);
     setBulkActionLoading(true);
     try {
       await adminApi.bulkUpdateProjectStatus(selectedIds, 'cancelled');
@@ -128,16 +155,18 @@ const AdminProjectsPage = () => {
 
   const filteredProjects = useMemo(() => {
     const normalizedTerm = searchTerm.toLowerCase();
+    const safeProjects = Array.isArray(projects) ? projects : [];
 
-    return projects.filter((project) => {
+    return safeProjects.filter((project) => {
       const title = (project.title || '').toLowerCase();
       const ownerName = (project.user?.fullName || '').toLowerCase();
       const ownerEmail = (project.user?.email || '').toLowerCase();
-      const skills = (project.skills || []).join(' ').toLowerCase();
+      const skillsList = ensureSkillsArray(project.skills);
+      const skillsStr = skillsList.join(' ').toLowerCase();
       const matchesSearch = title.includes(normalizedTerm)
         || ownerName.includes(normalizedTerm)
         || ownerEmail.includes(normalizedTerm)
-        || skills.includes(normalizedTerm);
+        || skillsStr.includes(normalizedTerm);
       const matchesFilter = filterStatus === 'all' || project.status === filterStatus;
       return matchesSearch && matchesFilter;
     });
@@ -159,12 +188,12 @@ const AdminProjectsPage = () => {
         <div className="flex flex-col gap-1.5 max-w-sm">
           <span className="font-bold text-slate-900 leading-tight line-clamp-1">{title}</span>
           <div className="flex flex-wrap gap-1">
-            {row.skills?.slice(0, 3).map((skill) => (
+            {ensureSkillsArray(row.skills).slice(0, 3).map((skill) => (
               <Tag key={skill} size="sm" className="scale-90 origin-left border-slate-100 bg-slate-50 text-slate-500 font-bold">
                 {skill}
               </Tag>
             ))}
-            {row.skills?.length > 3 && <span className="text-[9px] text-slate-400 font-bold">+{row.skills.length - 3}</span>}
+            {ensureSkillsArray(row.skills).length > 3 && <span className="text-[9px] text-slate-400 font-bold">+{ensureSkillsArray(row.skills).length - 3}</span>}
           </div>
         </div>
       )
@@ -322,7 +351,7 @@ const AdminProjectsPage = () => {
               <Button
                 size="sm"
                 className="bg-red-600 hover:bg-red-700 border-none text-[11px]"
-                onClick={handleBulkCancel}
+                onClick={() => setBulkConfirmOpen(true)}
                 disabled={bulkActionLoading}
               >
                 <XmarkCircle className="w-3.5 h-3.5 mr-1.5" />
@@ -409,7 +438,7 @@ const AdminProjectsPage = () => {
                 <section>
                   <Caption className="text-slate-400 font-bold uppercase tracking-widest mb-3 text-[10px]">{t('adminPages.projects.modalSkillsLabel')}</Caption>
                   <div className="flex flex-wrap gap-2">
-                    {projectDetail.skills?.map((skill) => (
+                    {ensureSkillsArray(projectDetail.skills).map((skill) => (
                       <Tag key={skill} className="bg-white border-slate-200 text-slate-600 font-bold">{skill}</Tag>
                     ))}
                   </div>
@@ -459,6 +488,37 @@ const AdminProjectsPage = () => {
             </div>
           </div>
         )}
+      </Modal>
+
+      {/* Hộp thoại xác nhận bulk cancel dự án */}
+      <Modal
+        isOpen={bulkConfirmOpen}
+        onClose={() => setBulkConfirmOpen(false)}
+        title={t('common.bulk.confirmTitle')}
+        size="sm"
+      >
+        <div className="flex flex-col gap-6">
+          <Text className="text-slate-600">
+            {t('common.bulk.confirmDesc', { count: selectedIds.length })}
+          </Text>
+          <div className="flex gap-3 pt-2">
+            <Button
+              variant="outline"
+              className="flex-1"
+              onClick={() => setBulkConfirmOpen(false)}
+            >
+              {t('adminPages.projects.closeBtn')}
+            </Button>
+            <Button
+              variant="error"
+              className="flex-1"
+              onClick={handleBulkCancel}
+              disabled={bulkActionLoading}
+            >
+              {t('adminPages.projects.cancelProjectBtn')}
+            </Button>
+          </div>
+        </div>
       </Modal>
     </div>
   );

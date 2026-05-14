@@ -1,5 +1,5 @@
 
-import PageComponent from '@/pages/ProfilePage';
+import PageComponent from '@/views/ProfilePage';
 export default function Page() {
   return <PageComponent />;
 }

@@ -1,5 +1,5 @@
 
-import PageComponent from '@/pages/WorkspaceDashboardPage';
+import PageComponent from '@/views/WorkspaceDashboardPage';
 export default function Page() {
   return <PageComponent />;
 }

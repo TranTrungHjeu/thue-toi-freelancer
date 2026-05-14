@@ -117,10 +117,14 @@ axiosClient.interceptors.response.use(
 
                 const newAccessToken = refreshResponse.data?.data?.accessToken;
                 setAccessToken(newAccessToken);
-                originalRequest.headers = {
-                    ...(originalRequest.headers || {}),
-                    Authorization: `Bearer ${newAccessToken}`,
-                };
+                // Chú ý: Bảo toàn đối tượng class AxiosHeaders gốc để tránh crash ngầm trên Axios v1.x
+                if (originalRequest.headers) {
+                    originalRequest.headers['Authorization'] = `Bearer ${newAccessToken}`;
+                } else {
+                    originalRequest.headers = {
+                        Authorization: `Bearer ${newAccessToken}`,
+                    };
+                }
                 return axiosClient(originalRequest);
             } catch (refreshError) {
                 refreshPromise = null;
@@ -130,7 +134,7 @@ axiosClient.interceptors.response.use(
             }
         }
 
-        console.warn('API Error', error.response?.data);
+
         return Promise.reject(createApiError(error.response?.data || error));
     }
 );

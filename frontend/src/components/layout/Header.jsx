@@ -8,6 +8,7 @@ import { H2 } from '../common/Typography';
 import UserDropdown from './UserDropdown';
 import LanguageSwitcher from '../common/LanguageSwitcher';
 import ConversationInbox from './ConversationInbox';
+import NotificationBell from './NotificationBell';
 import { useI18n } from '../../hooks/useI18n';
 
 const Header = ({ user, onOpenMenu }) => {
@@ -36,6 +37,7 @@ const Header = ({ user, onOpenMenu }) => {
 
       <div className="flex items-center gap-4">
         <LanguageSwitcher className="hidden md:inline-flex" />
+        {user && <NotificationBell />}
         {user && <ConversationInbox />}
         {user ? (
           <UserDropdown user={user} />

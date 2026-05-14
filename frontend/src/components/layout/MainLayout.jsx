@@ -1,23 +1,38 @@
 "use client";
 
 import React, { useState, useMemo } from 'react';
-import { usePathname, useSearchParams } from 'next/navigation';
+import { usePathname, useSearchParams, useRouter } from 'next/navigation';
 
 import { Bell, Home, Page, PageSearch, ProfileCircle, ViewGrid, Group, Settings, Reports, Coins, ShieldCheck, Megaphone, WarningTriangle, Database } from 'iconoir-react';
 import Header from './Header';
 import Sidebar from './Sidebar';
 import MobileDrawer from './MobileDrawer';
 import BottomNav from './BottomNav';
+import LoadingOverlay from '../common/LoadingOverlay';
 import { useAuth } from '../../hooks/useAuth';
 import { useI18n } from '../../hooks/useI18n';
 import { useNotifications } from '../../hooks/useNotifications';
 
 const MainLayout = ({ children }) => {
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
-  const { user, logout } = useAuth();
-  const location = ({ pathname: usePathname(), search: useSearchParams().toString() });
+  const { user, loading, logout } = useAuth();
+  const pathname = usePathname();
+  const searchParams = useSearchParams();
+  const router = useRouter();
+  const location = ({ pathname, search: searchParams.toString() });
   const { t } = useI18n();
   const { unreadCount } = useNotifications();
+
+  // Security Route Guard and RBAC
+  React.useEffect(() => {
+    if (!loading && !user) {
+      router.replace('/auth/login');
+      return;
+    }
+    if (user && pathname.startsWith('/workspace/admin') && user.role?.toLowerCase() !== 'admin') {
+      router.replace('/workspace');
+    }
+  }, [loading, user, pathname, router]);
 
   const role = (user?.role || '').toLowerCase();
   const notificationBadge = unreadCount > 0 ? (unreadCount > 99 ? '99+' : String(unreadCount)) : null;
@@ -136,6 +151,14 @@ const MainLayout = ({ children }) => {
       { label: t('layout.navigation.profile'), href: '/workspace/profile', icon: ProfileCircle },
     ];
   }, [notificationBadge, role, t, unreadCount]);
+
+  if (loading || !user) {
+    return <LoadingOverlay isActive={true} />;
+  }
+
+  if (pathname.startsWith('/workspace/admin') && role !== 'admin') {
+    return null;
+  }
 
   return (
     <div className="relative min-h-screen flex flex-col overflow-hidden bg-[radial-gradient(circle_at_top_left,_rgba(34,197,94,0.12),_transparent_28%),linear-gradient(180deg,#f8fafc_0%,#eff6ff_45%,#f8fafc_100%)]">

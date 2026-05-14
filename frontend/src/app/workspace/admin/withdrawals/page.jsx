@@ -1,5 +1,5 @@
 
-import PageComponent from '@/pages/admin/AdminWithdrawalsPage';
+import PageComponent from '@/views/admin/AdminWithdrawalsPage';
 export default function Page() {
   return <PageComponent />;
 }

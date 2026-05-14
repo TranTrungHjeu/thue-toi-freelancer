@@ -33,6 +33,9 @@ const AdminSkillsPage = () => {
   const [skillForm, setSkillForm] = useState({ name: '', description: '' });
   const [submitting, setSubmitting] = useState(false);
 
+  // State cho hộp thoại xác nhận xóa — thay thế window.confirm để nhất quán với UI hệ thống
+  const [deleteDialog, setDeleteDialog] = useState({ open: false, skillId: null });
+
   const fetchSkills = useCallback(async () => {
     try {
       const response = await marketplaceApi.getSkillCatalog();
@@ -80,8 +83,10 @@ const AdminSkillsPage = () => {
     }
   };
 
-  const handleDeleteSkill = async (id) => {
-    if (!window.confirm(t('adminPages.skills.deleteConfirm'))) return;
+  const handleDeleteSkill = async () => {
+    const id = deleteDialog.skillId;
+    if (!id) return;
+    setDeleteDialog({ open: false, skillId: null });
     try {
       await adminApi.deleteSkill(id);
       addToast(t('toasts.admin.deleteSkillSuccess'), 'success');
@@ -119,7 +124,7 @@ const AdminSkillsPage = () => {
           <Button variant="ghost" size="sm" onClick={() => handleOpenModal(row)}>
             <EditPencil className="w-4 h-4" />
           </Button>
-          <Button variant="ghost" size="sm" className="text-red-500 hover:bg-red-50" onClick={() => handleDeleteSkill(row.id)}>
+          <Button variant="ghost" size="sm" className="text-red-500 hover:bg-red-50" onClick={() => setDeleteDialog({ open: true, skillId: row.id })}>
             <Trash className="w-4 h-4" />
           </Button>
         </div>
@@ -224,6 +229,36 @@ const AdminSkillsPage = () => {
             </Button>
           </div>
         </form>
+      </Modal>
+
+      {/* Hộp thoại xác nhận xóa kỹ năng */}
+      <Modal
+        isOpen={deleteDialog.open}
+        onClose={() => setDeleteDialog({ open: false, skillId: null })}
+        title={t('adminPages.skills.deleteConfirmTitle')}
+        size="sm"
+      >
+        <div className="flex flex-col gap-6">
+          <Text className="text-slate-600">
+            {t('adminPages.skills.deleteConfirm')}
+          </Text>
+          <div className="flex gap-3 pt-2">
+            <Button
+              variant="outline"
+              className="flex-1"
+              onClick={() => setDeleteDialog({ open: false, skillId: null })}
+            >
+              {t('adminPages.skills.cancelBtn')}
+            </Button>
+            <Button
+              variant="error"
+              className="flex-1"
+              onClick={handleDeleteSkill}
+            >
+              {t('adminPages.skills.deleteConfirmBtn')}
+            </Button>
+          </div>
+        </div>
       </Modal>
     </div>
   );

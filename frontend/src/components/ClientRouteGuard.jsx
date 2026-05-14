@@ -3,10 +3,21 @@
 import { useEffect, useState } from 'react';
 import { useRouter, usePathname, useSearchParams } from 'next/navigation';
 import { useAuth } from '../hooks/useAuth';
-import Spinner from './common/Spinner';
+import LoadingOverlay from './common/LoadingOverlay';
 
+/**
+ * Component bảo vệ Route phía Client (Client-side Route Guard).
+ * Hỗ trợ cơ chế phân quyền RBAC động, lọc chuyển trang login nếu phiên làm việc hết hạn
+ * hoặc người dùng hiện tại không có thẩm quyền Admin khi truy cập khu vực nhạy cảm.
+ * 
+ * @param {Object} props
+ * @param {React.ReactNode} props.children Các node con kế thừa giao diện bảo vệ
+ * @param {boolean} [props.adminOnly=false] Bật cờ kiểm duyệt bắt buộc có vai trò Admin
+ * @returns {React.ReactNode} Giao diện được cấp phép truy cập hoặc Spinner chờ tải
+ */
 export default function ClientRouteGuard({ children, adminOnly = false }) {
-  const { isAuthenticated, isAuthLoaded, user } = useAuth();
+  const { isAuthenticated, loading, user } = useAuth();
+  const isAuthLoaded = !loading;
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
@@ -31,11 +42,7 @@ export default function ClientRouteGuard({ children, adminOnly = false }) {
   }, [isAuthenticated, isAuthLoaded, adminOnly, user, router, pathname, searchParams]);
 
   if (!isAuthLoaded || !isAllowed) {
-    return (
-      <div className="flex min-h-screen items-center justify-center">
-        <Spinner size="md" />
-      </div>
-    );
+    return <LoadingOverlay isActive={true} />;
   }
 
   return children;

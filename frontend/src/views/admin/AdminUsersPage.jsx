@@ -146,7 +146,8 @@ const AdminUsersPage = () => {
   const searchParams = useSearchParams();
   const router = useRouter();
   const pathname = usePathname();
-  const filters = useMemo(() => normalizeFilters(searchParams), [searchParams]);
+  const searchParamsString = searchParams ? searchParams.toString() : '';
+  const filters = useMemo(() => normalizeFilters(new URLSearchParams(searchParamsString)), [searchParamsString]);
 
   const [users, setUsers] = useState([]);
   const [summary, setSummary] = useState(null);
@@ -226,7 +227,7 @@ const AdminUsersPage = () => {
 
   useEffect(() => {
     fetchUsers();
-  }, [fetchUsers]);
+  }, [filters]);
 
   useEffect(() => {
     setSearchDraft(filters.q);

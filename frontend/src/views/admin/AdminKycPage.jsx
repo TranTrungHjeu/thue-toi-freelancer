@@ -23,6 +23,9 @@ const AdminKycPage = () => {
   const [requests, setRequests] = useState([]);
   const [loading, setLoading] = useState(true);
 
+  // State cho hộp thoại phê duyệt KYC — thay thế window.confirm để nhất quán với UI hệ thống
+  const [approveDialog, setApproveDialog] = useState({ open: false, requestId: null });
+
   // State for Rejection Modal
   const [isRejectModalOpen, setIsRejectModalOpen] = useState(false);
   const [selectedRequest, setSelectedRequest] = useState(null);
@@ -48,8 +51,10 @@ const AdminKycPage = () => {
     fetchData();
   }, [fetchData]);
 
-  const handleApprove = async (id) => {
-    if (!window.confirm(t('adminPages.kyc.approveConfirm'))) return;
+  const handleApprove = async () => {
+    const id = approveDialog.requestId;
+    if (!id) return;
+    setApproveDialog({ open: false, requestId: null });
     try {
       await adminApi.approveKyc(id);
       addToast(t('toasts.admin.kycApproveSuccess'), 'success');
@@ -121,7 +126,7 @@ const AdminKycPage = () => {
         <div className="flex gap-2">
           {row.status === 'PENDING' && (
             <>
-              <Button size="sm" onClick={() => handleApprove(row.id)}>
+              <Button size="sm" onClick={() => setApproveDialog({ open: true, requestId: row.id })}>
                 {t('adminPages.kyc.approveBtn')}
               </Button>
               <Button size="sm" variant="outline" onClick={() => handleOpenRejectModal(row)}>
@@ -212,6 +217,35 @@ const AdminKycPage = () => {
               disabled={submitting || !rejectReason.trim()}
             >
               {submitting ? <Spinner size="sm" tone="current" inline /> : t('adminPages.kyc.rejectConfirmBtn')}
+            </Button>
+          </div>
+        </div>
+      </Modal>
+
+      {/* Hộp thoại xác nhận phê duyệt KYC */}
+      <Modal
+        isOpen={approveDialog.open}
+        onClose={() => setApproveDialog({ open: false, requestId: null })}
+        title={t('adminPages.kyc.approveTitle')}
+        size="sm"
+      >
+        <div className="flex flex-col gap-6">
+          <Text className="text-slate-600">
+            {t('adminPages.kyc.approveConfirm')}
+          </Text>
+          <div className="flex gap-3 pt-2">
+            <Button
+              variant="outline"
+              className="flex-1"
+              onClick={() => setApproveDialog({ open: false, requestId: null })}
+            >
+              {t('adminPages.kyc.rejectCancelBtn')}
+            </Button>
+            <Button
+              className="flex-1"
+              onClick={handleApprove}
+            >
+              {t('adminPages.kyc.approveBtn')}
             </Button>
           </div>
         </div>

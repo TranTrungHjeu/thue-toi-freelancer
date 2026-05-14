@@ -1,5 +1,5 @@
 
-import PageComponent from '@/pages/admin/AdminSettingsPage';
+import PageComponent from '@/views/admin/AdminSettingsPage';
 export default function Page() {
   return <PageComponent />;
 }
