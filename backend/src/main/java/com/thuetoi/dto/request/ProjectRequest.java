@@ -33,4 +33,5 @@ public class ProjectRequest {
     private LocalDateTime deadline;
     private String status;
     private List<String> skills;
+    private List<FileAttachmentRequest> attachments;
 }

@@ -10,6 +10,7 @@ Checklist này dùng cho vòng QA local, review trước demo và regression sau
    - Frontend mở được tại `http://localhost:5173`
    - Backend health trả `200` tại `http://localhost:8080/api/v1/health`
 4. Xác nhận dữ liệu seed đã nạp khi volume DB rỗng.
+5. Ghi lại branch, commit và kết quả quality gate gần nhất để người review biết baseline đang dùng.
 
 ## 2. Tài khoản demo
 
@@ -34,13 +35,19 @@ Lưu ý:
    - Kỳ vọng: login thành công, profile role là `freelancer`.
 4. Tùy chọn: tạo 1 tài khoản mới bằng email thật rồi verify OTP.
    - Kỳ vọng: đăng ký gửi OTP, verify thành công, login được.
+5. Khi ở màn OTP, kiểm tra `GET /api/v1/auth/verification-otp-status?email=...`.
+   - Kỳ vọng: frontend hiển thị được thời gian hết hạn OTP và cooldown resend.
+6. Với user đã đăng nhập, gửi OTP đổi mật khẩu qua `POST /api/v1/users/me/password/otp`, sau đó đổi mật khẩu bằng `PUT /api/v1/users/me/password`.
+   - Kỳ vọng: backend yêu cầu `oldPassword`, `newPassword`, `otp`; đổi thành công thì trả access token mới và rotate refresh cookie.
+7. Với user đã đăng nhập, gửi OTP đổi email qua `POST /api/v1/users/me/email/otp`, sau đó xác nhận bằng `PUT /api/v1/users/me/email`.
+   - Kỳ vọng: email được cập nhật sau OTP hợp lệ; client đăng xuất hoặc yêu cầu đăng nhập lại để tránh giữ session cũ.
 
 ## 4. Khách hàng flow
 
 1. Login bằng `customer1@gmail.com`.
 2. Vào `Projects`.
-3. Tạo 1 project mới với `budgetMin < budgetMax`.
-   - Kỳ vọng: project mới xuất hiện trong danh sách `My Projects` với status `open`.
+3. Tạo 1 project mới với `budgetMin < budgetMax` và đính kèm 1 file hợp lệ.
+   - Kỳ vọng: project mới xuất hiện trong danh sách `My Projects` với status `open`; attachment hiển thị tên file và mở được link Cloudinary.
 4. Sửa project vừa tạo.
    - Kỳ vọng: title/description/budget cập nhật đúng.
 5. Thử set status thủ công sang `in_progress` hoặc `completed` nếu UI/API cho phép.
@@ -54,8 +61,8 @@ Lưu ý:
 2. Vào `Projects`.
 3. Xem project vừa tạo ở danh sách project mở.
    - Kỳ vọng: project hiển thị trong marketplace.
-4. Gửi bid mới cho project đó.
-   - Kỳ vọng: bid tạo thành công với status `pending`.
+4. Gửi bid mới cho project đó và đính kèm 1 file proposal hợp lệ.
+   - Kỳ vọng: bid tạo thành công với status `pending`; attachment hiển thị trong bid của Freelancer và danh sách bid của Khách hàng.
 5. Mở `Notifications` hoặc quay lại Khách hàng để kiểm tra.
    - Kỳ vọng: Khách hàng nhận notification `bid`.
 6. Với Freelancer, vào danh sách bid của mình.
@@ -85,10 +92,12 @@ Lưu ý:
    - Kỳ vọng: message xuất hiện đúng `senderId`, không cần client gửi `senderId`; Freelancer nhận notification `contract`.
 2. Login bằng `freelancer1@gmail.com`, mở cùng contract.
    - Kỳ vọng: thấy lịch sử message của contract.
-3. Gửi 1 tin nhắn file với `attachments`.
-   - Kỳ vọng: message file được tạo, link/attachment hiển thị đúng; participant còn lại nhận notification realtime.
+3. Gửi 1 tin nhắn file bằng nút chọn file thật.
+   - Kỳ vọng: frontend upload qua `/api/v1/files/messages?contractId=...`, message file được tạo, link hiển thị theo `name`, `size`, `contentType`; participant còn lại nhận notification realtime.
 4. Thử gửi message khi contract đã kết thúc.
    - Kỳ vọng: backend chặn với `ERR_SYS_02`.
+5. Thử upload file sai loại, file rỗng hoặc quá 5 MB.
+   - Kỳ vọng: backend chặn với `ERR_FILE_01`; UI hiển thị lỗi upload thân thiện.
 
 ## 8. Complete contract -> review
 
@@ -137,14 +146,42 @@ Lưu ý:
    - Kỳ vọng: API trả `updatedCount`, unread badge về 0, các item chuyển trạng thái đã đọc.
 9. Nếu notification có `link`, bấm mở liên kết.
    - Kỳ vọng: item được mark read trước khi điều hướng đúng workspace liên quan.
+10. Kiểm tra lưu trữ notification nếu UI có hỗ trợ.
+   - Kỳ vọng: `PUT /api/v1/notifications/{id}/archive` chỉ lưu trữ notification của chính user; inbox mặc định không còn hiện item đã archive.
+11. Kiểm tra xóa notification nếu UI có hỗ trợ.
+   - Kỳ vọng: `DELETE /api/v1/notifications/{id}` soft-delete notification của chính user; item không còn trong inbox.
+12. Kiểm tra preferences ở `/api/v1/notifications/preferences`.
+   - Kỳ vọng: có đủ type `project`, `bid`, `contract`, `system`; cập nhật `inAppEnabled`, `emailEnabled`, `browserEnabled` không ảnh hưởng user khác.
 
-## 10. Regression technical gate
+## 10. Admin flow
+
+1. Login bằng `admin@gmail.com`.
+   - Kỳ vọng: vào được admin route; user thường bị chặn ở cả frontend guard và backend `/api/v1/admin/**`.
+2. Mở dashboard và health detailed.
+   - Kỳ vọng: `/admin/stats` và `/admin/health-detailed` trả dữ liệu hợp lệ.
+3. Mở Users.
+   - Kỳ vọng: `/admin/users/page` hỗ trợ phân trang, tìm kiếm, lọc role/status/verified và sort; `/admin/users/{id}` mở được chi tiết.
+4. Thử khóa/mở khóa hoặc đổi role user khác.
+   - Kỳ vọng: thao tác thành công với user khác; backend chặn admin tự khóa hoặc tự hạ quyền chính mình.
+5. Thử bulk status user.
+   - Kỳ vọng: backend chặn payload có chính admin hiện tại.
+6. Mở Projects moderation.
+   - Kỳ vọng: admin chỉ update project về `open` hoặc `cancelled`, không ép `in_progress`/`completed`.
+7. Mở Skills.
+   - Kỳ vọng: tạo/sửa/xóa skill catalog thành công và các form project/profile đọc catalog mới.
+8. Mở KYC, Reports, Withdrawals.
+   - Kỳ vọng: chỉ xử lý request đang chờ; status chỉ nhận tập giá trị hợp lệ theo API contract.
+9. Gửi broadcast.
+   - Kỳ vọng: từng user thuộc target role nhận in-app notification realtime; delivery log có bản ghi tương ứng ở `/admin/notifications/delivery-logs`.
+
+## 11. Regression technical gate
 
 Chạy các lệnh sau trước khi review hoặc demo:
 
 - Frontend: `npm run lint`
 - Frontend: `npm run build`
-- Backend: `docker run --rm -v "${PWD}\\backend:/app" -w /app maven:3.9.6-eclipse-temurin-21 mvn test`
+- Backend local: `cd backend && mvn test`
+- Backend Docker: `docker run --rm -v "${PWD}\\backend:/app" -w /app maven:3.9.6-eclipse-temurin-21 mvn test`
 
 Kỳ vọng:
 

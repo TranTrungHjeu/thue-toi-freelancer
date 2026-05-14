@@ -10,6 +10,11 @@ import { H2 } from './Typography';
  * Animation spring mượt, không vỡ layout.
  */
 const Modal = ({ isOpen, onClose, title, children }) => {
+  const [mounted, setMounted] = React.useState(false);
+  React.useEffect(() => {
+    setMounted(true);
+  }, []);
+
   const modalVariants = {
     hidden: { opacity: 0, scale: 0.95, y: 10 },
     visible: {
@@ -20,6 +25,8 @@ const Modal = ({ isOpen, onClose, title, children }) => {
     },
     exit: { opacity: 0, scale: 0.95, y: 10, transition: { duration: 0.2 } }
   };
+
+  if (!mounted) return null;
 
   return createPortal(
     <AnimatePresence>

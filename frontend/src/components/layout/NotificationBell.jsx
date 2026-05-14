@@ -1,12 +1,16 @@
+"use client";
+
 import React, { useState, useRef, useEffect } from 'react';
 import { Bell, Check } from 'iconoir-react';
-import { useNavigate, Link } from 'react-router-dom';
+import Link from 'next/link';
+import { useRouter } from 'next/navigation';
+
 import { AnimatePresence, motion } from 'motion/react';
 import { useNotifications } from '../../hooks/useNotifications';
 import { useI18n } from '../../hooks/useI18n';
 
 const NotificationBell = () => {
-  const navigate = useNavigate();
+  const router = useRouter();
   const { t } = useI18n();
   const {
     notifications,
@@ -70,8 +74,8 @@ const NotificationBell = () => {
   const handleItemClick = (noti) => {
     if (!noti.isRead) handleMarkRead(noti.id);
     setIsOpen(false);
-    if (noti.link) navigate(noti.link);
-    else navigate('/workspace/notifications');
+    if (noti.link) router.push(noti.link);
+    else router.push('/workspace/notifications');
   };
 
   const panelVariants = {
@@ -170,7 +174,7 @@ const NotificationBell = () => {
 
             <div className="border-t border-slate-100 p-3 bg-white sticky bottom-0 z-10">
               <Link
-                to="/workspace/notifications"
+                href="/workspace/notifications"
                 onClick={() => setIsOpen(false)}
                 className="block w-full rounded-xl bg-slate-50 py-2.5 text-center text-sm font-medium text-primary-600 hover:bg-slate-100 active:bg-slate-200 transition-all"
               >

@@ -182,6 +182,7 @@ export const workspaceMessages = {
           "Bạn chưa gửi báo giá nào. Chọn một dự án đang tuyển để bắt đầu.",
       },
     },
+    profilePage: {"empty":{"title":"Không tìm thấy hồ sơ","description":"Tài khoản của bạn chưa được thiết lập hồ sơ đầy đủ."},"hero":{"caption":"Hồ sơ cá nhân","title":"Quản lý hồ sơ cá nhân","description":"Theo dõi và cập nhật thông tin cá nhân của bạn trên hệ thống.","refresh":"Đồng bộ hồ sơ","refreshing":"Đang đồng bộ..."},"roleCallout":{"title":"Vai trò hiện tại","customerDescription":"Với vai trò Khách hàng, bạn có thể tạo dự án và thuê chuyên gia.","freelancerDescription":"Với vai trò Freelancer, bạn có thể tìm việc và gửi báo giá."},"identity":{"caption":"Định danh","title":"Thông tin định danh","avatarLabel":"Ảnh đại diện","avatarFallback":"Chưa có ảnh","fullNameLabel":"Họ và tên","emailLabel":"Địa chỉ Email","roleLabel":"Vai trò"},"account":{"caption":"Tài khoản","title":"Trạng thái tài khoản","verified":"Đã xác thực","unverified":"Chưa xác thực","active":"Đang hoạt động","locked":"Bị khóa","descriptionFallback":"Chưa có mô tả","createdAtLabel":"Ngày đăng ký","updatedAtLabel":"Cập nhật lần cuối"}},
     contractsPage: {
       participants: {
         you: "Bạn",
@@ -278,7 +279,7 @@ export const workspaceMessages = {
         textType: "Tin nhắn văn bản",
         fileType: "Gửi tệp đính kèm",
         contentLabel: "Nội dung tin nhắn",
-        attachmentLabel: "Link hoặc mã tệp đính kèm",
+        attachmentLabel: "Tệp đính kèm",
         attachmentNoteLabel: "Ghi chú tệp (tùy chọn)",
         submit: "Gửi tin nhắn",
         submitting: "Đang gửi tin nhắn...",
@@ -501,6 +502,7 @@ export const workspaceMessages = {
           "You have not submitted any bids yet. Choose an open project to get started.",
       },
     },
+    profilePage: {"empty":{"title":"Profile not found","description":"Your account profile has not been fully set up."},"hero":{"caption":"Personal Profile","title":"Manage your profile","description":"Track and update your personal information on the platform.","refresh":"Sync profile","refreshing":"Syncing..."},"roleCallout":{"title":"Current Role","customerDescription":"As a Customer, you can post projects and hire freelancers.","freelancerDescription":"As a Freelancer, you can browse projects and submit bids."},"identity":{"caption":"Identity","title":"Identity Information","avatarLabel":"Avatar","avatarFallback":"No avatar","fullNameLabel":"Full Name","emailLabel":"Email Address","roleLabel":"Role"},"account":{"caption":"Account","title":"Account Status","verified":"Verified","unverified":"Unverified","active":"Active","locked":"Locked","descriptionFallback":"No description provided","createdAtLabel":"Registered at","updatedAtLabel":"Last updated"}},
     contractsPage: {
       participants: {
         you: "You",
@@ -597,7 +599,7 @@ export const workspaceMessages = {
         textType: "Text message",
         fileType: "Send attachment",
         contentLabel: "Message content",
-        attachmentLabel: "Attachment link or code",
+        attachmentLabel: "Attachment files",
         attachmentNoteLabel: "Attachment note (optional)",
         submit: "Send message",
         submitting: "Sending message...",

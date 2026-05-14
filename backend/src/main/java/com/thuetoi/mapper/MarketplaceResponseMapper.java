@@ -21,6 +21,8 @@ import com.thuetoi.entity.Review;
 import com.thuetoi.entity.Skill;
 import com.thuetoi.entity.TransactionHistory;
 import com.thuetoi.entity.User;
+import com.thuetoi.service.AttachmentMetadataService;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import java.util.Collection;
@@ -28,6 +30,8 @@ import java.util.List;
 
 @Component
 public class MarketplaceResponseMapper {
+    @Autowired
+    private AttachmentMetadataService attachmentMetadataService;
 
     public ProjectResponse toProjectResponse(Project project) {
         if (project == null) {
@@ -43,6 +47,7 @@ public class MarketplaceResponseMapper {
             project.getDeadline(),
             project.getStatus(),
             toSkillNames(project.getSkills()),
+            attachmentMetadataService.deserialize(project.getAttachments()),
             project.getCreatedAt(),
             project.getUpdatedAt()
         );
@@ -63,7 +68,7 @@ public class MarketplaceResponseMapper {
             bid.getPrice(),
             bid.getMessage(),
             bid.getEstimatedTime(),
-            bid.getAttachments(),
+            attachmentMetadataService.deserialize(bid.getAttachments()),
             bid.getStatus(),
             bid.getCreatedAt()
         );
@@ -122,7 +127,7 @@ public class MarketplaceResponseMapper {
             message.getSenderId(),
             message.getMessageType(),
             message.getContent(),
-            message.getAttachments(),
+            attachmentMetadataService.deserialize(message.getAttachments()),
             message.getSentAt()
         );
     }

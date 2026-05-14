@@ -5,6 +5,7 @@ import jakarta.validation.constraints.Positive;
 import lombok.Data;
 
 import java.math.BigDecimal;
+import java.util.List;
 
 /**
  * DTO gửi/cập nhật báo giá
@@ -20,5 +21,5 @@ public class BidRequest {
 
     private String message;
     private String estimatedTime;
-    private String attachments;
+    private List<FileAttachmentRequest> attachments;
 }

@@ -1,18 +1,21 @@
 "use client";
 
+import Link from 'next/link';
+
+
 import React from 'react';
-import { NavLink } from 'react-router-dom';
+
 import { Caption } from '../common/Typography';
 
 const BottomNav = ({ items = [], currentPath = '', className = '' }) => {
   return (
     <div className={`fixed bottom-0 left-0 right-0 z-[100] grid h-16 grid-cols-5 border-t border-slate-200 bg-white/90 backdrop-blur-md lg:hidden ${className}`}>
       {items.map((item) => {
-        const isActive = currentPath === item.to;
+        const isActive = currentPath === item.href;
         return (
-          <NavLink
-            key={item.to}
-            to={item.to}
+          <Link
+            key={item.href}
+            href={item.href}
             className={`relative flex flex-col items-center justify-center gap-1 transition-colors ${
               isActive ? 'text-primary-600' : 'text-slate-400 hover:text-secondary-900'
             }`}
@@ -32,7 +35,7 @@ const BottomNav = ({ items = [], currentPath = '', className = '' }) => {
               {item.label}
             </Caption>
             {isActive && <div className="absolute top-0 h-1 w-8 bg-primary-600" />}
-          </NavLink>
+          </Link>
         );
       })}
     </div>

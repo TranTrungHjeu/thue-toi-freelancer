@@ -53,7 +53,8 @@ public class ProjectController {
             request.getBudgetMin(),
             request.getBudgetMax(),
             request.getDeadline(),
-            request.getSkills()
+            request.getSkills(),
+            request.getAttachments()
         );
         return ApiResponse.success("Tạo dự án thành công", marketplaceResponseMapper.toProjectResponse(project));
     }
@@ -126,7 +127,8 @@ public class ProjectController {
             request.getBudgetMax(),
             request.getDeadline(),
             request.getStatus(),
-            request.getSkills()
+            request.getSkills(),
+            request.getAttachments()
         );
         return ApiResponse.success("Cập nhật dự án thành công", marketplaceResponseMapper.toProjectResponse(project));
     }

@@ -120,6 +120,90 @@ class ProjectServiceTest {
         verify(projectRepository, never()).save(any(Project.class));
     }
 
+    @Test
+    void updateProjectRejectsCancellingContractManagedProject() {
+        User customer = user(5L, "customer");
+        Project project = new Project();
+        project.setId(12L);
+        project.setUser(customer);
+        project.setTitle("Current title");
+        project.setStatus("in_progress");
+
+        when(projectRepository.findById(12L)).thenReturn(Optional.of(project));
+
+        assertThatThrownBy(() -> projectService.updateProject(
+            12L,
+            5L,
+            "New title",
+            "New description",
+            BigDecimal.valueOf(1000000),
+            BigDecimal.valueOf(2000000),
+            LocalDateTime.now().plusDays(7),
+            "cancelled"
+        ))
+            .isInstanceOf(BusinessException.class)
+            .satisfies(throwable -> {
+                BusinessException ex = (BusinessException) throwable;
+                assertThat(ex.getCode()).isEqualTo("ERR_SYS_02");
+                assertThat(ex.getStatus()).isEqualTo(HttpStatus.BAD_REQUEST);
+            });
+
+        verify(projectRepository, never()).save(any(Project.class));
+    }
+
+    @Test
+    void updateProjectRejectsReopeningCancelledProject() {
+        User customer = user(5L, "customer");
+        Project project = new Project();
+        project.setId(12L);
+        project.setUser(customer);
+        project.setTitle("Current title");
+        project.setStatus("cancelled");
+
+        when(projectRepository.findById(12L)).thenReturn(Optional.of(project));
+
+        assertThatThrownBy(() -> projectService.updateProject(
+            12L,
+            5L,
+            "New title",
+            "New description",
+            BigDecimal.valueOf(1000000),
+            BigDecimal.valueOf(2000000),
+            LocalDateTime.now().plusDays(7),
+            "open"
+        ))
+            .isInstanceOf(BusinessException.class)
+            .satisfies(throwable -> {
+                BusinessException ex = (BusinessException) throwable;
+                assertThat(ex.getCode()).isEqualTo("ERR_SYS_02");
+                assertThat(ex.getStatus()).isEqualTo(HttpStatus.BAD_REQUEST);
+            });
+
+        verify(projectRepository, never()).save(any(Project.class));
+    }
+
+    @Test
+    void deleteProjectRejectsContractManagedProject() {
+        User customer = user(5L, "customer");
+        Project project = new Project();
+        project.setId(12L);
+        project.setUser(customer);
+        project.setTitle("Current title");
+        project.setStatus("completed");
+
+        when(projectRepository.findById(12L)).thenReturn(Optional.of(project));
+
+        assertThatThrownBy(() -> projectService.deleteProject(12L, 5L))
+            .isInstanceOf(BusinessException.class)
+            .satisfies(throwable -> {
+                BusinessException ex = (BusinessException) throwable;
+                assertThat(ex.getCode()).isEqualTo("ERR_SYS_02");
+                assertThat(ex.getStatus()).isEqualTo(HttpStatus.BAD_REQUEST);
+            });
+
+        verify(projectRepository, never()).delete(any(Project.class));
+    }
+
     private User user(Long id, String role) {
         User user = new User();
         user.setId(id);

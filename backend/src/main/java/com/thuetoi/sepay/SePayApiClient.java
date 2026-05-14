@@ -19,11 +19,13 @@ import org.springframework.http.converter.json.MappingJackson2HttpMessageConvert
 import org.springframework.web.util.DefaultUriBuilderFactory;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import lombok.extern.slf4j.Slf4j;
 
 /**
  * Gọi SePay User API v2: tạo / hủy / lấy đơn VA.
  * Rate limit: 3 req/s (theo tài liệu SePay v2).
  */
+@Slf4j
 @Component
 public class SePayApiClient {
 
@@ -137,10 +139,10 @@ public class SePayApiClient {
     }
 
     private BusinessException mapSePayError(HttpStatusCodeException ex) {
-        System.out.println("[SePayApiClient] ERROR — bankAccountXid='" + props.getBankAccountXid()
-                + "' baseUrl='" + props.getBaseUrl()
-                + "' status=" + ex.getStatusCode()
-                + " body=" + ex.getResponseBodyAsString());
+        // Log ở cấp warn vì đây là sự kiện SePay từ chối — luồng bị chặn bởi bên thứ ba, không phải lỗi hệ thống nội bộ
+        log.warn("[SePayApiClient] Loi tu SePay — bankAccountXid='{}' baseUrl='{}' status={} body={}",
+                props.getBankAccountXid(), props.getBaseUrl(),
+                ex.getStatusCode(), ex.getResponseBodyAsString());
         if (ex.getStatusCode() == HttpStatus.TOO_MANY_REQUESTS) {
             return new BusinessException("ERR_PAYMENT_04", "SePay vượt rate limit, thử lại sau", HttpStatus.SERVICE_UNAVAILABLE);
         }

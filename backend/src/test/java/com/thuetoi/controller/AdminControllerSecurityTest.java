@@ -2,6 +2,10 @@ package com.thuetoi.controller;
 
 import com.thuetoi.config.WebConfig;
 import com.thuetoi.dto.response.admin.AdminStatsResponse;
+import com.thuetoi.dto.response.admin.AdminUserPageResponse;
+import com.thuetoi.dto.response.admin.AdminUserSummaryStatsResponse;
+import com.thuetoi.dto.response.admin.UserAdminResponse;
+import com.thuetoi.exception.BusinessException;
 import com.thuetoi.mapper.AdminResponseMapper;
 import com.thuetoi.mapper.MarketplaceResponseMapper;
 import com.thuetoi.repository.UserRepository;
@@ -20,6 +24,7 @@ import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletRequest;
 import jakarta.servlet.ServletResponse;
 import java.math.BigDecimal;
+import java.util.List;
 import java.util.Map;
 
 import org.junit.jupiter.api.BeforeEach;
@@ -31,6 +36,7 @@ import org.springframework.context.annotation.ComponentScan;
 import org.springframework.context.annotation.FilterType;
 import org.springframework.context.annotation.Import;
 import org.springframework.data.jpa.mapping.JpaMetamodelMappingContext;
+import org.springframework.http.HttpStatus;
 import org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors;
 import org.springframework.test.web.servlet.MockMvc;
 
@@ -142,5 +148,64 @@ class AdminControllerSecurityTest {
             .andExpect(status().isOk())
             .andExpect(jsonPath("$.success").value(true))
             .andExpect(jsonPath("$.data.totalUsers").value(10));
+    }
+
+    @Test
+    void adminUserPageEndpointReturnsPagedContract() throws Exception {
+        when(adminService.getUserPage(0, 20, "anna", "freelancer", "active", true, "fullName", "asc"))
+            .thenReturn(AdminUserPageResponse.builder()
+                .content(List.of(UserAdminResponse.builder()
+                    .id(12L)
+                    .email("anna@example.com")
+                    .fullName("Anna Freelancer")
+                    .role("freelancer")
+                    .isActive(true)
+                    .verified(true)
+                    .build()))
+                .page(0)
+                .size(20)
+                .totalElements(1)
+                .totalPages(1)
+                .summary(AdminUserSummaryStatsResponse.builder()
+                    .totalUsers(9)
+                    .activeUsers(7)
+                    .lockedUsers(2)
+                    .verifiedUsers(5)
+                    .freelancerUsers(4)
+                    .customerUsers(3)
+                    .adminUsers(2)
+                    .build())
+                .build());
+
+        mockMvc.perform(
+                get("/api/v1/admin/users/page")
+                    .param("page", "0")
+                    .param("size", "20")
+                    .param("q", "anna")
+                    .param("role", "freelancer")
+                    .param("status", "active")
+                    .param("verified", "true")
+                    .param("sort", "fullName")
+                    .param("direction", "asc")
+                    .with(SecurityMockMvcRequestPostProcessors.user("1").roles("ADMIN"))
+            )
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$.success").value(true))
+            .andExpect(jsonPath("$.data.content[0].fullName").value("Anna Freelancer"))
+            .andExpect(jsonPath("$.data.summary.activeUsers").value(7));
+    }
+
+    @Test
+    void adminUserDetailEndpointReturnsNotFoundForMissingUser() throws Exception {
+        when(adminService.getUserDetail(999L))
+            .thenThrow(new BusinessException("ERR_USER_01", "User not found", HttpStatus.NOT_FOUND));
+
+        mockMvc.perform(
+                get("/api/v1/admin/users/999")
+                    .with(SecurityMockMvcRequestPostProcessors.user("1").roles("ADMIN"))
+            )
+            .andExpect(status().isNotFound())
+            .andExpect(jsonPath("$.success").value(false))
+            .andExpect(jsonPath("$.code").value("ERR_USER_01"));
     }
 }

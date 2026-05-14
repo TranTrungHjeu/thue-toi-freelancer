@@ -1,5 +1,6 @@
+import Link from 'next/link';
 import React from 'react';
-import { NavLink } from 'react-router-dom';
+
 import { Caption } from '../common/Typography';
 
 const Sidebar = ({ navigation = [], currentPath = '' }) => {
@@ -13,11 +14,11 @@ const Sidebar = ({ navigation = [], currentPath = '' }) => {
             </Caption>
             <div className="mt-2 flex flex-col gap-1">
               {group.items.map((item) => {
-                const isActive = currentPath === item.to;
+                const isActive = currentPath === item.href;
                 return (
-                  <NavLink
-                    key={item.to}
-                    to={item.to}
+                  <Link
+                    key={item.href}
+                    href={item.href}
                     className={`flex items-center gap-3 border-l-4 px-3 py-3 text-sm font-semibold transition-all ${
                       isActive
                           ? 'border-primary-600 bg-primary-50 text-primary-700 shadow-sm'
@@ -36,7 +37,7 @@ const Sidebar = ({ navigation = [], currentPath = '' }) => {
                       )}
                     </span>
                     <span className="flex-1">{item.label}</span>
-                  </NavLink>
+                  </Link>
                 );
               })}
             </div>

@@ -2,6 +2,7 @@ package com.thuetoi.service;
 
 import com.thuetoi.entity.Project;
 import com.thuetoi.entity.User;
+import com.thuetoi.dto.request.FileAttachmentRequest;
 import com.thuetoi.enums.ProjectStatus;
 import com.thuetoi.exception.BusinessException;
 import com.thuetoi.repository.ProjectRepository;
@@ -40,6 +41,9 @@ public class ProjectService {
     @Autowired
     private SkillService skillService;
 
+    @Autowired
+    private AttachmentMetadataService attachmentMetadataService;
+
     /**
      * Tạo dự án mới
      */
@@ -65,6 +69,20 @@ public class ProjectService {
         LocalDateTime deadline,
         List<String> skills
     ) {
+        return createProject(userId, title, description, budgetMin, budgetMax, deadline, skills, null);
+    }
+
+    @Transactional
+    public Project createProject(
+        Long userId,
+        String title,
+        String description,
+        BigDecimal budgetMin,
+        BigDecimal budgetMax,
+        LocalDateTime deadline,
+        List<String> skills,
+        List<FileAttachmentRequest> attachments
+    ) {
         User user = getRequiredUser(userId);
         ensureCustomer(user);
         validateProjectPayload(title, budgetMin, budgetMax);
@@ -76,6 +94,7 @@ public class ProjectService {
         project.setBudgetMin(budgetMin);
         project.setBudgetMax(budgetMax);
         project.setDeadline(deadline);
+        project.setAttachments(serializeAttachments(attachments));
         project.setStatus(ProjectStatus.OPEN.getValue());
         project.setSkills(resolveSkills(skills));
         Project savedProject = projectRepository.save(project);
@@ -134,7 +153,24 @@ public class ProjectService {
         String status,
         List<String> skills
     ) {
+        return updateProject(id, userId, title, description, budgetMin, budgetMax, deadline, status, skills, null);
+    }
+
+    @Transactional
+    public Project updateProject(
+        Long id,
+        Long userId,
+        String title,
+        String description,
+        BigDecimal budgetMin,
+        BigDecimal budgetMax,
+        LocalDateTime deadline,
+        String status,
+        List<String> skills,
+        List<FileAttachmentRequest> attachments
+    ) {
         Project project = getOwnedProject(id, userId);
+        ensureProjectCanBeEditedByOwner(project);
         validateProjectPayload(title, budgetMin, budgetMax);
 
         project.setTitle(title.trim());
@@ -142,6 +178,9 @@ public class ProjectService {
         project.setBudgetMin(budgetMin);
         project.setBudgetMax(budgetMax);
         project.setDeadline(deadline);
+        if (attachments != null) {
+            project.setAttachments(serializeAttachments(attachments));
+        }
         project.setStatus(normalizeStatus(status, project.getStatus()));
         if (skills != null) {
             project.setSkills(resolveSkills(skills));
@@ -156,6 +195,7 @@ public class ProjectService {
     @Transactional
     public void deleteProject(Long id, Long userId) {
         Project project = getOwnedProject(id, userId);
+        ensureProjectCanBeEditedByOwner(project);
         projectRepository.delete(project);
     }
 
@@ -193,6 +233,13 @@ public class ProjectService {
         return skillService.resolveSkills(skills);
     }
 
+    private String serializeAttachments(List<FileAttachmentRequest> attachments) {
+        if (attachments == null) {
+            return null;
+        }
+        return attachmentMetadataService.serialize(attachments);
+    }
+
     private void validateProjectPayload(String title, BigDecimal budgetMin, BigDecimal budgetMax) {
         if (title == null || title.trim().isEmpty()) {
             throw new BusinessException("ERR_SYS_02", "Tiêu đề dự án không được để trống", HttpStatus.BAD_REQUEST);
@@ -224,8 +271,9 @@ public class ProjectService {
     }
 
     private String normalizeStatus(String status, String fallbackStatus) {
+        ProjectStatus currentStatus = normalizeStoredStatus(fallbackStatus);
         if (status == null || status.trim().isEmpty()) {
-            return fallbackStatus;
+            return currentStatus.getValue();
         }
         ProjectStatus normalizedStatus = ProjectStatus.fromValue(status)
             .orElseThrow(() -> new BusinessException("ERR_SYS_02", "Trạng thái dự án không hợp lệ", HttpStatus.BAD_REQUEST));
@@ -236,7 +284,39 @@ public class ProjectService {
                 HttpStatus.BAD_REQUEST
             );
         }
-        return normalizedStatus.getValue();
+
+        if (normalizedStatus == currentStatus) {
+            return currentStatus.getValue();
+        }
+
+        if (currentStatus == ProjectStatus.OPEN && normalizedStatus == ProjectStatus.CANCELLED) {
+            return normalizedStatus.getValue();
+        }
+
+        throw new BusinessException(
+            "ERR_SYS_02",
+            "Customer chỉ có thể hủy project đang mở; trạng thái còn lại do contract flow hoặc admin quản lý",
+            HttpStatus.BAD_REQUEST
+        );
+    }
+
+    private void ensureProjectCanBeEditedByOwner(Project project) {
+        ProjectStatus currentStatus = normalizeStoredStatus(project.getStatus());
+        if (currentStatus == ProjectStatus.IN_PROGRESS || currentStatus == ProjectStatus.COMPLETED) {
+            throw new BusinessException(
+                "ERR_SYS_02",
+                "Project đang có contract hoặc đã hoàn thành không thể cập nhật thủ công",
+                HttpStatus.BAD_REQUEST
+            );
+        }
+    }
+
+    private ProjectStatus normalizeStoredStatus(String status) {
+        if (status == null || status.trim().isEmpty()) {
+            return ProjectStatus.OPEN;
+        }
+        return ProjectStatus.fromValue(status)
+            .orElseThrow(() -> new BusinessException("ERR_SYS_02", "Trạng thái dự án hiện tại không hợp lệ", HttpStatus.BAD_REQUEST));
     }
 
     /**

@@ -1,8 +1,11 @@
+"use client";
+
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { AnimatePresence, motion } from 'framer-motion';
 import { X } from 'lucide-react';
-import { useNavigate } from 'react-router-dom';
+import { useRouter } from 'next/navigation';
+
 import gsap from 'gsap';
 import Input from '../common/Input';
 import Select from '../common/Select';
@@ -97,7 +100,7 @@ const AuthModal = ({
   initialEmail = '',
   redirectTo = '/workspace',
 }) => {
-  const navigate = useNavigate();
+  const router = useRouter();
   const { login } = useAuth();
   const { addToast } = useToast();
   const { t, locale } = useI18n();
@@ -300,8 +303,8 @@ const AuthModal = ({
     await login(email, password);
     addToast(t('toasts.auth.loginSuccess'), 'success');
     handleClose();
-    navigate(redirectTo || '/workspace', { replace: true });
-  }, [addToast, handleClose, login, navigate, redirectTo, t]);
+    router.replace(redirectTo || '/workspace');
+  }, [addToast, handleClose, login, router, redirectTo, t]);
 
   const submitVerification = useCallback(async () => {
     setVerifySubmitting(true);

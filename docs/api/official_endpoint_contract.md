@@ -35,7 +35,9 @@ Authorization: Bearer <access_token>
 ### 1.2. Response DTO chính
 
 - `AuthUserResponse`: `id`, `email`, `fullName`, `role`, `avatarUrl`, `profileDescription`, `skills`, `isActive`, `verified`, `createdAt`, `updatedAt`
-- `ProjectResponse`: `id`, `user`, `title`, `description`, `budgetMin`, `budgetMax`, `deadline`, `status`, `skills`, `createdAt`, `updatedAt`
+- `FileAttachmentRequest`: `url`, `name`, `contentType`, `size`
+- `FileUploadResponse`: `url`, `name`, `contentType`, `size`, `storageProvider`
+- `ProjectResponse`: `id`, `user`, `title`, `description`, `budgetMin`, `budgetMax`, `deadline`, `status`, `skills`, `attachments`, `createdAt`, `updatedAt`
 - `BidResponse`: `id`, `project`, `freelancer`, `price`, `message`, `estimatedTime`, `attachments`, `status`, `createdAt`
 - `ContractResponse`: `id`, `projectId`, `freelancerId`, `customerId`, `totalAmount`, `progress`, `status`, `startDate`, `endDate`
 - `MilestoneResponse`: `id`, `contractId`, `title`, `amount`, `dueDate`, `status`
@@ -44,14 +46,18 @@ Authorization: Bearer <access_token>
 - `NotificationResponse`: `id`, `userId`, `type`, `title`, `content`, `link`, `isRead`, `createdAt`
 - `NotificationPageResponse`: `notifications`, `page`, `size`, `totalElements`, `totalPages`, `totalNotifications`, `unreadCount`
 - `NotificationReadAllResponse`: `updatedCount`
+- `NotificationPreferenceResponse`: `type`, `inAppEnabled`, `emailEnabled`, `browserEnabled`
+- `OtpVerificationStatusResponse`: `expiresAt`, `resendAvailableAt`, `expiresInSeconds`, `resendCooldownSeconds`
 - `SkillResponse`: `id`, `name`, `description`
 - `TransactionResponse`: `id`, `contractId`, `amount`, `method`, `status`, `createdAt`
 - `AdminUserSummaryResponse`: `id`, `fullName`, `email`, `role`, `avatarUrl`
+- `AdminUserPageResponse`: `content`, `page`, `size`, `totalElements`, `totalPages`
 - `AdminProjectResponse`: `id`, `user`, `title`, `description`, `budgetMin`, `budgetMax`, `deadline`, `status`, `skills`, `createdAt`, `updatedAt`
 - `AdminKycResponse`: `id`, `user`, `status`, `note`, `createdAt`, `updatedAt`
 - `AdminReportResponse`: `id`, `reporter`, `targetType`, `targetId`, `reason`, `description`, `status`, `createdAt`, `updatedAt`
 - `AdminWithdrawalResponse`: `id`, `user`, `amount`, `bankInfo`, `status`, `note`, `processedBy`, `createdAt`, `updatedAt`
 - `AdminAuditLogResponse`: `id`, `adminEmail`, `action`, `entityType`, `entityId`, `detail`, `ipAddress`, `createdAt`
+- `NotificationDeliveryLogResponse`: thông tin delivery log gần đây cho in-app, websocket và email notification
 - `SystemSettingAdminResponse`: `key`, `value`, `updatedAt`
 
 ## 2. Auth & profile
@@ -61,13 +67,17 @@ Authorization: Bearer <access_token>
 | `POST` | `/auth/register`                | Không  | `email`, `password`, `fullName`, `role`, `profileDescription?` | `AuthUserResponse`  | Chỉ cho `freelancer` hoặc `customer`; tự gửi OTP verify email |
 | `POST` | `/auth/verify-email-otp`        | Không  | `email`, `otp`                                                 | `null`              | OTP đúng, chưa dùng, chưa hết hạn                             |
 | `POST` | `/auth/resend-verification-otp` | Không  | `email`                                                        | `null`              | Cooldown resend; không cho user đã verify                     |
+| `GET`  | `/auth/verification-otp-status` | Không  | Query `email`                                                  | `OtpVerificationStatusResponse` | Cho frontend hiển thị thời gian hết hạn OTP và cooldown resend |
 | `POST` | `/auth/login`                   | Không  | `email`, `password`                                            | `AuthTokenResponse` | Trả access token trong body, refresh token trong cookie       |
 | `POST` | `/auth/refresh`                 | Cookie | Không body                                                     | `AuthTokenResponse` | Rotate refresh token, revoke token cũ                         |
 | `POST` | `/auth/logout`                  | Cookie | Không body                                                     | `null`              | Revoke refresh token hiện tại và xóa cookie                   |
 | `GET`  | `/auth/profile`                 | Có     | Không                                                          | `AuthUserResponse`  | Lấy profile từ JWT principal                                  |
 | `PUT`  | `/users/me/profile`             | Có     | `fullName?`, `profileDescription?`, `avatarUrl?`, `skills?[]`  | `AuthUserResponse`  | Cập nhật hồ sơ hiện tại; skills phải tồn tại trong catalog    |
-| `POST` | `/users/me/avatar`              | Có     | `file` (multipart/form-data)                                   | `AuthUserResponse`  | Tải lên avatar mới, hệ thống trả về URL và cập nhật cho user  |
-| `PUT`  | `/users/me/password`            | Có     | `oldPassword`, `newPassword`                                   | `null`              | Đổi mật khẩu; cần xác thực mật khẩu cũ trước khi đổi          |
+| `POST` | `/users/me/avatar`              | Có     | `file` (multipart/form-data)                                   | `String`            | Tải ảnh đại diện lên storage và trả URL; FE gửi URL này khi lưu profile |
+| `POST` | `/users/me/password/otp`        | Có     | Không                                                          | `null`              | Gửi OTP về email hiện tại trước khi đổi mật khẩu              |
+| `PUT`  | `/users/me/password`            | Có + Cookie | `oldPassword`, `newPassword`, `otp`                         | `String`            | Đổi mật khẩu, revoke session khác, rotate refresh cookie và trả access token mới |
+| `POST` | `/users/me/email/otp`           | Có     | `oldPassword`, `newEmail`                                      | `null`              | Gửi OTP tới email mới sau khi xác thực mật khẩu hiện tại      |
+| `PUT`  | `/users/me/email`               | Có     | `oldPassword`, `newEmail`, `otp`                               | `AuthUserResponse`  | Đổi email sau khi OTP hợp lệ; session cũ bị thu hồi, client cần đăng nhập lại |
 
 ### 2.1. `AuthTokenResponse`
 
@@ -94,12 +104,31 @@ Authorization: Bearer <access_token>
 | `GET`  | `/skills`     | Không | `SkillResponse[]`  | Danh mục kỹ năng chuẩn hóa dùng cho project/profile |
 | `GET`  | `/users/{id}` | Không | `AuthUserResponse` | Phục vụ tra cứu user theo id                        |
 
+## 3.5. File upload
+
+| Method | Path               | Auth | Request                                                | Data success           | Rule chính                                                                                                                                       |
+| ------ | ------------------ | ---- | ------------------------------------------------------ | ---------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `POST` | `/files/{context}` | Có   | `files` multipart, query `projectId?`, `contractId?`   | `FileUploadResponse[]` | `context`: `projects`, `bids`, `messages`; backend validate quyền, owner/participant, status nghiệp vụ, MIME, filename và size trước khi upload |
+
+Query theo context:
+
+- `projects`: `projectId` optional, nếu có thì user phải là owner project.
+- `bids`: bắt buộc `projectId`; chỉ `freelancer`, project phải `open`, không phải project của chính mình.
+- `messages`: bắt buộc `contractId`; chỉ participant của contract `in_progress`.
+
+Giới hạn file:
+
+- Tối đa 5 file mỗi entity.
+- Tối đa 5 MB mỗi file, `max-request-size` 10 MB.
+- Extension: `jpg`, `jpeg`, `png`, `webp`, `pdf`, `docx`, `xlsx`, `pptx`, `txt`.
+- Response metadata dùng để gửi tiếp vào `ProjectRequest.attachments`, `BidRequest.attachments`, `MessageRequest.attachments`.
+
 ## 4. Project
 
 | Method   | Path                        | Auth  | Request                                                                     | Data success        | Rule chính                                                                                       |
 | -------- | --------------------------- | ----- | --------------------------------------------------------------------------- | ------------------- | ------------------------------------------------------------------------------------------------ |
 | `GET`    | `/projects`                 | Không | Không                                                                       | `ProjectResponse[]` | Chỉ trả project `open` trên marketplace                                                          |
-| `POST`   | `/projects`                 | Có    | `title`, `description?`, `budgetMin`, `budgetMax`, `deadline?`, `skills?[]` | `ProjectResponse`   | Chỉ `customer` được tạo; skills phải tồn tại trong catalog                                       |
+| `POST`   | `/projects`                 | Có    | `title`, `description?`, `budgetMin`, `budgetMax`, `deadline?`, `skills?[]`, `attachments?[]` | `ProjectResponse`   | Chỉ `customer` được tạo; skills phải tồn tại trong catalog                                       |
 | `GET`    | `/projects/status/{status}` | Không | Path `status`                                                               | `ProjectResponse[]` | `status` hợp lệ: `open`, `in_progress`, `completed`, `cancelled`                                 |
 | `GET`    | `/projects/search`          | Không | Query `skills?`, `status?`                                                  | `ProjectResponse[]` | Skill-based search (tên kỹ năng), optional status                                                |
 | `GET`    | `/projects/my`              | Có    | Không                                                                       | `ProjectResponse[]` | Dự án của user hiện tại                                                                          |
@@ -154,8 +183,9 @@ Quy tắc payload:
 
 - Nếu `messageType` trống, backend mặc định `text`
 - `text` bắt buộc có `content`
-- `file` bắt buộc có `attachments`
+- `file` bắt buộc có `attachments` dạng `FileAttachmentRequest[]`
 - Client không gửi `senderId`
+- `ProjectResponse`, `BidResponse`, `MessageResponse` luôn trả `attachments` dạng list metadata; không trả raw string JSON.
 
 ## 8. Review
 
@@ -180,6 +210,10 @@ Quy tắc payload:
 | `GET`  | `/notifications/user/me/page`          | Có   | Query `page?`, `size?`, `type?`, `unreadOnly?` | `NotificationPageResponse` | Inbox phân trang, hỗ trợ filter type và chỉ chưa đọc; `size` tối đa 100 |
 | `PUT`  | `/notifications/{notificationId}/read` | Có   | Path `notificationId`                 | `NotificationResponse`   | Chỉ chủ notification được đánh dấu đã đọc                          |
 | `PUT`  | `/notifications/read-all`              | Có   | Không                                 | `NotificationReadAllResponse` | Chỉ đánh dấu các notification chưa đọc của user hiện tại; trả số bản ghi đã cập nhật |
+| `PUT`  | `/notifications/{notificationId}/archive` | Có | Path `notificationId`                 | `NotificationResponse`   | Chỉ chủ notification được lưu trữ notification                     |
+| `DELETE` | `/notifications/{notificationId}`     | Có   | Path `notificationId`                 | `null`                   | Soft delete notification của chính user                            |
+| `GET`  | `/notifications/preferences`           | Có   | Không                                 | `NotificationPreferenceResponse[]` | Trả preference theo từng type notification                         |
+| `PUT`  | `/notifications/preferences/{type}`    | Có   | `inAppEnabled?`, `emailEnabled?`, `browserEnabled?` | `NotificationPreferenceResponse` | Cập nhật preference cho type `project`, `bid`, `contract`, `system` |
 
 Quy tắc notification:
 
@@ -189,6 +223,7 @@ Quy tắc notification:
 - Mọi notification lưu thành công phải được phát qua `/user/queue/notifications` với payload `NotificationResponse`.
 - Broadcast admin phải lưu từng notification theo user nhận và emit từng user queue; `/topic/global-notifications` chỉ là tín hiệu phụ, frontend không phụ thuộc vào topic này.
 - Frontend nên dùng endpoint phân trang cho inbox chính; endpoint list cũ giữ lại để tương thích.
+- Endpoint page hỗ trợ thêm query `archived?` và `q?` để xem notification đã lưu trữ và tìm theo tiêu đề/nội dung.
 - `read-all` và `mark-read` phải đồng bộ badge giữa các tab bằng cross-tab sync hoặc reload nhẹ.
 
 ## 10. Report & KYC
@@ -196,8 +231,8 @@ Quy tắc notification:
 | Method | Path              | Auth | Request                                              | Data success | Rule chính                                                                 |
 | ------ | ----------------- | ---- | ---------------------------------------------------- | ------------ | -------------------------------------------------------------------------- |
 | `POST` | `/reports`        | Có   | `targetType`, `targetId`, `reason`, `description?`   | `null`       | Chỉ user đã đăng nhập; backend tự gán `reporterId`, không trả raw entity   |
-| `POST` | `/kyc/request`    | Có   | Không                                                | `null`       | User chỉ gửi yêu cầu xác thực cho chính mình                               |
-| `GET`  | `/kyc/my-status`  | Có   | Không                                                | `KycStatus`  | Trả trạng thái KYC hiện tại của user                                       |
+| `POST` | `/kyc/request`    | Có   | Không                                                | `KycRequest` | User chỉ gửi yêu cầu xác thực cho chính mình; tạo hoặc cập nhật request `PENDING` |
+| `GET`  | `/kyc/my-status`  | Có   | Không                                                | `KycRequest \| null` | Trả yêu cầu KYC hiện tại nếu có                                        |
 
 Quy tắc payload:
 
@@ -220,6 +255,8 @@ Tất cả endpoint dưới `/admin/**` đều yêu cầu:
 | `GET`  | `/admin/stats`                         | Admin     | Không                                                              | `AdminStatsResponse`           | Dashboard tổng quan hệ thống                                                                          |
 | `GET`  | `/admin/health-detailed`               | Admin     | Không                                                              | `SystemHealthResponse`         | Theo dõi tài nguyên hệ thống                                                                          |
 | `GET`  | `/admin/users`                         | Admin     | Không                                                              | `UserAdminResponse[]`          | Danh sách toàn bộ user                                                                                |
+| `GET`  | `/admin/users/page`                    | Admin     | Query `page?`, `size?`, `q?`, `role?`, `status?`, `verified?`, `sort?`, `direction?` | `AdminUserPageResponse` | Danh sách user phân trang, lọc/tìm kiếm/sắp xếp cho admin UI |
+| `GET`  | `/admin/users/{userId}`                | Admin     | Path `userId`                                                       | `UserAdminResponse`            | Chi tiết người dùng cho admin                                                                         |
 | `PUT`  | `/admin/users/{userId}/toggle-status`  | Admin     | Query `reason?`                                                    | `null`                         | Không được tự khóa/mở khóa chính mình                                                                 |
 | `POST` | `/admin/users/bulk-status`             | Admin     | `userIds[]`, `active`, `reason?`                                  | `null`                         | Không được áp dụng bulk action lên chính admin đang đăng nhập                                         |
 | `PUT`  | `/admin/users/{userId}/role`           | Admin     | Query `role`                                                       | `null`                         | Không được tự đổi role của chính mình                                                                 |
@@ -240,6 +277,7 @@ Tất cả endpoint dưới `/admin/**` đều yêu cầu:
 | `GET`  | `/admin/settings`                      | Admin     | Không                                                              | `SystemSettingAdminResponse[]` | Dùng DTO admin riêng                                                                                  |
 | `POST` | `/admin/settings`                      | Admin     | `key`, `value`                                                     | `SystemSettingAdminResponse`   | Ghi nhận audit log cho thay đổi setting                                                               |
 | `GET`  | `/admin/logs`                          | Admin     | Không                                                              | `AdminAuditLogResponse[]`      | Nhật ký hệ thống/audit                                                                                |
+| `GET`  | `/admin/notifications/delivery-logs`   | Admin     | Không                                                              | `NotificationDeliveryLogResponse[]` | Nhật ký gửi notification gần đây                                                                 |
 
 Lưu ý cho frontend:
 
@@ -324,6 +362,7 @@ Các lỗi cần ưu tiên xử lý theo `code`, không hardcode chuỗi `messag
 - Bid: `ERR_BID_01`
 - Contract: `ERR_CONTRACT_01`, `ERR_CONTRACT_02`
 - Notification: `ERR_NOTIFICATION_01`
+- File: `ERR_FILE_01`, `ERR_FILE_02`, `ERR_FILE_03`
 - Validation/System: `ERR_SYS_02`, `ERR_SYS_01`
 
 Chi tiết đầy đủ xem tại [docs/architecture/error_codes.md](../architecture/error_codes.md).

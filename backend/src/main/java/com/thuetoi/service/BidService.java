@@ -3,6 +3,7 @@ package com.thuetoi.service;
 import com.thuetoi.entity.Bid;
 import com.thuetoi.entity.Project;
 import com.thuetoi.entity.User;
+import com.thuetoi.dto.request.FileAttachmentRequest;
 import com.thuetoi.enums.BidStatus;
 import com.thuetoi.enums.ProjectStatus;
 import com.thuetoi.exception.BusinessException;
@@ -37,6 +38,9 @@ public class BidService {
     @Autowired
     private NotificationService notificationService;
 
+    @Autowired
+    private AttachmentMetadataService attachmentMetadataService;
+
     /**
      * Lấy toàn bộ bid mà user hiện tại được phép xem.
      */
@@ -52,7 +56,7 @@ public class BidService {
      * Freelancer gửi báo giá cho dự án.
      */
     @Transactional
-    public Bid createBid(Long projectId, Long freelancerId, BigDecimal price, String message, String estimatedTime, String attachments) {
+    public Bid createBid(Long projectId, Long freelancerId, BigDecimal price, String message, String estimatedTime, List<FileAttachmentRequest> attachments) {
         Project project = projectRepository.findById(projectId)
             .orElseThrow(() -> new BusinessException("ERR_PROJECT_01", "Không tìm thấy dự án", HttpStatus.NOT_FOUND));
         User freelancer = getRequiredUser(freelancerId);
@@ -72,7 +76,7 @@ public class BidService {
         bid.setPrice(price);
         bid.setMessage(normalizeText(message));
         bid.setEstimatedTime(normalizeText(estimatedTime));
-        bid.setAttachments(normalizeText(attachments));
+        bid.setAttachments(serializeAttachments(attachments));
         bid.setStatus(BidStatus.PENDING.getValue());
         Bid createdBid = bidRepository.save(bid);
         notificationService.createNotificationForUser(
@@ -207,6 +211,13 @@ public class BidService {
         }
         String normalized = value.trim();
         return normalized.isEmpty() ? null : normalized;
+    }
+
+    private String serializeAttachments(List<FileAttachmentRequest> attachments) {
+        if (attachments == null) {
+            return null;
+        }
+        return attachmentMetadataService.serialize(attachments);
     }
 
     private BidStatus normalizeBidStatus(String status) {

@@ -25,6 +25,14 @@ export const marketplaceApi = {
   getProjectsByUser: (userId) => axiosClient.get(`/v1/projects/user/${userId}`),
   createProject: (payload) => axiosClient.post('/v1/projects', payload),
   updateProject: (projectId, payload) => axiosClient.put(`/v1/projects/${projectId}`, payload),
+  uploadFiles: (context, files, params = {}) => {
+    const formData = new FormData();
+    files.forEach((file) => formData.append('files', file));
+    return axiosClient.post(`/v1/files/${context}`, formData, {
+      params,
+      headers: { 'Content-Type': 'multipart/form-data' },
+    });
+  },
   getSkillCatalog: () => axiosClient.get('/v1/skills'),
   getBidsByProject: (projectId) => axiosClient.get(`/v1/bids/project/${projectId}`),
   getMyBids: () => axiosClient.get('/v1/bids/my'),
@@ -52,6 +60,10 @@ export const marketplaceApi = {
   getNotificationsPage: (params = {}) => axiosClient.get('/v1/notifications/user/me/page', { params }),
   markNotificationAsRead: (notificationId) => axiosClient.put(`/v1/notifications/${notificationId}/read`),
   markAllNotificationsAsRead: () => axiosClient.put('/v1/notifications/read-all'),
+  archiveNotification: (notificationId) => axiosClient.put(`/v1/notifications/${notificationId}/archive`),
+  deleteNotification: (notificationId) => axiosClient.delete(`/v1/notifications/${notificationId}`),
+  getNotificationPreferences: () => axiosClient.get('/v1/notifications/preferences'),
+  updateNotificationPreference: (type, payload) => axiosClient.put(`/v1/notifications/preferences/${type}`, payload),
 
   // --- Reports ---
   submitReport: (payload) => axiosClient.post('/v1/reports', payload),

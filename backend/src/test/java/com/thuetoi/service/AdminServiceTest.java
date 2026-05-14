@@ -1,10 +1,12 @@
 package com.thuetoi.service;
 
+import com.thuetoi.dto.response.admin.AdminUserPageResponse;
 import com.thuetoi.entity.KycRequest;
 import com.thuetoi.entity.Project;
 import com.thuetoi.entity.User;
 import com.thuetoi.entity.WithdrawalRequest;
 import com.thuetoi.exception.BusinessException;
+import com.thuetoi.repository.BidRepository;
 import com.thuetoi.repository.ContractRepository;
 import com.thuetoi.repository.KycRequestRepository;
 import com.thuetoi.repository.ProjectRepository;
@@ -20,8 +22,11 @@ import java.util.Optional;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
+import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -44,6 +49,9 @@ class AdminServiceTest {
 
     @Mock
     private ContractRepository contractRepository;
+
+    @Mock
+    private BidRepository bidRepository;
 
     @Mock
     private NotificationService notificationService;
@@ -110,6 +118,63 @@ class AdminServiceTest {
             });
 
         verify(projectRepository, never()).save(any(Project.class));
+    }
+
+    @Test
+    void getUserPageAppliesFiltersSortAndBuildsSummary() {
+        User freelancer = user(12L, "freelancer", BigDecimal.valueOf(200000));
+        freelancer.setFullName("Anna Freelancer");
+
+        when(userRepository.searchAdminUsers(eq("anna"), eq("freelancer"), eq(true), eq(true), any(Pageable.class)))
+            .thenReturn(new PageImpl<>(java.util.List.of(freelancer)));
+        when(userRepository.count()).thenReturn(9L);
+        when(userRepository.countByIsActiveTrue()).thenReturn(7L);
+        when(userRepository.countByIsActiveFalse()).thenReturn(2L);
+        when(userRepository.countByVerifiedTrue()).thenReturn(5L);
+        when(userRepository.countByRole("customer")).thenReturn(3L);
+        when(userRepository.countByRole("freelancer")).thenReturn(4L);
+        when(userRepository.countByRole("admin")).thenReturn(2L);
+
+        AdminUserPageResponse result = adminService.getUserPage(
+            0,
+            20,
+            " Anna ",
+            "freelancer",
+            "active",
+            true,
+            "fullName",
+            "asc"
+        );
+
+        assertThat(result.getContent()).hasSize(1);
+        assertThat(result.getContent().get(0).getFullName()).isEqualTo("Anna Freelancer");
+        assertThat(result.getSummary().getTotalUsers()).isEqualTo(9L);
+        assertThat(result.getSummary().getActiveUsers()).isEqualTo(7L);
+        assertThat(result.getSummary().getFreelancerUsers()).isEqualTo(4L);
+
+        ArgumentCaptor<Pageable> pageableCaptor = ArgumentCaptor.forClass(Pageable.class);
+        verify(userRepository).searchAdminUsers(eq("anna"), eq("freelancer"), eq(true), eq(true), pageableCaptor.capture());
+        assertThat(pageableCaptor.getValue().getPageNumber()).isZero();
+        assertThat(pageableCaptor.getValue().getPageSize()).isEqualTo(20);
+        assertThat(pageableCaptor.getValue().getSort().getOrderFor("fullName").isAscending()).isTrue();
+    }
+
+    @Test
+    void getUserDetailReturnsProfileAndActivityStats() {
+        User freelancer = user(15L, "freelancer", BigDecimal.valueOf(350000));
+        freelancer.setProfileDescription("Senior Java developer");
+
+        when(userRepository.findById(15L)).thenReturn(Optional.of(freelancer));
+        when(projectRepository.countByUserId(15L)).thenReturn(2L);
+        when(bidRepository.countByFreelancerId(15L)).thenReturn(8L);
+        when(contractRepository.countByClientIdOrFreelancerId(15L, 15L)).thenReturn(3L);
+
+        var result = adminService.getUserDetail(15L);
+
+        assertThat(result.getProfileDescription()).isEqualTo("Senior Java developer");
+        assertThat(result.getProjectCount()).isEqualTo(2L);
+        assertThat(result.getBidCount()).isEqualTo(8L);
+        assertThat(result.getContractCount()).isEqualTo(3L);
     }
 
     @Test

@@ -30,6 +30,15 @@ public class MessageService {
     @Autowired
     private ContractMessageWebSocketHandler contractMessageWebSocketHandler;
 
+    @Autowired
+    private AttachmentMetadataService attachmentMetadataService;
+
+    @Autowired(required = false)
+    private ContractRealtimePublisher contractRealtimePublisher;
+
+    @Autowired
+    private NotificationService notificationService;
+
     public Message sendMessage(Long currentUserId, MessageRequest request) {
         Contract contract = contractAccessService.requireAccessibleContract(request.getContractId(), currentUserId);
         if (!ContractStatus.IN_PROGRESS.matches(contract.getStatus())) {
@@ -38,7 +47,7 @@ public class MessageService {
 
         MessageType messageType = normalizeMessageType(request.getMessageType());
         String normalizedContent = normalizeText(request.getContent());
-        String normalizedAttachments = normalizeText(request.getAttachments());
+        String normalizedAttachments = serializeAttachments(request.getAttachments());
 
         if (messageType == MessageType.TEXT && normalizedContent == null) {
             throw new BusinessException("ERR_SYS_02", "Tin nhắn văn bản không được để trống nội dung", HttpStatus.BAD_REQUEST);
@@ -56,6 +65,22 @@ public class MessageService {
         Message savedMessage = messageRepository.save(message);
         MessageResponse response = marketplaceResponseMapper.toMessageResponse(savedMessage);
         contractMessageWebSocketHandler.broadcast(response);
+
+        if (contractRealtimePublisher != null) {
+            contractRealtimePublisher.publish(request.getContractId(), "message.created", savedMessage);
+        }
+
+        Long recipientId = contract.getClientId().equals(currentUserId)
+            ? contract.getFreelancerId()
+            : contract.getClientId();
+        notificationService.createNotificationForUser(
+            recipientId,
+            "contract",
+            "Tin nhắn mới trong hợp đồng",
+            "Bạn có tin nhắn mới trong contract #" + request.getContractId() + ".",
+            "/workspace/contracts"
+        );
+
         return savedMessage;
     }
 
@@ -78,5 +103,12 @@ public class MessageService {
         }
         String normalized = value.trim();
         return normalized.isEmpty() ? null : normalized;
+    }
+
+    private String serializeAttachments(java.util.List<com.thuetoi.dto.request.FileAttachmentRequest> attachments) {
+        if (attachments == null || attachments.isEmpty()) {
+            return null;
+        }
+        return attachmentMetadataService.serialize(attachments);
     }
 }
