@@ -1,9 +1,9 @@
 "use client";
 
-import React, { useEffect, useMemo, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import Link from 'next/link';
 
-import { Attachment, ChatBubble, NavArrowDown, SendSolid, Xmark } from 'iconoir-react';
+import { ArrowUpRightSquare, Attachment, ChatBubble, NavArrowDown, SendSolid, Xmark } from 'iconoir-react';
 import marketplaceApi from '../../api/marketplaceApi';
 import { formatDateTime } from '../../utils/formatters';
 import { formatAttachmentSize, normalizeAttachments } from '../../utils/attachments';
@@ -27,6 +27,8 @@ const getPreview = (message) => {
 };
 
 const hasAttachments = (attachments) => normalizeAttachments(attachments).length > 0;
+
+const getMessageTime = (message) => new Date(message?.sentAt || 0).getTime();
 
 const MessageAttachmentLinks = ({ attachments, isSender }) => {
   const normalizedAttachments = normalizeAttachments(attachments);
@@ -76,7 +78,10 @@ const ConversationInbox = () => {
   const [uploadingAttachment, setUploadingAttachment] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [uploadError, setUploadError] = useState('');
+  const [readByContract, setReadByContract] = useState({});
   const messagesEndRef = useRef(null);
+  const isOpenRef = useRef(isOpen);
+  const selectedContractIdRef = useRef(selectedContractId);
 
   const selectedItem = useMemo(
     () => items.find((item) => item.contract.id === selectedContractId) || null,
@@ -85,8 +90,63 @@ const ConversationInbox = () => {
 
   const normalizedDraftAttachments = useMemo(() => normalizeAttachments(attachments), [attachments]);
 
+  const readStorageKey = user?.id ? `thuetoi_message_reads_${user.id}` : null;
+  const contractSubscriptionKey = useMemo(
+    () => [...new Set(items.map((item) => item.contract.id).filter(Boolean))]
+      .sort((first, second) => Number(first) - Number(second))
+      .join(','),
+    [items],
+  );
+
   useEffect(() => {
-    if (!isOpen) return;
+    isOpenRef.current = isOpen;
+  }, [isOpen]);
+
+  useEffect(() => {
+    selectedContractIdRef.current = selectedContractId;
+  }, [selectedContractId]);
+
+  const markContractRead = useCallback((contractId, sentAt) => {
+    if (!contractId || !readStorageKey) return;
+    const readTime = sentAt || new Date().toISOString();
+    setReadByContract((previous) => {
+      const previousTime = new Date(previous[contractId] || 0).getTime();
+      const nextTime = new Date(readTime || 0).getTime();
+      if (previousTime >= nextTime) return previous;
+
+      const next = { ...previous, [contractId]: readTime };
+      try {
+        window.localStorage.setItem(readStorageKey, JSON.stringify(next));
+      } catch {
+        // Ignore local persistence failures; unread state can be rebuilt from latest messages.
+      }
+      return next;
+    });
+  }, [readStorageKey]);
+
+  const unreadConversationCount = useMemo(() => (
+    items.filter(({ contract, latest }) => {
+      if (!latest || latest.senderId === user?.id) return false;
+      const readTime = new Date(readByContract[contract.id] || 0).getTime();
+      return getMessageTime(latest) > readTime;
+    }).length
+  ), [items, readByContract, user?.id]);
+
+  useEffect(() => {
+    if (!readStorageKey) {
+      setReadByContract({});
+      return;
+    }
+
+    try {
+      setReadByContract(JSON.parse(window.localStorage.getItem(readStorageKey) || '{}'));
+    } catch {
+      setReadByContract({});
+    }
+  }, [readStorageKey]);
+
+  useEffect(() => {
+    if (!user?.id) return;
     let mounted = true;
 
     const loadInbox = async () => {
@@ -129,7 +189,7 @@ const ConversationInbox = () => {
     return () => {
       mounted = false;
     };
-  }, [isOpen]);
+  }, [user?.id]);
 
   useEffect(() => {
     if (!isOpen || !selectedContractId) return;
@@ -139,7 +199,14 @@ const ConversationInbox = () => {
       setLoadingMessages(true);
       try {
         const response = await marketplaceApi.getMessagesByContract(selectedContractId);
-        if (mounted) setMessages(response.data || []);
+        if (mounted) {
+          const nextMessages = response.data || [];
+          setMessages(nextMessages);
+          const latestMessage = nextMessages[nextMessages.length - 1];
+          if (latestMessage?.senderId !== user?.id) {
+            markContractRead(selectedContractId, latestMessage.sentAt);
+          }
+        }
       } finally {
         if (mounted) setLoadingMessages(false);
       }
@@ -149,38 +216,57 @@ const ConversationInbox = () => {
     return () => {
       mounted = false;
     };
-  }, [isOpen, selectedContractId]);
+  }, [isOpen, markContractRead, selectedContractId, user?.id]);
 
   useEffect(() => {
-    if (!isOpen || !selectedContractId) return undefined;
+    if (!user?.id || !contractSubscriptionKey) return undefined;
 
-    const realtimeClient = createMessageRealtimeClient({
-      contractId: selectedContractId,
-      onMessage: (incomingMessage) => {
-        setMessages((previous) => {
-          if (previous.some((message) => message.id === incomingMessage.id)) {
-            return previous;
+    const realtimeClients = contractSubscriptionKey.split(',').map((contractId) =>
+      createMessageRealtimeClient({
+        contractId,
+        onMessage: (incomingMessage) => {
+          const incomingContractId = Number(incomingMessage.contractId || contractId);
+          const isSelectedConversation = selectedContractIdRef.current === incomingContractId;
+
+          if (isSelectedConversation) {
+            setMessages((previous) => {
+              if (previous.some((message) => message.id === incomingMessage.id)) {
+                return previous;
+              }
+              return [...previous, incomingMessage];
+            });
           }
-          return [...previous, incomingMessage];
-        });
-        setItems((previous) =>
-          previous
-            .map((item) =>
-              item.contract.id === selectedContractId ? { ...item, latest: incomingMessage } : item,
-            )
-            .sort((a, b) => new Date(b.latest?.sentAt || 0) - new Date(a.latest?.sentAt || 0)),
-        );
-      },
-    });
+
+          setItems((previous) =>
+            previous
+              .map((item) =>
+                item.contract.id === incomingContractId ? { ...item, latest: incomingMessage } : item,
+              )
+              .sort((a, b) => new Date(b.latest?.sentAt || 0) - new Date(a.latest?.sentAt || 0)),
+          );
+
+          if (isOpenRef.current && isSelectedConversation && incomingMessage.senderId !== user?.id) {
+            markContractRead(incomingContractId, incomingMessage.sentAt);
+          }
+        },
+      }),
+    );
 
     return () => {
-      realtimeClient.close();
+      realtimeClients.forEach((client) => client.close());
     };
-  }, [isOpen, selectedContractId]);
+  }, [contractSubscriptionKey, markContractRead, user?.id]);
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ block: 'end' });
   }, [messages, loadingMessages, isOpen]);
+
+  const handleSelectConversation = (contractId, latest) => {
+    setSelectedContractId(contractId);
+    if (latest?.sentAt) {
+      markContractRead(contractId, latest.sentAt);
+    }
+  };
 
   const handleSend = async (event) => {
     event.preventDefault();
@@ -209,6 +295,7 @@ const ConversationInbox = () => {
             )
             .sort((a, b) => new Date(b.latest?.sentAt || 0) - new Date(a.latest?.sentAt || 0)),
         );
+        markContractRead(selectedContractId, sentMessage.sentAt);
       }
       setContent('');
       setAttachments('');
@@ -248,28 +335,32 @@ const ConversationInbox = () => {
     }
   };
 
-  const unreadHint = items.length > 0 ? items.length : null;
-
   return (
-    <div className="fixed bottom-20 right-4 z-[60] md:bottom-6 md:right-6">
+    <div className="fixed bottom-24 right-4 z-[120] lg:bottom-6 lg:right-6">
       {!isOpen && (
-        <button
-          type="button"
-          onClick={() => setIsOpen(true)}
-          className="relative flex h-14 w-14 items-center justify-center border border-secondary-900 bg-secondary-900 text-white shadow-2xl transition hover:bg-slate-800"
+        <div className="relative h-14 w-14">
+          <button
+            type="button"
+            onClick={() => setIsOpen(true)}
+            className="flex h-14 w-14 items-center justify-center overflow-hidden border border-secondary-900 bg-secondary-900 text-white shadow-2xl transition hover:bg-slate-800"
+            style={{ borderRadius: '9999px', clipPath: 'circle(50% at 50% 50%)' }}
           title="Tin nhắn"
         >
-          <ChatBubble className="h-6 w-6" />
-          {unreadHint && (
-            <span className="absolute -right-1 -top-1 min-w-5 border border-white bg-primary-600 px-1 text-center text-[11px] font-bold text-white">
-              {unreadHint > 9 ? '9+' : unreadHint}
+            <ChatBubble className="h-6 w-6" />
+          </button>
+          {unreadConversationCount > 0 && (
+            <span
+              className="absolute -right-1 -top-1 flex min-h-5 min-w-5 items-center justify-center rounded-full border border-white bg-primary-600 px-1 text-center text-[11px] font-bold text-white"
+              style={{ borderRadius: '9999px' }}
+            >
+              {unreadConversationCount > 9 ? '9+' : unreadConversationCount}
             </span>
           )}
-        </button>
+        </div>
       )}
 
       {isOpen && (
-        <section className="flex h-[calc(100dvh-6rem)] max-h-[34rem] w-[min(94vw,27rem)] flex-col overflow-hidden border border-slate-200 bg-white shadow-2xl md:h-[calc(100dvh-3rem)] md:max-h-[40rem]">
+        <section className="flex h-[calc(100dvh-7rem)] max-h-[34rem] w-[min(94vw,27rem)] flex-col overflow-hidden border border-slate-200 bg-white shadow-2xl lg:h-[calc(100dvh-3rem)] lg:max-h-[40rem]">
           <div className="flex items-center justify-between border-b border-slate-200 bg-secondary-900 px-4 py-3 text-white">
             <div>
               <div className="text-sm font-bold">Tin nhắn</div>
@@ -281,9 +372,11 @@ const ConversationInbox = () => {
               <Link
                 href="/workspace/messages"
                 onClick={() => setIsOpen(false)}
-                className="flex h-8 items-center justify-center border border-slate-600 px-3 text-xs font-bold text-slate-100 hover:border-white"
+                className="flex h-8 w-8 items-center justify-center border border-slate-600 text-slate-100 hover:border-white"
+                title="Mở trang tin nhắn"
+                aria-label="Mở trang tin nhắn"
               >
-                Trang mới
+                <ArrowUpRightSquare className="h-4 w-4" />
               </Link>
               <button
                 type="button"
@@ -307,7 +400,7 @@ const ConversationInbox = () => {
                   <button
                     key={contract.id}
                     type="button"
-                    onClick={() => setSelectedContractId(contract.id)}
+                    onClick={() => handleSelectConversation(contract.id, latest)}
                     className={`min-w-[10rem] border px-3 py-2 text-left transition ${
                       selectedContractId === contract.id
                         ? 'border-secondary-900 bg-white'

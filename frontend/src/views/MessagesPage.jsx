@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useMemo, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Attachment, ChatBubble, Search, SendSolid, Xmark } from 'iconoir-react';
 
 import EmptyState from '../components/common/EmptyState';
@@ -82,6 +82,7 @@ const MessagesPage = () => {
   const [uploadingAttachment, setUploadingAttachment] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [formError, setFormError] = useState('');
+  const [, setReadByContract] = useState({});
   const messagesEndRef = useRef(null);
 
   const selectedItem = useMemo(
@@ -98,6 +99,39 @@ const MessagesPage = () => {
   }, [items, search]);
 
   const normalizedDraftAttachments = useMemo(() => normalizeAttachments(attachments), [attachments]);
+
+  const readStorageKey = user?.id ? `thuetoi_message_reads_${user.id}` : null;
+
+  const markContractRead = useCallback((contractId, sentAt) => {
+    if (!contractId || !readStorageKey) return;
+    const readTime = sentAt || new Date().toISOString();
+    setReadByContract((previous) => {
+      const previousTime = new Date(previous[contractId] || 0).getTime();
+      const nextTime = new Date(readTime || 0).getTime();
+      if (previousTime >= nextTime) return previous;
+
+      const next = { ...previous, [contractId]: readTime };
+      try {
+        window.localStorage.setItem(readStorageKey, JSON.stringify(next));
+      } catch {
+        // Local read state is a UX hint; failures should not block messaging.
+      }
+      return next;
+    });
+  }, [readStorageKey]);
+
+  useEffect(() => {
+    if (!readStorageKey) {
+      setReadByContract({});
+      return;
+    }
+
+    try {
+      setReadByContract(JSON.parse(window.localStorage.getItem(readStorageKey) || '{}'));
+    } catch {
+      setReadByContract({});
+    }
+  }, [readStorageKey]);
 
   useEffect(() => {
     let mounted = true;
@@ -147,7 +181,14 @@ const MessagesPage = () => {
       setLoadingMessages(true);
       try {
         const response = await marketplaceApi.getMessagesByContract(selectedContractId);
-        if (mounted) setMessages(response.data || []);
+        if (mounted) {
+          const nextMessages = response.data || [];
+          setMessages(nextMessages);
+          const latestMessage = nextMessages[nextMessages.length - 1];
+          if (latestMessage?.senderId !== user?.id) {
+            markContractRead(selectedContractId, latestMessage.sentAt);
+          }
+        }
       } finally {
         if (mounted) setLoadingMessages(false);
       }
@@ -157,7 +198,7 @@ const MessagesPage = () => {
     return () => {
       mounted = false;
     };
-  }, [selectedContractId]);
+  }, [markContractRead, selectedContractId, user?.id]);
 
   useEffect(() => {
     if (!selectedContractId) return undefined;
@@ -177,15 +218,25 @@ const MessagesPage = () => {
             )
             .sort((a, b) => new Date(b.latest?.sentAt || 0) - new Date(a.latest?.sentAt || 0)),
         );
+        if (incomingMessage.senderId !== user?.id) {
+          markContractRead(selectedContractId, incomingMessage.sentAt);
+        }
       },
     });
 
     return () => realtimeClient.close();
-  }, [selectedContractId]);
+  }, [markContractRead, selectedContractId, user?.id]);
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ block: 'end' });
   }, [messages, loadingMessages]);
+
+  const handleSelectConversation = (contractId, latest) => {
+    setSelectedContractId(contractId);
+    if (latest?.sentAt) {
+      markContractRead(contractId, latest.sentAt);
+    }
+  };
 
   const handleFileChange = async (event) => {
     const selectedFile = event.target.files?.[0];
@@ -240,6 +291,7 @@ const MessagesPage = () => {
             )
             .sort((a, b) => new Date(b.latest?.sentAt || 0) - new Date(a.latest?.sentAt || 0)),
         );
+        markContractRead(selectedContractId, sentMessage.sentAt);
       }
       setContent('');
       setAttachments('');
@@ -287,7 +339,7 @@ const MessagesPage = () => {
                 <button
                   key={contract.id}
                   type="button"
-                  onClick={() => setSelectedContractId(contract.id)}
+                  onClick={() => handleSelectConversation(contract.id, latest)}
                   className={`flex w-full gap-3 border-b border-slate-100 px-4 py-4 text-left transition ${
                     active ? 'bg-primary-50' : 'bg-white hover:bg-slate-50'
                   }`}
