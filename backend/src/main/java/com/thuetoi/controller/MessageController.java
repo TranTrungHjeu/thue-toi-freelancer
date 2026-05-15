@@ -10,6 +10,7 @@ import com.thuetoi.service.MessageService;
 import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.security.Principal;
 import java.util.List;
@@ -38,5 +39,16 @@ public class MessageController {
         Long currentUserId = currentUserProvider.requireCurrentUserId(principal);
         List<Message> messages = messageService.getMessagesByContract(contractId, currentUserId);
         return ApiResponse.success("Lấy danh sách tin nhắn thành công", marketplaceResponseMapper.toMessageResponses(messages));
+    }
+
+    @PostMapping("/upload")
+    public ApiResponse<String> uploadAttachment(
+        @RequestParam("contractId") Long contractId,
+        @RequestParam("file") MultipartFile file,
+        Principal principal
+    ) {
+        Long currentUserId = currentUserProvider.requireCurrentUserId(principal);
+        String attachmentUrl = messageService.uploadMessageAttachment(currentUserId, contractId, file);
+        return ApiResponse.success("Tải tệp đính kèm thành công", attachmentUrl);
     }
 }

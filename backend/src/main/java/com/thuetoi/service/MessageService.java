@@ -13,6 +13,7 @@ import com.thuetoi.websocket.ContractMessageWebSocketHandler;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.util.List;
 
@@ -38,6 +39,9 @@ public class MessageService {
 
     @Autowired
     private NotificationService notificationService;
+
+    @Autowired
+    private FileStorageService fileStorageService;
 
     public Message sendMessage(Long currentUserId, MessageRequest request) {
         Contract contract = contractAccessService.requireAccessibleContract(request.getContractId(), currentUserId);
@@ -87,6 +91,19 @@ public class MessageService {
     public List<Message> getMessagesByContract(Long contractId, Long currentUserId) {
         contractAccessService.requireAccessibleContract(contractId, currentUserId);
         return messageRepository.findByContractIdOrderBySentAtAsc(contractId);
+    }
+
+    public String uploadMessageAttachment(Long currentUserId, Long contractId, MultipartFile file) {
+        if (file == null || file.isEmpty()) {
+            throw new BusinessException("ERR_SYS_02", "Tệp tải lên không hợp lệ", HttpStatus.BAD_REQUEST);
+        }
+
+        Contract contract = contractAccessService.requireAccessibleContract(contractId, currentUserId);
+        if (!ContractStatus.IN_PROGRESS.matches(contract.getStatus())) {
+            throw new BusinessException("ERR_SYS_02", "Chỉ có thể tải tệp khi hợp đồng đang thực hiện", HttpStatus.BAD_REQUEST);
+        }
+
+        return fileStorageService.storeFile(file, "messages");
     }
 
     private MessageType normalizeMessageType(String messageType) {
