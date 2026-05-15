@@ -21,6 +21,7 @@ import authApi from '../api/authApi';
 import marketplaceApi from '../api/marketplaceApi';
 import { formatDateTime, formatRole } from '../utils/formatters';
 import { splitApiFormError } from '../utils/formError';
+import CVAutoFill from '../components/features/CVAutoFill';
 
 const MAX_SKILLS = 15;
 
@@ -104,6 +105,12 @@ const getProfilePageCopy = (locale) => {
       changeEmailBtn: 'Update Email',
       changeEmailSuccess: 'Email updated successfully. Please log in again.',
       changeEmailError: 'Could not update email.',
+      kycRequestBtn: 'Request identity verification (KYC)',
+      kycSendingBtn: 'Sending...',
+      kycPendingTitle: 'KYC pending admin review',
+      kycPendingHint: 'This is not the same as email verification. If you change your login email, this pending request is cancelled.',
+      kycRejectedTitle: 'Verification rejected',
+      kycRejectedReasonLabel: 'Reason',
     };
   }
 
@@ -166,6 +173,12 @@ const getProfilePageCopy = (locale) => {
     changeEmailBtn: 'Cập nhật Email',
     changeEmailSuccess: 'Đổi email thành công! Vui lòng đăng nhập lại.',
     changeEmailError: 'Không thể đổi email.',
+    kycRequestBtn: 'Yêu cầu xác thực danh tính (KYC)',
+    kycSendingBtn: 'Đang gửi...',
+    kycPendingTitle: 'Đang chờ admin duyệt KYC',
+    kycPendingHint: 'Khác với xác thực email. Đổi email đăng nhập sẽ hủy yêu cầu đang chờ này.',
+    kycRejectedTitle: 'Xác thực danh tính bị từ chối',
+    kycRejectedReasonLabel: 'Lý do',
   };
 };
 
@@ -177,7 +190,7 @@ const normalizeSkillNames = (skills) =>
 const ProfilePage = () => {
   const { user, refreshProfile, logout } = useAuth();
   const { addToast } = useToast();
-  const { locale } = useI18n();
+  const { locale, t } = useI18n();
   const copy = useMemo(() => getProfilePageCopy(locale), [locale]);
   const router = useRouter();
   
@@ -303,6 +316,29 @@ const ProfilePage = () => {
     setFieldErrors((previous) => ({ ...previous, skills: '' }));
     setFormError('');
   };
+
+  const handleCvEmailSuggestForChange = useCallback(
+    (email) => {
+      const trimmed = (email || '').trim();
+      if (!trimmed) {
+        return;
+      }
+      if (user?.email && trimmed.toLowerCase() === String(user.email).toLowerCase()) {
+        addToast(t('toasts.profile.cvEmailSameAsCurrent'), 'warning');
+        return;
+      }
+      setEmailForm((prev) => ({ ...prev, newEmail: trimmed, otp: '' }));
+      setEmailOtpSent(false);
+      setEmailFieldErrors({});
+      setEmailFormError('');
+      setActiveTab('SECURITY');
+      requestAnimationFrame(() => {
+        tabContentRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      });
+      addToast(t('toasts.profile.cvEmailPrefilledForChange'), 'success');
+    },
+    [user?.email, addToast, t]
+  );
 
   const handleAvatarFileChange = (event) => {
     const file = event.target.files?.[0];
@@ -552,22 +588,29 @@ const ProfilePage = () => {
                     <div className="mt-2 text-slate-500 font-medium">{user.email}</div>
                     
                     <div className="mt-6 flex flex-wrap gap-4 items-center">
-                      {!user.verified && (!kycStatus || kycStatus.status === 'REJECTED') && (
+                      {(!kycStatus || kycStatus.status === 'REJECTED') && (
                         <Button size="sm" variant="outline" onClick={handleRequestKyc} disabled={requestingKyc}>
-                          {requestingKyc ? "Đang gửi..." : "Yêu cầu xác thực tài khoản"}
+                          {requestingKyc ? copy.kycSendingBtn : copy.kycRequestBtn}
                         </Button>
                       )}
                       {kycStatus?.status === 'PENDING' && (
-                        <div className="flex items-center gap-2 text-primary-600 font-bold text-xs uppercase tracking-wider bg-primary-50 px-3 py-1.5">
-                           Đang chờ xác thực...
+                        <div className="flex max-w-xl flex-col gap-1 rounded border border-primary-200 bg-primary-50 px-3 py-2">
+                          <div className="text-primary-700 text-xs font-bold uppercase tracking-wider">
+                            {copy.kycPendingTitle}
+                          </div>
+                          <div className="text-[11px] leading-snug text-slate-600">
+                            {copy.kycPendingHint}
+                          </div>
                         </div>
                       )}
                       {kycStatus?.status === 'REJECTED' && (
                         <div className="flex flex-col gap-1">
                           <div className="flex items-center gap-2 text-red-500 font-bold text-xs uppercase tracking-wider">
-                             Xác thực bị từ chối
+                            {copy.kycRejectedTitle}
                           </div>
-                          <div className="text-[10px] text-red-400 italic">Lý do: {kycStatus.note}</div>
+                          <div className="text-[10px] text-red-400 italic">
+                            {copy.kycRejectedReasonLabel}: {kycStatus.note}
+                          </div>
                         </div>
                       )}
                     </div>
@@ -620,6 +663,8 @@ const ProfilePage = () => {
                 </div>
               </div>
             </Card>
+
+            <CVAutoFill onSuggestEmailForChange={handleCvEmailSuggestForChange} />
           </section>
         )}
 

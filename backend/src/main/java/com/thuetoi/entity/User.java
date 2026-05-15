@@ -40,6 +40,18 @@ public class User extends BaseEntity {
 
     private String profileDescription;
 
+    @Column(name = "phone")
+    private String phone;
+
+    @Column(name = "location")
+    private String location;
+
+    @Column(name = "experience_years")
+    private Integer experienceYears;
+
+    @Column(name = "education", columnDefinition = "TEXT")
+    private String education;
+
     private Boolean isActive = true;
 
     private Boolean verified = false;

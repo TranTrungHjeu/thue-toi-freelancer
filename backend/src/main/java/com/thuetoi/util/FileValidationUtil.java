@@ -4,7 +4,8 @@ import java.util.Locale;
 import java.util.Set;
 
 public final class FileValidationUtil {
-    public static final long MAX_FILE_SIZE_BYTES = 5L * 1024L * 1024L;
+    /** Per-file cap for Cloudinary-backed uploads (avatar, project files, etc.). */
+    public static final long MAX_FILE_SIZE_BYTES = 15L * 1024L * 1024L;
     public static final int MAX_ATTACHMENTS = 5;
 
     private static final Set<String> ALLOWED_EXTENSIONS = Set.of(

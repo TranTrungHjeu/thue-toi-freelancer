@@ -40,6 +40,8 @@ services:
       APP_AUTH_REFRESH_COOKIE_SECURE: ${APP_AUTH_REFRESH_COOKIE_SECURE:-false}
       APP_AUTH_REFRESH_COOKIE_SAME_SITE: ${APP_AUTH_REFRESH_COOKIE_SAME_SITE:-Lax}
       CLOUDINARY_URL: ${CLOUDINARY_URL}
+      GEMINI_API_KEY: ${GEMINI_API_KEY}
+      GEMINI_MODEL: ${GEMINI_MODEL:-}
       # SePay API v2 (VA orders) + webhook auth — see backend/src/main/resources/application.properties
       SEPAY_API_BASE_URL: ${SEPAY_API_BASE_URL:-https://userapi.sepay.vn}
       SEPAY_API_TOKEN: ${SEPAY_API_TOKEN}

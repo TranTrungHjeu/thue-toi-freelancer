@@ -9,6 +9,7 @@ import Sidebar from './Sidebar';
 import MobileDrawer from './MobileDrawer';
 import BottomNav from './BottomNav';
 import LoadingOverlay from '../common/LoadingOverlay';
+import AiChatbot from '../features/AiChatbot';
 import { useAuth } from '../../hooks/useAuth';
 import { useI18n } from '../../hooks/useI18n';
 import { useNotifications } from '../../hooks/useNotifications';
@@ -185,6 +186,7 @@ const MainLayout = ({ children }) => {
       </div>
 
       <BottomNav items={mobileNavigation} currentPath={location.pathname} />
+      <AiChatbot user={user} />
     </div>
   );
 };
