@@ -55,9 +55,9 @@ export const marketplaceApi = {
   getMessagesByContract: (contractId) => axiosClient.get(`/v1/messages/contract/${contractId}`),
   uploadMessageAttachment: (contractId, file) => {
     const formData = new FormData();
-    formData.append('contractId', String(contractId));
-    formData.append('file', file);
-    return axiosClient.post('/v1/messages/upload', formData, {
+    formData.append('files', file);
+    return axiosClient.post('/v1/files/messages', formData, {
+      params: { contractId },
       headers: {
         'Content-Type': 'multipart/form-data',
       },

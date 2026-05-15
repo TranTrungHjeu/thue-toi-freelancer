@@ -3,11 +3,12 @@
 import React, { useState, useMemo } from 'react';
 import { usePathname, useSearchParams, useRouter } from 'next/navigation';
 
-import { Bell, Home, Page, PageSearch, ProfileCircle, ViewGrid, Group, Settings, Reports, Coins, ShieldCheck, Megaphone, WarningTriangle, Database } from 'iconoir-react';
+import { Bell, ChatBubble, Home, Page, PageSearch, ProfileCircle, ViewGrid, Group, Settings, Reports, Coins, ShieldCheck, Megaphone, WarningTriangle, Database } from 'iconoir-react';
 import Header from './Header';
 import Sidebar from './Sidebar';
 import MobileDrawer from './MobileDrawer';
 import BottomNav from './BottomNav';
+import ConversationInbox from './ConversationInbox';
 import LoadingOverlay from '../common/LoadingOverlay';
 import { useAuth } from '../../hooks/useAuth';
 import { useI18n } from '../../hooks/useI18n';
@@ -47,6 +48,7 @@ const MainLayout = ({ children }) => {
     };
 
     const commonWorkspaceItems = [
+      { label: 'Tin nhắn', href: '/workspace/messages', icon: ChatBubble },
       notificationItem,
       { label: t('layout.navigation.profile'), href: '/workspace/profile', icon: ProfileCircle },
     ];
@@ -138,6 +140,7 @@ const MainLayout = ({ children }) => {
         ...baseNav,
         { label: t('layout.navigation.projects'), href: '/workspace/projects', icon: ViewGrid },
         { label: t('layout.navigation.rent'), href: '/workspace/contracts', icon: PageSearch },
+        { label: 'Tin nhắn', href: '/workspace/messages', icon: ChatBubble },
         notificationItem,
         { label: t('layout.navigation.profile'), href: '/workspace/profile', icon: ProfileCircle },
       ];
@@ -147,6 +150,7 @@ const MainLayout = ({ children }) => {
       ...baseNav,
       { label: t('layout.navigation.findJobs'), href: '/workspace/projects', icon: PageSearch },
       { label: t('layout.navigation.contracts'), href: '/workspace/contracts', icon: ViewGrid },
+      { label: 'Tin nhắn', href: '/workspace/messages', icon: ChatBubble },
       notificationItem,
       { label: t('layout.navigation.profile'), href: '/workspace/profile', icon: ProfileCircle },
     ];
@@ -185,6 +189,7 @@ const MainLayout = ({ children }) => {
       </div>
 
       <BottomNav items={mobileNavigation} currentPath={location.pathname} />
+      {pathname !== '/workspace/messages' && <ConversationInbox />}
     </div>
   );
 };
