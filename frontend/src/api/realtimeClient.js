@@ -43,7 +43,7 @@ export const createMessageRealtimeClient = ({ contractId, onMessage, onStatusCha
       contractId: String(contractId),
     });
 
-    socket = new WebSocket(`${wsBaseUrl}/ws/messages?${params.toString()}`);
+    socket = new WebSocket(`${wsBaseUrl}/realtime/messages?${params.toString()}`);
     notifyStatus('connecting');
 
     socket.onopen = () => {
@@ -61,9 +61,12 @@ export const createMessageRealtimeClient = ({ contractId, onMessage, onStatusCha
       }
     };
 
-    socket.onclose = () => {
+    socket.onclose = (event) => {
       notifyStatus('disconnected');
-      if (!manuallyClosed) {
+      // Server closes with policy violation (1008) when token invalid/expired
+      // or user does not have access to the requested contract.
+      // Do not keep reconnecting in this case to avoid endless error loops.
+      if (!manuallyClosed && event?.code !== 1008) {
         reconnectTimeout = window.setTimeout(connect, 2000);
       }
     };

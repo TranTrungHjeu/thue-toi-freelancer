@@ -53,6 +53,16 @@ export const marketplaceApi = {
   updateMilestoneStatus: (milestoneId, status) => axiosClient.put(`/v1/milestones/${milestoneId}/status`, { status }),
   getTransactionsByContract: (contractId) => axiosClient.get(`/v1/contracts/${contractId}/transactions`),
   getMessagesByContract: (contractId) => axiosClient.get(`/v1/messages/contract/${contractId}`),
+  uploadMessageAttachment: (contractId, file) => {
+    const formData = new FormData();
+    formData.append('contractId', String(contractId));
+    formData.append('file', file);
+    return axiosClient.post('/v1/messages/upload', formData, {
+      headers: {
+        'Content-Type': 'multipart/form-data',
+      },
+    });
+  },
   sendMessage: (payload) => axiosClient.post('/v1/messages', payload),
   getReviewsByContract: (contractId) => axiosClient.get(`/v1/reviews/contract/${contractId}`),
   createReview: (payload) => axiosClient.post('/v1/reviews', payload),

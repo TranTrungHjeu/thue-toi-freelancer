@@ -31,6 +31,7 @@ const ConversationInbox = () => {
   const [loadingMessages, setLoadingMessages] = useState(false);
   const [content, setContent] = useState('');
   const [attachments, setAttachments] = useState('');
+  const [uploadingAttachment, setUploadingAttachment] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const dropdownRef = useRef(null);
 
@@ -260,13 +261,26 @@ const ConversationInbox = () => {
                     <input
                       type="file"
                       className="hidden"
-                      disabled={!selectedContractId || submitting}
-                      onChange={(event) => {
+                      disabled={!selectedContractId || submitting || uploadingAttachment}
+                      onChange={async (event) => {
                         const selectedFile = event.target.files?.[0];
-                        if (selectedFile) {
-                          setAttachments(selectedFile.name);
-                          if (!content.trim()) setContent(selectedFile.name);
+                        if (selectedFile && selectedContractId) {
+                          setUploadingAttachment(true);
+                          try {
+                            const response = await marketplaceApi.uploadMessageAttachment(
+                              selectedContractId,
+                              selectedFile,
+                            );
+                            const uploadedUrl = response.data || '';
+                            setAttachments(uploadedUrl);
+                            if (!content.trim()) setContent(selectedFile.name);
+                          } catch {
+                            setAttachments('');
+                          } finally {
+                            setUploadingAttachment(false);
+                          }
                         }
+                        event.target.value = '';
                       }}
                     />
                   </label>
@@ -274,14 +288,14 @@ const ConversationInbox = () => {
                     type="text"
                     value={content}
                     onChange={(event) => setContent(event.target.value)}
-                    placeholder={attachments ? `Tệp: ${attachments}` : 'Nhập tin nhắn...'}
+                    placeholder={uploadingAttachment ? 'Đang tải tệp lên...' : (attachments ? 'Đã đính kèm tệp' : 'Nhập tin nhắn...')}
                     className="h-9 flex-1 rounded-lg border border-slate-300 bg-white px-3 text-sm outline-none focus:border-primary-500"
-                    disabled={!selectedContractId || submitting}
+                    disabled={!selectedContractId || submitting || uploadingAttachment}
                   />
                   <button
                     type="submit"
                     className="flex h-9 w-9 items-center justify-center rounded-full bg-secondary-900 text-white transition hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-50"
-                    disabled={!selectedContractId || submitting || (!content.trim() && !attachments.trim())}
+                    disabled={!selectedContractId || submitting || uploadingAttachment || (!content.trim() && !attachments.trim())}
                     title="Gửi"
                   >
                     <SendSolid className="h-5 w-5" />

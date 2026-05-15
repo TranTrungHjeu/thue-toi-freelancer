@@ -18,7 +18,7 @@ public class MessageWebSocketConfig implements WebSocketConfigurer {
 
     @Override
     public void registerWebSocketHandlers(WebSocketHandlerRegistry registry) {
-        registry.addHandler(contractMessageWebSocketHandler, "/ws/messages")
+        registry.addHandler(contractMessageWebSocketHandler, "/realtime/messages")
             .setAllowedOriginPatterns("http://localhost:*");
     }
 }
