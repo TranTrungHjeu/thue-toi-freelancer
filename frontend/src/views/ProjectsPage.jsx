@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import { useRouter } from 'next/navigation';
 import Card from '../components/common/Card';
 import Button from '../components/common/Button';
 import Input from '../components/common/Input';
@@ -12,6 +13,7 @@ import SearchInput from '../components/common/SearchInput';
 import Select from '../components/common/Select';
 import TagInput from '../components/common/TagInput';
 import FileUpload from '../components/common/FileUpload';
+import Modal from '../components/common/Modal';
 import StatMetricCard from '../components/common/StatMetricCard';
 import InfoPanel from '../components/common/InfoPanel';
 import Spinner from '../components/common/Spinner';
@@ -200,6 +202,7 @@ const buildProjectUpdatePayload = (project, statusOverride) => ({
 });
 
 const ProjectsPage = () => {
+  const router = useRouter();
   const { user } = useAuth();
   const { addToast } = useToast();
   const { locale, t } = useI18n();
@@ -214,19 +217,26 @@ const ProjectsPage = () => {
   const [skillCatalog, setSkillCatalog] = useState([]);
   const [loadingSkillCatalog, setLoadingSkillCatalog] = useState(false);
   const [selectedProject, setSelectedProject] = useState(null);
-  const [selectedProjectBids, setSelectedProjectBids] = useState([]);
+  const [isQuotationModalOpen, setIsQuotationModalOpen] = useState(false);
+  const [isQuotationLoading, setIsQuotationLoading] = useState(false);
+  const [quotations, setQuotations] = useState([]);
+  const [quotationError, setQuotationError] = useState('');
   const [submittingProject, setSubmittingProject] = useState(false);
   const [submittingBid, setSubmittingBid] = useState(false);
   const [projectFieldErrors, setProjectFieldErrors] = useState({});
   const [projectFormError, setProjectFormError] = useState('');
   const [bidFieldErrors, setBidFieldErrors] = useState({});
   const [bidFormError, setBidFormError] = useState('');
-  const [loadingProjectBids, setLoadingProjectBids] = useState(false);
-  const visibleProjectBidsLoading = useMinimumLoadingState(loadingProjectBids, 500);
+  const visibleQuotationLoading = useMinimumLoadingState(isQuotationLoading, 500);
   const [editingProjectId, setEditingProjectId] = useState(null);
   const [projectActionId, setProjectActionId] = useState(null);
   const [bidActionId, setBidActionId] = useState(null);
-  const [activePayment, setActivePayment] = useState(null);
+  const [isConfirmModalOpen, setIsConfirmModalOpen] = useState(false);
+  const [isQrModalOpen, setIsQrModalOpen] = useState(false);
+  const [isPaymentLoading, setIsPaymentLoading] = useState(false);
+  const [paymentQrData, setPaymentQrData] = useState(null);
+  const [paymentError, setPaymentError] = useState('');
+  const [pendingCheckoutBidId, setPendingCheckoutBidId] = useState(null);
   const [marketplaceSearchTerm, setMarketplaceSearchTerm] = useState('');
   const [marketplaceStatus, setMarketplaceStatus] = useState('open');
   const [marketplaceSkills, setMarketplaceSkills] = useState([]);
@@ -238,6 +248,14 @@ const ProjectsPage = () => {
   const isCustomer = user?.role === 'customer';
 
   const paymentStorageKey = useCallback((projectId) => `thuetoi:payment:${projectId}`, []);
+  const resetPaymentFlow = useCallback(() => {
+    setIsConfirmModalOpen(false);
+    setIsQrModalOpen(false);
+    setIsPaymentLoading(false);
+    setPaymentQrData(null);
+    setPaymentError('');
+    setPendingCheckoutBidId(null);
+  }, []);
 
   const loadSkillCatalog = useCallback(async () => {
     setLoadingSkillCatalog(true);
@@ -283,19 +301,32 @@ const ProjectsPage = () => {
     }
   }, [addToast, isCustomer, marketplaceSkills, marketplaceStatus, t, user?.id]);
 
-  const loadProjectBids = useCallback(async (project) => {
-    setSelectedProject(project);
-    setLoadingProjectBids(true);
+  const loadProjectBids = useCallback(async (project, options = {}) => {
+    if (!project?.id) {
+      return;
+    }
 
+    const { force = false } = options;
+    const sameProject = selectedProject?.id === project.id;
+    const hasQuotations = sameProject && quotations.length > 0;
+
+    setSelectedProject(project);
+    setQuotationError('');
+    if (!force && hasQuotations) {
+      return;
+    }
+
+    setIsQuotationLoading(true);
     try {
       const response = await marketplaceApi.getBidsByProject(project.id);
-      setSelectedProjectBids(response.data || []);
+      setQuotations(response.data || []);
     } catch (error) {
-      addToast(error?.message || t('toasts.projects.loadBidsError'), 'error');
+      setQuotations([]);
+      setQuotationError(error?.message || t('toasts.projects.loadBidsError'));
     } finally {
-      setLoadingProjectBids(false);
+      setIsQuotationLoading(false);
     }
-  }, [addToast, t]);
+  }, [quotations.length, selectedProject?.id, t]);
 
   useEffect(() => {
     loadPageData();
@@ -322,7 +353,11 @@ const ProjectsPage = () => {
           return;
         }
         if (p.status === 'pending' || p.status === 'paid') {
-          setActivePayment({ ...p, projectId: selectedProject.id });
+          setPaymentQrData({ ...p, projectId: selectedProject.id });
+          if (p.status === 'pending') {
+            setIsQrModalOpen(true);
+          }
+          setPaymentError('');
         }
         if (p.status === 'cancelled' || p.status === 'expired' || p.status === 'failed') {
           sessionStorage.removeItem(paymentStorageKey(selectedProject.id));
@@ -340,15 +375,15 @@ const ProjectsPage = () => {
   }, [isCustomer, selectedProject?.id, selectedProject?.status, paymentStorageKey]);
 
   useEffect(() => {
-    if (!activePayment?.orderCode || activePayment.status !== 'pending') {
+    if (!paymentQrData?.orderCode || paymentQrData.status !== 'pending') {
       return undefined;
     }
     const timer = setInterval(async () => {
       try {
-        const r = await marketplaceApi.getPaymentByOrderCode(activePayment.orderCode);
+        const r = await marketplaceApi.getPaymentByOrderCode(paymentQrData.orderCode);
         const p = r?.data;
         if (p) {
-          setActivePayment((prev) => {
+          setPaymentQrData((prev) => {
             if (!prev || prev.orderCode !== p.orderCode) {
               return prev;
             }
@@ -356,18 +391,22 @@ const ProjectsPage = () => {
           });
         }
         if (p?.status === 'paid') {
-          if (activePayment.projectId) {
-            sessionStorage.removeItem(paymentStorageKey(activePayment.projectId));
+          if (paymentQrData.projectId) {
+            sessionStorage.removeItem(paymentStorageKey(paymentQrData.projectId));
           }
+          setIsQrModalOpen(false);
+          setPaymentQrData(null);
+          setPaymentError('');
           addToast(copy.projectBids.paymentPaidToast, 'success');
           await loadPageData();
+          router.push('/workspace');
         }
       } catch {
         // ignore
       }
     }, 3000);
     return () => clearInterval(timer);
-  }, [activePayment?.orderCode, activePayment?.status, activePayment?.projectId, addToast, copy.projectBids.paymentPaidToast, loadPageData, paymentStorageKey]);
+  }, [paymentQrData?.orderCode, paymentQrData?.status, paymentQrData?.projectId, addToast, copy.projectBids.paymentPaidToast, loadPageData, paymentStorageKey, router]);
 
   const customerProjectSummary = useMemo(() => {
     return projects.reduce((accumulator, project) => {
@@ -517,14 +556,33 @@ const ProjectsPage = () => {
     }
   };
 
-  const handleCheckoutBid = async (bidId) => {
+  const handleStartCheckoutBid = (bidId) => {
+    setPendingCheckoutBidId(bidId);
+    setPaymentError('');
+    setIsConfirmModalOpen(true);
+  };
+
+  const handleConfirmCheckoutBid = async () => {
+    if (!pendingCheckoutBidId) {
+      return;
+    }
+
+    const bidId = pendingCheckoutBidId;
     setBidActionId(bidId);
+    setIsConfirmModalOpen(false);
+    setIsQrModalOpen(true);
+    setIsPaymentLoading(true);
+    setPaymentError('');
+
     try {
       const response = await marketplaceApi.checkoutBid(bidId);
       const payment = response?.data;
       if (payment?.orderCode && selectedProject?.id) {
         sessionStorage.setItem(paymentStorageKey(selectedProject.id), payment.orderCode);
-        setActivePayment({ ...payment, projectId: selectedProject.id });
+        setPaymentQrData({ ...payment, projectId: selectedProject.id });
+      } else {
+        setPaymentQrData(null);
+        setPaymentError(copy.projectBids.paymentGenerateError);
       }
       addToast(copy.projectBids.checkoutSuccess, 'success');
       await loadPageData();
@@ -532,35 +590,44 @@ const ProjectsPage = () => {
         const refreshed = (await marketplaceApi.getMyProjects())?.data || [];
         const next = refreshed.find((p) => p.id === selectedProject.id) || { ...selectedProject, status: 'pending_payment' };
         setSelectedProject(next);
-        await loadProjectBids(next);
+        await loadProjectBids(next, { force: true });
       }
     } catch (error) {
-      addToast(error?.message || t('toasts.projects.acceptError'), 'error');
+      const message = error?.message || copy.projectBids.paymentGenerateError;
+      setPaymentQrData(null);
+      setPaymentError(message);
+      addToast(message, 'error');
     } finally {
+      setIsPaymentLoading(false);
       setBidActionId(null);
+      setPendingCheckoutBidId(null);
     }
   };
 
   const handleCancelActivePayment = async () => {
-    if (!activePayment?.orderCode) {
+    if (!paymentQrData?.orderCode) {
+      resetPaymentFlow();
       return;
     }
+    setIsPaymentLoading(true);
     try {
-      await marketplaceApi.cancelPaymentByOrderCode(activePayment.orderCode);
-      if (activePayment.projectId) {
-        sessionStorage.removeItem(paymentStorageKey(activePayment.projectId));
+      await marketplaceApi.cancelPaymentByOrderCode(paymentQrData.orderCode);
+      if (paymentQrData.projectId) {
+        sessionStorage.removeItem(paymentStorageKey(paymentQrData.projectId));
       }
-      setActivePayment(null);
+      resetPaymentFlow();
       addToast(t('toasts.projects.cancelSuccess'), 'success');
       await loadPageData();
       if (selectedProject) {
         const refreshed = (await marketplaceApi.getMyProjects())?.data || [];
         const next = refreshed.find((p) => p.id === selectedProject.id) || selectedProject;
         setSelectedProject(next);
-        await loadProjectBids(next);
+        await loadProjectBids(next, { force: true });
       }
     } catch (error) {
       addToast(error?.message || t('toasts.projects.cancelError'), 'error');
+    } finally {
+      setIsPaymentLoading(false);
     }
   };
 
@@ -570,7 +637,7 @@ const ProjectsPage = () => {
       await marketplaceApi.updateBidStatus(bidId, 'rejected');
       addToast(t('toasts.projects.rejectSuccess'), 'success');
       if (selectedProject) {
-        await loadProjectBids(selectedProject);
+        await loadProjectBids(selectedProject, { force: true });
       }
       await loadPageData();
     } catch (error) {
@@ -643,6 +710,24 @@ const ProjectsPage = () => {
 
   const handleInvalidSkill = () => {
     addToast(extraCopy.invalidSkillMessage, 'warning');
+  };
+
+  const handleOpenQuotationModal = async (project) => {
+    setIsQuotationModalOpen(true);
+    await loadProjectBids(project);
+  };
+
+  const handleCloseQuotationModal = () => {
+    setIsQuotationModalOpen(false);
+    setQuotationError('');
+    setIsQuotationLoading(false);
+  };
+
+  const handleRetryQuotationLoad = async () => {
+    if (!selectedProject) {
+      return;
+    }
+    await loadProjectBids(selectedProject, { force: true });
   };
 
   const resetMarketplaceFilters = () => {
@@ -833,7 +918,7 @@ const ProjectsPage = () => {
                         caption={extraCopy.attachmentsCaption}
                       />
                       <div className="mt-4 flex flex-wrap gap-3">
-                        <Button variant="outline" onClick={() => loadProjectBids(project)}>
+                        <Button variant="outline" onClick={() => handleOpenQuotationModal(project)}>
                           {copy.customerList.viewBids}
                         </Button>
                         {canManageProject && (
@@ -877,162 +962,6 @@ const ProjectsPage = () => {
             </Card>
           </section>
 
-          {selectedProject && (
-            <Card className="border-2 border-slate-200 bg-white p-6">
-              <Caption className="text-[11px] uppercase tracking-[0.18em] text-primary-700">
-                {copy.projectBids.caption}
-              </Caption>
-              <H2 className="mt-2 text-2xl">
-                {t('projectsPage.projectBids.title', { title: selectedProject.title })}
-              </H2>
-              <div className="mt-2">
-                <Badge color={getProjectStatusMeta(selectedProject.status, locale).color}>
-                  {getProjectStatusMeta(selectedProject.status, locale).label}
-                </Badge>
-              </div>
-              <AttachmentLinks
-                attachments={selectedProject.attachments}
-                caption={extraCopy.attachmentsCaption}
-              />
-              <div className="mt-5 flex flex-col gap-3">
-                {visibleProjectBidsLoading && (
-                  <Text className="text-sm text-slate-500">
-                    {copy.projectBids.loading}
-                  </Text>
-                )}
-
-                {!visibleProjectBidsLoading && selectedProjectBids.map((bid) => {
-                  const statusMeta = getBidStatusMeta(bid.status, locale);
-                  const isHandlingBid = bidActionId === bid.id;
-                  const canProcessBid =
-                    (selectedProject.status === 'open' || selectedProject.status === 'pending_payment') && bid.status === 'pending';
-
-                  return (
-                    <div key={bid.id} className="border border-slate-200 bg-slate-50 p-4">
-                      <div className="flex items-start justify-between gap-3">
-                        <div>
-                          <div className="text-sm font-bold text-secondary-900">
-                            {bid.freelancer?.fullName || t('projectsPage.projectBids.freelancerFallback', { id: bid.freelancer?.id || bid.id })}
-                          </div>
-                          <Caption className="text-xs text-slate-500">
-                            {t('projectsPage.projectBids.proposedAt', { value: formatDateTime(bid.createdAt, locale) })}
-                          </Caption>
-                        </div>
-                        <Badge color={statusMeta.color}>
-                          {statusMeta.label}
-                        </Badge>
-                      </div>
-                      <div className="mt-3 text-sm font-semibold text-slate-700">
-                        {t('projectsPage.projectBids.price', { value: formatCurrency(bid.price, locale) })}
-                      </div>
-                      <Text className="mt-2 text-sm text-slate-600">
-                        {bid.message || copy.projectBids.messageFallback}
-                      </Text>
-                      <Text className="mt-2 text-sm text-slate-500">
-                        {t('projectsPage.projectBids.estimatedTime', { value: bid.estimatedTime || copy.projectBids.estimatedFallback })}
-                      </Text>
-                      <AttachmentLinks
-                        attachments={bid.attachments}
-                        caption={extraCopy.attachmentsCaption}
-                      />
-                      {canProcessBid && (
-                        <div className="mt-4 flex flex-wrap gap-3">
-                          <Button disabled={isHandlingBid} onClick={() => handleCheckoutBid(bid.id)}>
-                            {isHandlingBid ? copy.projectBids.processing : copy.projectBids.accept}
-                          </Button>
-                          <Button disabled={isHandlingBid} variant="danger" onClick={() => handleRejectBid(bid.id)}>
-                            {isHandlingBid ? copy.projectBids.processing : copy.projectBids.reject}
-                          </Button>
-                        </div>
-                      )}
-                    </div>
-                  );
-                })}
-
-                {activePayment
-                  && selectedProject
-                  && activePayment.projectId === selectedProject.id && (
-                    <InfoPanel className="mt-5 border-2 border-amber-200 bg-amber-50/90">
-                      <div className="text-sm font-bold text-amber-900">
-                        {copy.projectBids.paymentBlockTitle}
-                      </div>
-                      <div className="mt-3 grid gap-2 text-sm text-slate-800">
-                        <div>
-                          <Text className="text-xs font-semibold uppercase text-slate-500">{copy.projectBids.paymentStatus}</Text>
-                          <div className="font-mono text-base">{activePayment.status}</div>
-                        </div>
-                        <div>
-                          <Text className="text-xs font-semibold uppercase text-slate-500">Order</Text>
-                          <div className="font-mono text-sm break-all">{activePayment.orderCode}</div>
-                        </div>
-                        {activePayment.bankName && (
-                          <div>
-                            <Text className="text-xs font-semibold uppercase text-slate-500">{copy.projectBids.paymentBank}</Text>
-                            <div>{activePayment.bankName}</div>
-                          </div>
-                        )}
-                        {activePayment.vaNumber && (
-                          <div>
-                            <Text className="text-xs font-semibold uppercase text-slate-500">{copy.projectBids.paymentVa}</Text>
-                            <div className="font-mono">{activePayment.vaNumber}</div>
-                          </div>
-                        )}
-                        {activePayment.vaHolderName && (
-                          <div>
-                            <Text className="text-xs font-semibold uppercase text-slate-500">{copy.projectBids.paymentHolder}</Text>
-                            <div>{activePayment.vaHolderName}</div>
-                          </div>
-                        )}
-                        {activePayment.amount != null && (
-                          <div>
-                            <Text className="text-xs font-semibold uppercase text-slate-500">{copy.projectBids.paymentAmount}</Text>
-                            <div className="font-semibold">{formatCurrency(activePayment.amount, locale)}</div>
-                          </div>
-                        )}
-                        {activePayment.expiredAt && (
-                          <div>
-                            <Text className="text-xs font-semibold uppercase text-slate-500">{copy.projectBids.paymentExpires}</Text>
-                            <div>{formatDateTime(activePayment.expiredAt, locale)}</div>
-                          </div>
-                        )}
-                      </div>
-                      {(activePayment.vietqrUrl || (activePayment.qrCodeData && String(activePayment.qrCodeData).startsWith('data:image'))) && (
-                        <div className="mt-3">
-                          <img
-                            src={activePayment.vietqrUrl || activePayment.qrCodeData}
-                            alt="VietQR"
-                            className="max-w-[220px] border border-slate-200 bg-white p-2"
-                          />
-                        </div>
-                      )}
-                      {!activePayment.vietqrUrl && activePayment.qrCodeUrl && (
-                        <a
-                          href={activePayment.qrCodeUrl}
-                          className="mt-2 inline-block text-sm font-semibold text-primary-700 underline"
-                          target="_blank"
-                          rel="noreferrer"
-                        >
-                          {copy.projectBids.openQrLink}
-                        </a>
-                      )}
-                      {activePayment.status === 'pending' && (
-                        <div className="mt-4">
-                          <Button type="button" variant="ghost" onClick={handleCancelActivePayment}>
-                            {copy.projectBids.paymentCancel}
-                          </Button>
-                        </div>
-                      )}
-                    </InfoPanel>
-                )}
-
-                {!visibleProjectBidsLoading && selectedProjectBids.length === 0 && (
-                  <Callout type="info" title={copy.projectBids.emptyTitle}>
-                    {copy.projectBids.emptyDescription}
-                  </Callout>
-                )}
-              </div>
-            </Card>
-          )}
         </>
       ) : (
         <section className="grid gap-6 lg:grid-cols-[1.05fr_0.95fr]">
@@ -1275,6 +1204,251 @@ const ProjectsPage = () => {
           </div>
         </section>
       )}
+
+      <Modal
+        isOpen={isQuotationModalOpen}
+        onClose={handleCloseQuotationModal}
+        title={selectedProject ? t('projectsPage.projectBids.title', { title: selectedProject.title }) : copy.projectBids.caption}
+      >
+        <div className="flex max-h-[72vh] flex-col gap-4 overflow-y-auto pr-1">
+          {selectedProject && (
+            <>
+              <div>
+                <Badge color={getProjectStatusMeta(selectedProject.status, locale).color}>
+                  {getProjectStatusMeta(selectedProject.status, locale).label}
+                </Badge>
+              </div>
+              <AttachmentLinks
+                attachments={selectedProject.attachments}
+                caption={extraCopy.attachmentsCaption}
+              />
+            </>
+          )}
+
+          {visibleQuotationLoading && (
+            <div className="flex items-center gap-3 rounded-md border border-slate-200 bg-slate-50 px-3 py-3">
+              <Spinner size="sm" />
+              <Text className="text-sm text-slate-600">{copy.projectBids.loading}</Text>
+            </div>
+          )}
+
+          {!visibleQuotationLoading && quotationError && (
+            <div className="flex flex-col gap-3">
+              <InlineErrorBlock title={copy.projectBids.loadErrorTitle}>
+                {quotationError}
+              </InlineErrorBlock>
+              <div className="flex justify-end">
+                <Button type="button" variant="outline" onClick={handleRetryQuotationLoad}>
+                  {copy.projectBids.retryLoad}
+                </Button>
+              </div>
+            </div>
+          )}
+
+          {!visibleQuotationLoading && !quotationError && quotations.map((bid) => {
+            const statusMeta = getBidStatusMeta(bid.status, locale);
+            const isHandlingBid = bidActionId === bid.id;
+            const canProcessBid =
+              selectedProject && (selectedProject.status === 'open' || selectedProject.status === 'pending_payment') && bid.status === 'pending';
+
+            return (
+              <div key={bid.id} className="border border-slate-200 bg-slate-50 p-4">
+                <div className="flex items-start justify-between gap-3">
+                  <div>
+                    <div className="text-sm font-bold text-secondary-900">
+                      {bid.freelancer?.fullName || t('projectsPage.projectBids.freelancerFallback', { id: bid.freelancer?.id || bid.id })}
+                    </div>
+                    <Caption className="text-xs text-slate-500">
+                      {t('projectsPage.projectBids.proposedAt', { value: formatDateTime(bid.createdAt, locale) })}
+                    </Caption>
+                  </div>
+                  <Badge color={statusMeta.color}>
+                    {statusMeta.label}
+                  </Badge>
+                </div>
+                <div className="mt-3 text-sm font-semibold text-slate-700">
+                  {t('projectsPage.projectBids.price', { value: formatCurrency(bid.price, locale) })}
+                </div>
+                <Text className="mt-2 text-sm text-slate-600">
+                  {bid.message || copy.projectBids.messageFallback}
+                </Text>
+                <Text className="mt-2 text-sm text-slate-500">
+                  {t('projectsPage.projectBids.estimatedTime', { value: bid.estimatedTime || copy.projectBids.estimatedFallback })}
+                </Text>
+                <AttachmentLinks
+                  attachments={bid.attachments}
+                  caption={extraCopy.attachmentsCaption}
+                />
+                {canProcessBid && (
+                  <div className="mt-4 flex flex-wrap gap-3">
+                    <Button disabled={isHandlingBid} onClick={() => handleStartCheckoutBid(bid.id)}>
+                      {isHandlingBid ? copy.projectBids.processing : copy.projectBids.accept}
+                    </Button>
+                    <Button disabled={isHandlingBid} variant="danger" onClick={() => handleRejectBid(bid.id)}>
+                      {isHandlingBid ? copy.projectBids.processing : copy.projectBids.reject}
+                    </Button>
+                  </div>
+                )}
+              </div>
+            );
+          })}
+
+          {!visibleQuotationLoading && !quotationError && paymentQrData
+            && selectedProject
+            && paymentQrData.projectId === selectedProject.id
+            && paymentQrData.status === 'pending' && (
+              <InfoPanel className="border-2 border-amber-200 bg-amber-50/90">
+                <div className="text-sm font-bold text-amber-900">
+                  {copy.projectBids.paymentPendingTitle}
+                </div>
+                <Text className="mt-2 text-sm text-slate-700">{copy.projectBids.paymentPendingDescription}</Text>
+                <div className="mt-4 flex flex-wrap gap-3">
+                  <Button type="button" onClick={() => setIsQrModalOpen(true)}>
+                    {copy.projectBids.openQrModal}
+                  </Button>
+                  <Button type="button" variant="ghost" onClick={handleCancelActivePayment}>
+                    {copy.projectBids.paymentCancel}
+                  </Button>
+                </div>
+              </InfoPanel>
+          )}
+
+          {!visibleQuotationLoading && !quotationError && quotations.length === 0 && (
+            <Callout type="info" title={copy.projectBids.emptyTitle}>
+              {copy.projectBids.emptyDescription}
+            </Callout>
+          )}
+
+          <div className="mt-2 flex flex-col-reverse gap-3 sm:flex-row sm:justify-end">
+            <Button type="button" variant="ghost" onClick={handleCloseQuotationModal}>
+              {copy.projectBids.closeModal}
+            </Button>
+          </div>
+        </div>
+      </Modal>
+
+      <Modal
+        isOpen={isConfirmModalOpen}
+        onClose={() => {
+          setIsConfirmModalOpen(false);
+          setPendingCheckoutBidId(null);
+          setPaymentError('');
+        }}
+        title={copy.projectBids.confirmModalTitle}
+      >
+        <div className="flex flex-col gap-4">
+          <Text className="text-sm text-slate-700">
+            {copy.projectBids.confirmModalDescription}
+          </Text>
+          <div className="flex flex-col-reverse gap-3 sm:flex-row sm:justify-end">
+            <Button
+              type="button"
+              variant="ghost"
+              onClick={() => {
+                setIsConfirmModalOpen(false);
+                setPendingCheckoutBidId(null);
+                setPaymentError('');
+              }}
+            >
+              {copy.projectBids.confirmModalCancel}
+            </Button>
+            <Button type="button" onClick={handleConfirmCheckoutBid}>
+              {copy.projectBids.confirmModalConfirm}
+            </Button>
+          </div>
+        </div>
+      </Modal>
+
+      <Modal
+        isOpen={isQrModalOpen}
+        onClose={() => setIsQrModalOpen(false)}
+        title={copy.projectBids.qrModalTitle}
+      >
+        <div className="flex max-h-[70vh] flex-col gap-4 overflow-y-auto pr-1">
+          {isPaymentLoading && (
+            <div className="flex items-center gap-3 rounded-md border border-slate-200 bg-slate-50 px-3 py-3">
+              <Spinner size="sm" />
+              <Text className="text-sm text-slate-600">{copy.projectBids.paymentLoading}</Text>
+            </div>
+          )}
+
+          {paymentError && (
+            <InlineErrorBlock title={copy.projectBids.paymentErrorTitle}>
+              {paymentError}
+            </InlineErrorBlock>
+          )}
+
+          {!isPaymentLoading && !paymentError && paymentQrData && (
+            <div className="grid gap-4">
+              {(paymentQrData.vietqrUrl || (paymentQrData.qrCodeData && String(paymentQrData.qrCodeData).startsWith('data:image'))) && (
+                <div className="mx-auto w-full max-w-[260px] border border-slate-200 bg-white p-3">
+                  <img
+                    src={paymentQrData.vietqrUrl || paymentQrData.qrCodeData}
+                    alt="VietQR"
+                    className="h-auto w-full"
+                  />
+                </div>
+              )}
+
+              {!paymentQrData.vietqrUrl && paymentQrData.qrCodeUrl && (
+                <a
+                  href={paymentQrData.qrCodeUrl}
+                  className="inline-block text-sm font-semibold text-primary-700 underline"
+                  target="_blank"
+                  rel="noreferrer"
+                >
+                  {copy.projectBids.openQrLink}
+                </a>
+              )}
+
+              <div className="grid gap-3 text-sm text-slate-800 sm:grid-cols-2">
+                {paymentQrData.amount != null && (
+                  <div>
+                    <Text className="text-xs font-semibold uppercase text-slate-500">{copy.projectBids.paymentAmount}</Text>
+                    <div className="font-semibold">{formatCurrency(paymentQrData.amount, locale)}</div>
+                  </div>
+                )}
+                {paymentQrData.description && (
+                  <div>
+                    <Text className="text-xs font-semibold uppercase text-slate-500">{copy.projectBids.paymentDescription}</Text>
+                    <div className="break-words">{paymentQrData.description}</div>
+                  </div>
+                )}
+                {paymentQrData.orderCode && (
+                  <div className="sm:col-span-2">
+                    <Text className="text-xs font-semibold uppercase text-slate-500">{copy.projectBids.paymentOrderCode}</Text>
+                    <div className="font-mono text-xs break-all">{paymentQrData.orderCode}</div>
+                  </div>
+                )}
+                {paymentQrData.bankName && (
+                  <div>
+                    <Text className="text-xs font-semibold uppercase text-slate-500">{copy.projectBids.paymentBank}</Text>
+                    <div>{paymentQrData.bankName}</div>
+                  </div>
+                )}
+                {paymentQrData.vaNumber && (
+                  <div>
+                    <Text className="text-xs font-semibold uppercase text-slate-500">{copy.projectBids.paymentVa}</Text>
+                    <div className="font-mono">{paymentQrData.vaNumber}</div>
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+
+          <div className="mt-2 flex flex-col-reverse gap-3 sm:flex-row sm:justify-end">
+            <Button
+              type="button"
+              variant="ghost"
+              disabled={isPaymentLoading}
+              onClick={handleCancelActivePayment}
+            >
+              {copy.projectBids.paymentCancel}
+            </Button>
+          </div>
+        </div>
+      </Modal>
+
       {/* Report Modal */}
       <ReportModal 
         isOpen={isReportModalOpen}
