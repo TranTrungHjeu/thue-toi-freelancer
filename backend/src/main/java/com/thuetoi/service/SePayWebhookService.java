@@ -6,6 +6,7 @@ import com.thuetoi.entity.PaymentWebhookEvent;
 import com.thuetoi.exception.BusinessException;
 import com.thuetoi.repository.PaymentOrderRepository;
 import com.thuetoi.repository.PaymentWebhookEventRepository;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.HttpStatus;
@@ -14,16 +15,20 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
+import java.nio.charset.StandardCharsets;
 import java.time.LocalDateTime;
 import java.util.HashMap;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Optional;
+import java.util.UUID;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 /**
  * Webhook giao dịch SePay — trường {@code code} khớp {@code order_code} đơn VA (tài liệu SePay v2).
  */
+@Slf4j
 @Service
 public class SePayWebhookService {
 
@@ -57,13 +62,14 @@ public class SePayWebhookService {
     @Transactional
     public void processIncomingTransaction(Map<String, Object> body) {
         String txId = extractTransactionId(body);
-        if (txId == null || txId.isEmpty()) {
-            return;
-        }
-        if (paymentWebhookEventRepository.existsBySepayTransactionId(txId)) {
-            return;
-        }
         String transferType = asString(body.get("transferType"));
+        BigDecimal amount = toAmount(body.get("transferAmount"));
+        log.info("[SePayWebhook] received txId={} transferType={} amount={} code={} referenceCode={} content={}",
+            txId, transferType, amount, body.get("code"), body.get("referenceCode"), body.get("content"));
+        if (paymentWebhookEventRepository.existsBySepayTransactionId(txId)) {
+            log.info("[SePayWebhook] duplicate txId={}, skip", txId);
+            return;
+        }
         if (transferType != null && !"in".equalsIgnoreCase(transferType)) {
             persistEvent(txId, null, null, null, null, body);
             return;
@@ -72,7 +78,8 @@ public class SePayWebhookService {
         if (code == null || code.isBlank()) {
             // SePay only fills `code` when a dashboard pattern matches the memo.
             // Fall back to scanning the raw memo for our deterministic order code
-            // format produced by PaymentService#buildOrderCode: TTB<bidId>P<projectId>X<8 hex>.
+            // formats produced by PaymentService:
+            // TTB<bidId>P<projectId>X<8 hex> for checkout, TTD<userId>W<8 hex> for wallet deposits.
             code = extractOrderCodeFromMemo(body);
         }
         if (code == null || code.isBlank()) {
@@ -80,7 +87,6 @@ public class SePayWebhookService {
             return;
         }
         code = code.trim();
-        BigDecimal amount = toAmount(body.get("transferAmount"));
         Optional<PaymentOrder> orderOpt = paymentOrderRepository.findDetailedByOrderCode(code);
         if (orderOpt.isEmpty()) {
             tryPersistEvent(txId, code, null, amount, transferType, body);
@@ -100,13 +106,10 @@ public class SePayWebhookService {
             return;
         }
         if (PaymentService.ST_PENDING.equals(order.getStatus())) {
-            order.setStatus(PaymentService.ST_PAID);
-            order.setPaidAt(LocalDateTime.now());
-            paymentOrderRepository.save(order);
+            paymentService.afterPaymentReceived(order);
+        } else if (PaymentService.ST_PAID.equals(order.getStatus())) {
+            paymentService.afterPaymentReceived(order);
         }
-        paymentService.afterPaymentReceived(
-            paymentOrderRepository.findDetailedByOrderCode(code).orElseThrow()
-        );
         try {
             tryPersistEvent(txId, code, order.getId(), amount, transferType, body);
         } catch (DataIntegrityViolationException e) {
@@ -132,7 +135,7 @@ public class SePayWebhookService {
         PaymentWebhookEvent e = new PaymentWebhookEvent();
         e.setSepayTransactionId(sepayTransactionId);
         e.setOrderCode(orderCode);
-        e.setReferenceCode(null);
+        e.setReferenceCode(asString(raw.get("referenceCode")));
         e.setTransferAmount(transferAmount);
         e.setTransferType(transferType);
         e.setRawPayloadJson(new HashMap<>(raw));
@@ -142,13 +145,24 @@ public class SePayWebhookService {
 
     private static String extractTransactionId(Map<String, Object> body) {
         Object id = body.get("id");
-        if (id == null) {
-            return null;
+        if (id != null) {
+            if (id instanceof Number n) {
+                return String.valueOf(n.longValue());
+            }
+            String textId = id.toString().trim();
+            if (!textId.isEmpty()) {
+                return textId;
+            }
         }
-        if (id instanceof Number n) {
-            return String.valueOf(n.longValue());
-        }
-        return id.toString();
+        String rawKey = String.join("|",
+            Optional.ofNullable(asString(body.get("referenceCode"))).orElse(""),
+            Optional.ofNullable(asString(body.get("transactionDate"))).orElse(""),
+            Optional.ofNullable(asString(body.get("accountNumber"))).orElse(""),
+            Optional.ofNullable(asString(body.get("transferType"))).orElse(""),
+            Optional.ofNullable(asString(body.get("transferAmount"))).orElse(""),
+            Optional.ofNullable(asString(body.get("content"))).orElse("")
+        );
+        return "fallback-" + UUID.nameUUIDFromBytes(rawKey.getBytes(StandardCharsets.UTF_8));
     }
 
     private static String asString(Object o) {
@@ -156,7 +170,7 @@ public class SePayWebhookService {
     }
 
     private static final Pattern ORDER_CODE_PATTERN =
-        Pattern.compile("TTB\\d+P\\d+X[0-9A-Fa-f]{8}");
+        Pattern.compile("(?:TTB\\d+P\\d+X|TTD\\d+W)[0-9A-Fa-f]{8}");
 
     private static String extractOrderCodeFromMemo(Map<String, Object> body) {
         String[] fields = { "content", "description", "transferContent", "memo", "remark", "note" };
@@ -165,7 +179,7 @@ public class SePayWebhookService {
             if (v == null || v.isBlank()) continue;
             Matcher m = ORDER_CODE_PATTERN.matcher(v);
             if (m.find()) {
-                return m.group().toUpperCase(java.util.Locale.ROOT);
+                return m.group().toUpperCase(Locale.ROOT);
             }
         }
         return null;

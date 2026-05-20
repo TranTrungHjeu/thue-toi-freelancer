@@ -5,6 +5,7 @@ import { Xmark, Download, Copy, CheckCircle } from 'iconoir-react';
 import Button from './Button';
 import { H2, Text, Caption } from './Typography';
 import { formatCurrency, formatDateTime } from '../../utils/formatters';
+import { useI18n } from '../../hooks/useI18n';
 
 const PaymentReceiptModal = ({
   isOpen,
@@ -12,6 +13,7 @@ const PaymentReceiptModal = ({
   payment,
   contract
 }) => {
+  const { t } = useI18n();
   const [mounted, setMounted] = React.useState(false);
   const [copied, setCopied] = React.useState(false);
 
@@ -25,42 +27,51 @@ const PaymentReceiptModal = ({
     setTimeout(() => setCopied(false), 2000);
   };
 
+  const getStatusLabel = (status) => {
+    if (!status) return '';
+    const key = `paymentReceipt.statusBadge.${String(status).toLowerCase()}`;
+    const translated = t(key);
+    return translated === key ? String(status).toUpperCase() : translated;
+  };
+
   const handleDownloadReceipt = () => {
-    // Generate PDF receipt
-    const receiptContent = `
-PAYMENT RECEIPT
-===============
+    const div = t('paymentReceipt.download.divider');
+    const lines = [
+      t('paymentReceipt.download.heading'),
+      div,
+      '',
+      `${t('paymentReceipt.download.orderCode')}: ${payment?.orderCode ?? ''}`,
+      `${t('paymentReceipt.download.date')}: ${formatDateTime(payment?.createdAt || new Date())}`,
+      `${t('paymentReceipt.download.status')}: ${getStatusLabel(payment?.status)}`,
+      '',
+      t('paymentReceipt.download.paymentDetailsTitle'),
+      div,
+      `${t('paymentReceipt.download.amount')}: ${formatCurrency(payment?.amount)}`,
+      `${t('paymentReceipt.download.method')}: ${payment?.method || t('paymentReceipt.methodFallback')}`,
+      `${t('paymentReceipt.download.transactionId')}: ${payment?.transactionId ?? ''}`,
+      '',
+      t('paymentReceipt.download.contractDetailsTitle'),
+      div,
+      `${t('paymentReceipt.download.contractId')}: ${contract?.id ?? ''}`,
+      `${t('paymentReceipt.download.project')}: ${contract?.projectTitle ?? ''}`,
+      `${t('paymentReceipt.download.freelancer')}: ${contract?.freelancerName ?? ''}`,
+      `${t('paymentReceipt.download.startDate')}: ${contract?.startDate ? formatDateTime(contract.startDate) : ''}`,
+      '',
+      t('paymentReceipt.download.nextStepsTitle'),
+      div,
+      t('paymentReceipt.download.nextStep1'),
+      t('paymentReceipt.download.nextStep2'),
+      t('paymentReceipt.download.nextStep3'),
+      t('paymentReceipt.download.nextStep4'),
+      '',
+      t('paymentReceipt.download.supportLine'),
+    ];
+    const receiptContent = lines.join('\n');
 
-Order Code: ${payment?.orderCode}
-Date: ${formatDateTime(new Date())}
-Status: ${payment?.status?.toUpperCase()}
-
-PAYMENT DETAILS
-===============
-Amount: ${formatCurrency(payment?.amount)}
-Method: ${payment?.method}
-Transaction ID: ${payment?.transactionId}
-
-CONTRACT DETAILS
-================
-Contract ID: ${contract?.id}
-Project: ${contract?.projectTitle}
-Freelancer: ${contract?.freelancerName}
-Start Date: ${formatDateTime(contract?.startDate)}
-
-NEXT STEPS
-==========
-1. The contract has been created
-2. You can now communicate with the freelancer
-3. Create milestones to track progress
-4. Release payment upon completion
-
-For support, contact: support@thuetoi.com
-    `;
-
+    const filename = `${t('paymentReceipt.filenamePrefix')}-${payment?.orderCode || 'unknown'}.txt`;
     const element = document.createElement('a');
     element.setAttribute('href', 'data:text/plain;charset=utf-8,' + encodeURIComponent(receiptContent));
-    element.setAttribute('download', `receipt-${payment?.orderCode}.txt`);
+    element.setAttribute('download', filename);
     element.style.display = 'none';
     document.body.appendChild(element);
     element.click();
@@ -106,13 +117,13 @@ For support, contact: support@thuetoi.com
               <div className="flex items-center gap-3">
                 <CheckCircle className="w-6 h-6 text-emerald-500" />
                 <H2 id="receipt-title" className="!mb-0 text-xl">
-                  Payment Receipt
+                  {t('paymentReceipt.title')}
                 </H2>
               </div>
               <button
                 onClick={onClose}
                 className="text-slate-400 hover:text-secondary-900 transition-colors p-1 rounded-none hover:bg-slate-100"
-                aria-label="Close dialog"
+                aria-label={t('paymentReceipt.closeAria')}
                 type="button"
               >
                 <Xmark className="w-6 h-6" />
@@ -120,17 +131,15 @@ For support, contact: support@thuetoi.com
             </div>
 
             <div className="p-6 space-y-6">
-              {/* Success Message */}
               <div className="bg-emerald-50 border border-emerald-200 rounded-none p-4">
                 <Text className="text-sm text-emerald-700">
-                  Your payment has been successfully processed. The contract has been created and the freelancer has been notified.
+                  {t('paymentReceipt.successMessage')}
                 </Text>
               </div>
 
-              {/* Receipt Details */}
               <div className="space-y-4 bg-slate-50 rounded-none p-4">
                 <div className="flex justify-between items-start">
-                  <Text className="text-slate-600">Order Code</Text>
+                  <Text className="text-slate-600">{t('paymentReceipt.orderCodeLabel')}</Text>
                   <div className="flex items-center gap-2">
                     <Text className="font-mono text-sm text-slate-900">
                       {payment?.orderCode}
@@ -138,7 +147,8 @@ For support, contact: support@thuetoi.com
                     <button
                       onClick={handleCopyOrderCode}
                       className="p-1 hover:bg-slate-200 rounded-none transition-colors"
-                      title="Copy order code"
+                      title={t('paymentReceipt.copyTitle')}
+                      type="button"
                     >
                       <Copy className="w-4 h-4 text-slate-600" />
                     </button>
@@ -146,60 +156,58 @@ For support, contact: support@thuetoi.com
                 </div>
 
                 <div className="flex justify-between items-start">
-                  <Text className="text-slate-600">Amount</Text>
+                  <Text className="text-slate-600">{t('paymentReceipt.amountLabel')}</Text>
                   <Text className="font-bold text-lg text-primary-600">
                     {formatCurrency(payment?.amount)}
                   </Text>
                 </div>
 
                 <div className="flex justify-between items-start">
-                  <Text className="text-slate-600">Payment Method</Text>
+                  <Text className="text-slate-600">{t('paymentReceipt.methodLabel')}</Text>
                   <Text className="font-semibold text-slate-900">
-                    {payment?.method}
+                    {payment?.method || t('paymentReceipt.methodFallback')}
                   </Text>
                 </div>
 
                 <div className="flex justify-between items-start">
-                  <Text className="text-slate-600">Status</Text>
+                  <Text className="text-slate-600">{t('paymentReceipt.statusLabel')}</Text>
                   <span className="px-3 py-1 bg-emerald-100 text-emerald-700 rounded-none text-sm font-semibold">
-                    {payment?.status?.toUpperCase()}
+                    {getStatusLabel(payment?.status)}
                   </span>
                 </div>
 
                 <div className="flex justify-between items-start">
-                  <Text className="text-slate-600">Date</Text>
+                  <Text className="text-slate-600">{t('paymentReceipt.dateLabel')}</Text>
                   <Text className="text-slate-900">
                     {formatDateTime(payment?.createdAt)}
                   </Text>
                 </div>
               </div>
 
-              {/* Next Steps */}
               <div className="space-y-3">
                 <Caption className="text-slate-600">
-                  NEXT STEPS
+                  {t('paymentReceipt.nextStepsTitle')}
                 </Caption>
                 <ol className="space-y-2 text-sm text-slate-700">
                   <li className="flex gap-3">
                     <span className="font-bold text-primary-600">1.</span>
-                    <span>The contract has been created and is now active</span>
+                    <span>{t('paymentReceipt.nextStep1')}</span>
                   </li>
                   <li className="flex gap-3">
                     <span className="font-bold text-primary-600">2.</span>
-                    <span>You can now communicate with the freelancer</span>
+                    <span>{t('paymentReceipt.nextStep2')}</span>
                   </li>
                   <li className="flex gap-3">
                     <span className="font-bold text-primary-600">3.</span>
-                    <span>Create milestones to track project progress</span>
+                    <span>{t('paymentReceipt.nextStep3')}</span>
                   </li>
                   <li className="flex gap-3">
                     <span className="font-bold text-primary-600">4.</span>
-                    <span>Release payment upon milestone completion</span>
+                    <span>{t('paymentReceipt.nextStep4')}</span>
                   </li>
                 </ol>
               </div>
 
-              {/* Actions */}
               <div className="flex gap-3">
                 <Button
                   variant="ghost"
@@ -207,21 +215,20 @@ For support, contact: support@thuetoi.com
                   className="flex-1 flex items-center justify-center gap-2"
                 >
                   <Download className="w-4 h-4" />
-                  Download Receipt
+                  {t('paymentReceipt.downloadReceiptBtn')}
                 </Button>
                 <Button
                   variant="primary"
                   onClick={onClose}
                   className="flex-1"
                 >
-                  Continue
+                  {t('paymentReceipt.continueBtn')}
                 </Button>
               </div>
 
-              {/* Copy Confirmation */}
               {copied && (
                 <Text className="text-center text-xs text-emerald-600">
-                  ✓ Order code copied to clipboard
+                  {t('paymentReceipt.copySuccess')}
                 </Text>
               )}
             </div>
