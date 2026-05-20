@@ -1,5 +1,3 @@
-"use client";
-
 import React from 'react';
 import Table from './Table';
 import { Text, Caption } from './Typography';
@@ -46,3 +44,4 @@ const ResponsiveTable = ({
 };
 
 export default ResponsiveTable;
+

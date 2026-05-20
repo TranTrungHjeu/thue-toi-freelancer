@@ -27,3 +27,4 @@ const useMinimumLoadingState = (isLoading, minimumDuration = 700) => {
 };
 
 export default useMinimumLoadingState;
+

@@ -1,18 +1,19 @@
-"use client";
+import { Link } from 'react-router-dom';
+
 
 import React from 'react';
-import { NavLink } from 'react-router-dom';
+
 import { Caption } from '../common/Typography';
 
 const BottomNav = ({ items = [], currentPath = '', className = '' }) => {
   return (
     <div className={`fixed bottom-0 left-0 right-0 z-[100] grid h-16 grid-cols-5 border-t border-slate-200 bg-white/90 backdrop-blur-md lg:hidden ${className}`}>
       {items.map((item) => {
-        const isActive = currentPath === item.to;
+        const isActive = currentPath === item.href;
         return (
-          <NavLink
-            key={item.to}
-            to={item.to}
+          <Link
+            key={item.href}
+            to={item.href}
             className={`relative flex flex-col items-center justify-center gap-1 transition-colors ${
               isActive ? 'text-primary-600' : 'text-slate-400 hover:text-secondary-900'
             }`}
@@ -21,7 +22,7 @@ const BottomNav = ({ items = [], currentPath = '', className = '' }) => {
               <item.icon className="h-5 w-5" />
               {item.badge && (
                 <span
-                  className="absolute -right-3 -top-2 min-w-4 border border-white bg-red-500 px-1 text-[9px] font-black leading-4 text-white"
+                  className="absolute -right-3 -top-2 min-w-4 rounded-full border border-white bg-primary-600 px-1 text-[9px] font-bold leading-4 text-white"
                   aria-label={item.badgeLabel}
                 >
                   {item.badge}
@@ -32,7 +33,7 @@ const BottomNav = ({ items = [], currentPath = '', className = '' }) => {
               {item.label}
             </Caption>
             {isActive && <div className="absolute top-0 h-1 w-8 bg-primary-600" />}
-          </NavLink>
+          </Link>
         );
       })}
     </div>
@@ -40,3 +41,4 @@ const BottomNav = ({ items = [], currentPath = '', className = '' }) => {
 };
 
 export default BottomNav;
+

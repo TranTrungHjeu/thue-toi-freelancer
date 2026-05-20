@@ -32,3 +32,4 @@ export const splitApiFormError = (error, fallbackMessage = '') => {
     formError: hasFieldErrors ? '' : (error?.message || fallbackMessage),
   };
 };
+

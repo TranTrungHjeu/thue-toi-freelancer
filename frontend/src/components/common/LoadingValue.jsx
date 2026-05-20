@@ -5,3 +5,4 @@ const LoadingValue = ({ isLoading, value, fallback = '...' }) => {
 };
 
 export default LoadingValue;
+

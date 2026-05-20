@@ -41,3 +41,4 @@ const Table = ({ headers, data, renderRow, className = '' }) => {
 };
 
 export default Table;
+

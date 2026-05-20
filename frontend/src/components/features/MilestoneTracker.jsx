@@ -1,5 +1,3 @@
-"use client";
-
 import React from 'react';
 import { H2, Caption, Text } from '../common/Typography';
 import { CheckCircle, Lock, Wallet, Hourglass } from 'iconoir-react';
@@ -55,3 +53,4 @@ const MilestoneTracker = ({ milestones = [], className = "" }) => {
 };
 
 export default MilestoneTracker;
+

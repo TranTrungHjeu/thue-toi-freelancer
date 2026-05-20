@@ -1,3 +1,8 @@
+-- V1__Initial_schema.sql
+-- Flyway initial schema migration for Thuê Tôi freelance marketplace
+-- Generated from docs/database/schema.sql
+-- Follows marketplace_rules.md §1-8: DECIMAL for money, ENUM status, ownership FKs, indexes
+
 -- Bảng users: Quản lý thông tin người dùng, freelancer, khách hàng
 CREATE TABLE users (
     id BIGINT PRIMARY KEY AUTO_INCREMENT COMMENT 'Khóa chính, mã người dùng',
@@ -45,14 +50,14 @@ CREATE TABLE refresh_tokens (
     INDEX idx_refresh_revoked (revoked),
     INDEX idx_refresh_expires_at (expires_at)
 );
+
 -- Bảng skills: Danh sách kỹ năng chuẩn hóa
 CREATE TABLE skills (
     id BIGINT PRIMARY KEY AUTO_INCREMENT COMMENT 'Khóa chính, mã kỹ năng',
     name VARCHAR(100) UNIQUE NOT NULL COMMENT 'Tên kỹ năng, duy nhất',
-    description TEXT COMMENT 'Mô tả kỹ năng',
-    created_at DATETIME DEFAULT CURRENT_TIMESTAMP COMMENT 'Ngày tạo',
-    updated_at DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT 'Ngày cập nhật'
+    description TEXT COMMENT 'Mô tả kỹ năng'
 );
+
 -- Bảng users_skills: Liên kết người dùng với kỹ năng (many-to-many)
 CREATE TABLE users_skills (
     user_id BIGINT NOT NULL COMMENT 'Mã người dùng',
@@ -63,6 +68,7 @@ CREATE TABLE users_skills (
     INDEX idx_user_id (user_id),
     INDEX idx_skill_id (skill_id)
 );
+
 -- Bảng projects: Quản lý dự án/việc làm
 CREATE TABLE projects (
     id BIGINT PRIMARY KEY AUTO_INCREMENT COMMENT 'Khóa chính, mã dự án',
@@ -72,7 +78,6 @@ CREATE TABLE projects (
     budget_min DECIMAL(12, 2) COMMENT 'Ngân sách tối thiểu',
     budget_max DECIMAL(12, 2) COMMENT 'Ngân sách tối đa',
     deadline DATETIME COMMENT 'Thời hạn hoàn thành mong muốn',
-    attachments TEXT COMMENT 'File đính kèm của project',
     status ENUM(
         'open',
         'in_progress',
@@ -85,6 +90,7 @@ CREATE TABLE projects (
     INDEX idx_user_id (user_id),
     INDEX idx_status (status)
 );
+
 -- Bảng projects_skills: Liên kết dự án với kỹ năng (many-to-many)
 CREATE TABLE projects_skills (
     project_id BIGINT NOT NULL COMMENT 'Mã dự án',
@@ -95,6 +101,7 @@ CREATE TABLE projects_skills (
     INDEX idx_project_id (project_id),
     INDEX idx_skill_id (skill_id)
 );
+
 -- Bảng bids: Báo giá/đề xuất của freelancer cho dự án
 CREATE TABLE bids (
     id BIGINT PRIMARY KEY AUTO_INCREMENT COMMENT 'Khóa chính, mã báo giá',
@@ -117,6 +124,7 @@ CREATE TABLE bids (
     INDEX idx_freelancer_id (freelancer_id),
     INDEX idx_status (status)
 );
+
 -- Bảng contracts: Quản lý hợp đồng giữa khách và freelancer
 CREATE TABLE contracts (
     id BIGINT PRIMARY KEY AUTO_INCREMENT COMMENT 'Khóa chính, mã hợp đồng',
@@ -140,6 +148,7 @@ CREATE TABLE contracts (
     INDEX idx_customer_id (customer_id),
     INDEX idx_status (status)
 );
+
 -- Bảng milestones: Quản lý các mốc thanh toán/hợp đồng
 CREATE TABLE milestones (
     id BIGINT PRIMARY KEY AUTO_INCREMENT COMMENT 'Khóa chính, mã milestone',
@@ -156,6 +165,7 @@ CREATE TABLE milestones (
     INDEX idx_contract_id (contract_id),
     INDEX idx_status (status)
 );
+
 -- Bảng reviews: Đánh giá sau khi hoàn thành hợp đồng
 CREATE TABLE reviews (
     id BIGINT PRIMARY KEY AUTO_INCREMENT COMMENT 'Khóa chính, mã đánh giá',
@@ -171,6 +181,7 @@ CREATE TABLE reviews (
     INDEX idx_contract_id (contract_id),
     INDEX idx_reviewer_id (reviewer_id)
 );
+
 -- Bảng messages: Trao đổi giữa khách và freelancer trong hợp đồng
 CREATE TABLE messages (
     id BIGINT PRIMARY KEY AUTO_INCREMENT COMMENT 'Khóa chính, mã tin nhắn',
@@ -186,6 +197,7 @@ CREATE TABLE messages (
     INDEX idx_sender_id (sender_id),
     INDEX idx_message_type (message_type)
 );
+
 -- Bảng transaction_history: Lịch sử thanh toán hợp đồng
 CREATE TABLE transaction_history (
     id BIGINT PRIMARY KEY AUTO_INCREMENT COMMENT 'Khóa chính, mã giao dịch',
@@ -202,6 +214,7 @@ CREATE TABLE transaction_history (
     INDEX idx_contract_id (contract_id),
     INDEX idx_status (status)
 );
+
 -- Bảng notifications: Thông báo cho người dùng
 CREATE TABLE notifications (
     id BIGINT PRIMARY KEY AUTO_INCREMENT COMMENT 'Khóa chính, mã thông báo',
@@ -222,3 +235,6 @@ CREATE TABLE notifications (
     INDEX idx_type (type),
     INDEX idx_is_read (is_read)
 );
+
+-- Add seed data reference
+-- See docs/database/seed.sql for initial data

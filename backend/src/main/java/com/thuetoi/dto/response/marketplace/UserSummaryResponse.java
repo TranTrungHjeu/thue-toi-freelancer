@@ -5,6 +5,7 @@ public record UserSummaryResponse(
     String fullName,
     String role,
     String avatarUrl,
-    java.util.List<String> skills
+    java.util.List<String> skills,
+    Boolean kycApproved
 ) {
 }

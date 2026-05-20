@@ -1,5 +1,3 @@
-"use client";
-
 import React from 'react';
 import { Caption, Text } from '../common/Typography';
 
@@ -36,3 +34,4 @@ const ChatBubble = ({
 };
 
 export default ChatBubble;
+

@@ -1,6 +1,5 @@
-"use client";
-
 import React, { useState } from 'react';
+import { Link } from 'react-router-dom';
 import { AnimatePresence, motion } from 'motion/react';
 import { NavArrowDown } from 'iconoir-react';
 import AnimatedIcon from '../common/AnimatedIcon';
@@ -11,18 +10,18 @@ const MotionDiv = motion.div;
  * Nhóm điều hướng có thể thu gọn trong thanh bên.
  * Hỗ trợ nhiều cấp hiển thị theo phong cách giao diện góc cạnh.
  */
-const NavGroup = ({ 
-  icon: Icon, 
-  label, 
-  items = [], 
+const NavGroup = ({
+  icon: Icon,
+  label,
+  items = [],
   isOpen: initialOpen = false,
-  activePath = "" 
+  activePath = ""
 }) => {
   const [isOpen, setIsOpen] = useState(initialOpen);
 
   return (
     <div className="flex flex-col">
-      <button 
+      <button
         onClick={() => setIsOpen(!isOpen)}
         className={`
           flex items-center justify-between px-4 py-3 text-sm font-medium transition-colors w-full
@@ -51,16 +50,16 @@ const NavGroup = ({
           >
             <div className="flex flex-col pl-11 pr-3 py-1">
               {items.map((item, idx) => (
-                <a
+                <Link
                   key={idx}
-                  href={item.path}
+                  to={item.path}
                   className={`
                     block py-2 text-xs font-semibold uppercase tracking-wider transition-colors
                     ${activePath === item.path ? 'text-primary-600' : 'text-slate-400 hover:text-secondary-900'}
                   `}
                 >
                   {item.label}
-                </a>
+                </Link>
               ))}
             </div>
           </MotionDiv>
@@ -71,3 +70,4 @@ const NavGroup = ({
 };
 
 export default NavGroup;
+

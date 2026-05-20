@@ -1,36 +1,40 @@
-import { defineConfig, loadEnv } from "vite";
+import { defineConfig } from "vite";
 import react from "@vitejs/plugin-react";
-import tailwindcss from "@tailwindcss/vite";
+import path from "path";
 
-// https://vite.dev/config/
-export default defineConfig(({ mode }) => {
-  const env = loadEnv(mode, ".", "");
-  const backendTarget = env.VITE_DEV_BACKEND_TARGET || "http://localhost:8080";
-
-  return {
-    define: {
-      global: "globalThis",
+export default defineConfig({
+  plugins: [react()],
+  resolve: {
+    alias: {
+      "@": path.resolve(__dirname, "./src"),
     },
-    plugins: [react(), tailwindcss()],
-    server: {
-      // Lắng nghe tất cả network interface để truy cập được từ ngoài Container
-      host: "0.0.0.0",
-      port: 5173,
-      // Cấu hình HMR cho môi trường Docker (Polling thay vì inotify)
-      watch: {
-        usePolling: true,
+  },
+  define: {
+    global: "globalThis",
+    "process.env": {},
+    process: {
+      env: {},
+    },
+  },
+  server: {
+    host: "0.0.0.0",
+    port: 3000,
+    proxy: {
+      "/api": {
+        target: "http://backend:8080",
+        changeOrigin: true,
+        rewrite: (path) => path,
       },
-      proxy: {
-        "/api": {
-          target: backendTarget,
-          changeOrigin: true,
-        },
-        "/ws": {
-          target: backendTarget,
-          changeOrigin: true,
-          ws: true,
-        },
+      "/ws": {
+        target: "http://backend:8080",
+        ws: true,
+        changeOrigin: true,
       },
     },
-  };
+  },
+  build: {
+    outDir: "dist",
+    sourcemap: false,
+    minify: "terser",
+  },
 });

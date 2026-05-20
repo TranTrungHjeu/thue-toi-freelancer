@@ -6,6 +6,9 @@ import com.thuetoi.entity.Contract;
 import com.thuetoi.entity.Message;
 import com.thuetoi.exception.BusinessException;
 import com.thuetoi.repository.MessageRepository;
+import com.thuetoi.mapper.MarketplaceResponseMapper;
+import com.thuetoi.websocket.ContractMessageWebSocketHandler;
+import com.thuetoi.dto.response.marketplace.MessageResponse;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
@@ -37,6 +40,12 @@ class MessageServiceTest {
     @Mock
     private AttachmentMetadataService attachmentMetadataService;
 
+    @Mock
+    private MarketplaceResponseMapper marketplaceResponseMapper;
+
+    @Mock
+    private ContractMessageWebSocketHandler contractMessageWebSocketHandler;
+
     @InjectMocks
     private MessageService messageService;
 
@@ -49,6 +58,7 @@ class MessageServiceTest {
         Contract contract = contract(5L, "in_progress");
         when(contractAccessService.requireAccessibleContract(5L, 9L)).thenReturn(contract);
         when(messageRepository.save(any(Message.class))).thenAnswer(invocation -> invocation.getArgument(0));
+        when(marketplaceResponseMapper.toMessageResponse(any(Message.class))).thenReturn(new MessageResponse(1L, 5L, 9L, "text", "Xin chao client", null, null));
 
         Message message = messageService.sendMessage(9L, request);
 
@@ -115,6 +125,7 @@ class MessageServiceTest {
         when(contractAccessService.requireAccessibleContract(5L, 9L)).thenReturn(contract);
         when(attachmentMetadataService.serialize(request.getAttachments())).thenReturn("[{\"url\":\"https://res.cloudinary.com/demo/file.pdf\"}]");
         when(messageRepository.save(any(Message.class))).thenAnswer(invocation -> invocation.getArgument(0));
+        when(marketplaceResponseMapper.toMessageResponse(any(Message.class))).thenReturn(new MessageResponse(2L, 5L, 9L, "file", null, null, null));
 
         Message message = messageService.sendMessage(9L, request);
 

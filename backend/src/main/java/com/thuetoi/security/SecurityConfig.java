@@ -55,6 +55,8 @@ public class SecurityConfig {
             .authorizeHttpRequests(auth -> auth
                 .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
                 .requestMatchers(
+                    "/ws/**",
+                    "/api/ws/**",
                     "/api/v1/health",
                     "/api/v1/auth/register",
                     "/api/v1/auth/login",
@@ -64,6 +66,7 @@ public class SecurityConfig {
                     "/api/v1/auth/resend-verification-otp",
                     "/api/v1/auth/verification-otp-status",
                     "/api/v1/skills",
+                    "/api/v1/payments/sepay/webhook",
                     "/ws/**",
                     "/v3/api-docs/**",
                     "/swagger-ui.html",

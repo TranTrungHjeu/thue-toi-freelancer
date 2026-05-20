@@ -1,5 +1,3 @@
-"use client";
-
 import React, { useState, useCallback } from 'react';
 import { motion, AnimatePresence } from "motion/react";
 import { Xmark, CheckCircle, WarningTriangle, InfoCircle } from "iconoir-react";
@@ -12,7 +10,8 @@ const getToastId = () => {
   if (typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function') {
     return crypto.randomUUID();
   }
-  return `${Date.now()}-${Math.random().toString(16).slice(2)}`;
+  // Fallback: use a short random id without Date.now to avoid SSR/CSR mismatch
+  return `toast_${Math.random().toString(36).slice(2, 9)}`;
 };
 
 const toastIcons = {
@@ -89,3 +88,4 @@ export const ToastProvider = ({ children }) => {
     </ToastContext.Provider>
   );
 };
+

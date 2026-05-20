@@ -12,3 +12,4 @@ export const useI18n = () => {
 };
 
 export default useI18n;
+

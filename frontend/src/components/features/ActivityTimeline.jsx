@@ -1,5 +1,3 @@
-"use client";
-
 import React from 'react';
 import { Caption, Text } from '../common/Typography';
 import { CheckCircle, Clock, InfoCircle, WarningTriangle } from 'iconoir-react';
@@ -52,3 +50,4 @@ const ActivityTimeline = ({
 };
 
 export default ActivityTimeline;
+

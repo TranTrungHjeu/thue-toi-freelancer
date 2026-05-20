@@ -1,5 +1,3 @@
-"use client";
-
 import React, { useState } from 'react';
 import { Search, Xmark } from 'iconoir-react';
 
@@ -50,3 +48,4 @@ const SearchInput = ({
 };
 
 export default SearchInput;
+

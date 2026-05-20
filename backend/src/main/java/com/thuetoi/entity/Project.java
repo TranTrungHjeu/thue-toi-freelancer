@@ -1,8 +1,6 @@
 package com.thuetoi.entity;
 
 import jakarta.persistence.*;
-import lombok.Data;
-import lombok.EqualsAndHashCode;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.HashSet;
@@ -13,8 +11,6 @@ import java.util.Set;
  */
 @Entity
 @Table(name = "projects")
-@Data
-@EqualsAndHashCode(callSuper = false, exclude = {"user", "skills"})
 public class Project extends BaseEntity {
     @ManyToOne
     @JoinColumn(name = "user_id", nullable = false)
@@ -44,5 +40,75 @@ public class Project extends BaseEntity {
     )
     private Set<Skill> skills = new HashSet<>();
 
-    // Getter, Setter, Constructor
+    public User getUser() {
+        return user;
+    }
+
+    public void setUser(User user) {
+        this.user = user;
+    }
+
+    public String getTitle() {
+        return title;
+    }
+
+    public void setTitle(String title) {
+        this.title = title;
+    }
+
+    public String getDescription() {
+        return description;
+    }
+
+    public void setDescription(String description) {
+        this.description = description;
+    }
+
+    public BigDecimal getBudgetMin() {
+        return budgetMin;
+    }
+
+    public void setBudgetMin(BigDecimal budgetMin) {
+        this.budgetMin = budgetMin;
+    }
+
+    public BigDecimal getBudgetMax() {
+        return budgetMax;
+    }
+
+    public void setBudgetMax(BigDecimal budgetMax) {
+        this.budgetMax = budgetMax;
+    }
+
+    public LocalDateTime getDeadline() {
+        return deadline;
+    }
+
+    public void setDeadline(LocalDateTime deadline) {
+        this.deadline = deadline;
+    }
+
+    public String getAttachments() {
+        return attachments;
+    }
+
+    public void setAttachments(String attachments) {
+        this.attachments = attachments;
+    }
+
+    public String getStatus() {
+        return status;
+    }
+
+    public void setStatus(String status) {
+        this.status = status;
+    }
+
+    public Set<Skill> getSkills() {
+        return skills;
+    }
+
+    public void setSkills(Set<Skill> skills) {
+        this.skills = skills;
+    }
 }

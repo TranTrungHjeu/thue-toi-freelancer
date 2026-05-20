@@ -181,6 +181,17 @@ public class AdminService {
         user.setIsActive(newStatus);
         userRepository.save(user);
 
+        // If locking user, cancel all their OPEN projects to clean marketplace
+        if (!newStatus) {
+            List<Project> openProjects = projectRepository.findByUserId(user.getId()).stream()
+                .filter(p -> ProjectStatus.OPEN.getValue().equals(p.getStatus()))
+                .toList();
+            for (Project p : openProjects) {
+                p.setStatus(ProjectStatus.CANCELLED.getValue());
+                projectRepository.save(p);
+            }
+        }
+
         // Send notification/email
         String statusText = newStatus ? "kích hoạt lại" : "tạm khóa";
         notificationService.createNotificationForUser(
@@ -201,6 +212,17 @@ public class AdminService {
             userRepository.findById(userId).ifPresent(user -> {
                 user.setIsActive(active);
                 userRepository.save(user);
+
+                // Sync: If locking multiple users, cancel their OPEN projects
+                if (!active) {
+                    List<Project> openProjects = projectRepository.findByUserId(user.getId()).stream()
+                        .filter(p -> ProjectStatus.OPEN.getValue().equals(p.getStatus()))
+                        .toList();
+                    for (Project p : openProjects) {
+                        p.setStatus(ProjectStatus.CANCELLED.getValue());
+                        projectRepository.save(p);
+                    }
+                }
 
                 String statusText = active ? "kích hoạt" : "khóa";
                 notificationService.createNotificationForUser(
@@ -224,6 +246,7 @@ public class AdminService {
         Project project = projectRepository.findById(projectId)
             .orElseThrow(() -> new BusinessException("ERR_PROJECT_01", "Project not found", HttpStatus.NOT_FOUND));
 
+        ensureProjectStateNotContractLocked(project);
         ProjectStatus normalizedStatus = normalizeAdminManagedProjectStatus(status);
 
         project.setStatus(normalizedStatus.getValue());
@@ -242,6 +265,13 @@ public class AdminService {
 
         for (Long projectId : projectIds) {
             projectRepository.findById(projectId).ifPresent(project -> {
+                // Skip if project is already in contract flow to protect active jobs
+                String currentStatus = project.getStatus();
+                if (ProjectStatus.IN_PROGRESS.getValue().equals(currentStatus) ||
+                    ProjectStatus.COMPLETED.getValue().equals(currentStatus)) {
+                    return;
+                }
+
                 project.setStatus(normalizedStatus.getValue());
                 projectRepository.save(project);
 
@@ -272,7 +302,10 @@ public class AdminService {
         request.setStatus("APPROVED");
         User user = userRepository.findById(request.getUserId())
             .orElseThrow(() -> new BusinessException("ERR_USER_01", "User not found", HttpStatus.NOT_FOUND));
+
+        // Double sync: Both verified and kyc_approved fields
         user.setVerified(true);
+        user.setKycApproved(true);
         userRepository.save(user);
 
         notificationService.createNotificationForUser(user.getId(), "system", "Tài khoản đã được xác thực", "Hồ sơ của bạn đã được kiểm duyệt và cấp huy hiệu xác thực.", "/workspace/profile");
@@ -488,6 +521,18 @@ public class AdminService {
             throw new BusinessException("ERR_SYS_02", "Vai trò người dùng không hợp lệ", HttpStatus.BAD_REQUEST);
         }
         return normalizedRole;
+    }
+
+    private void ensureProjectStateNotContractLocked(Project project) {
+        String currentStatus = project.getStatus();
+        if (ProjectStatus.IN_PROGRESS.getValue().equals(currentStatus) ||
+            ProjectStatus.COMPLETED.getValue().equals(currentStatus)) {
+            throw new BusinessException(
+                "ERR_SYS_02",
+                "Không thể thay đổi trạng thái dự án đang thực hiện hoặc đã hoàn thành để bảo vệ tính toàn vẹn của hợp đồng",
+                HttpStatus.BAD_REQUEST
+            );
+        }
     }
 
     private ProjectStatus normalizeAdminManagedProjectStatus(String status) {

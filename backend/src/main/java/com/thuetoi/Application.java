@@ -10,6 +10,7 @@ import org.springframework.data.jpa.repository.config.EnableJpaAuditing;
  */
 @SpringBootApplication(exclude = UserDetailsServiceAutoConfiguration.class)
 @EnableJpaAuditing
+@org.springframework.boot.context.properties.EnableConfigurationProperties(com.thuetoi.config.SePayProperties.class)
 public class Application {
 
     public static void main(String[] args) {

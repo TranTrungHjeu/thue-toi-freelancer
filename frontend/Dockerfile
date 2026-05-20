@@ -5,13 +5,13 @@ WORKDIR /app
 COPY package*.json ./
 
 # Cài đặt tất cả thư viện (có thể dùng npm ci nếu có package-lock)
-RUN npm install
+RUN npm install --legacy-peer-deps
 
 # Copy toàn bộ mã nguồn Frontend
 COPY . .
 
-# Expose port mặc định của máy chủ Vite
-EXPOSE 5173
+# Expose port mặc định của Next.js
+EXPOSE 3000
 
-# Chạy dev server và phát sóng mạng ra 0.0.0.0
-CMD ["npm", "run", "dev", "--", "--host", "0.0.0.0"]
+# Chạy dev server
+CMD ["npm", "run", "dev"]

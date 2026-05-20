@@ -1,5 +1,6 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
+
 import { H1, H2, Text, Caption } from '../common/Typography';
 import Card from '../common/Card';
 import Badge from '../common/Badge';
@@ -72,3 +73,4 @@ const AuthShell = ({ eyebrow, title, description, children, tips = [] }) => {
 };
 
 export default AuthShell;
+

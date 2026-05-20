@@ -1,5 +1,3 @@
-"use client";
-
 import React from 'react';
 import { motion, useAnimation } from "motion/react";
 
@@ -49,3 +47,4 @@ const AnimatedIcon = ({ icon: Icon, animation = 'float', size = 20, className = 
 };
 
 export default AnimatedIcon;
+

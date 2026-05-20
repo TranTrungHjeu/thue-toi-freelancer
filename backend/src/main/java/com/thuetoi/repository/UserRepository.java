@@ -24,6 +24,10 @@ public interface UserRepository extends JpaRepository<User, Long> {
     @EntityGraph(attributePaths = "skills")
     User findByEmail(String email);
 
+    default Optional<User> findByUsername(String username) {
+        return Optional.ofNullable(findByEmail(username));
+    }
+
     @Override
     @EntityGraph(attributePaths = "skills")
     Optional<User> findById(Long id);
@@ -45,6 +49,11 @@ public interface UserRepository extends JpaRepository<User, Long> {
     long countByVerifiedTrue();
 
     List<User> findByRole(String role);
+
+    @Query("SELECT u FROM User u WHERE u.role = 'freelancer' AND u.telegramChatId IS NOT NULL")
+    List<User> findFreelancersWithTelegram();
+
+    Optional<User> findByTelegramChatId(String telegramChatId);
 
     @Query(
         value = """

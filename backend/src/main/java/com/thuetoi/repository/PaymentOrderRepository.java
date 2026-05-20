@@ -1,0 +1,33 @@
+package com.thuetoi.repository;
+
+import com.thuetoi.entity.PaymentOrder;
+import org.springframework.data.jpa.repository.EntityGraph;
+import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
+
+import java.util.List;
+import java.util.Optional;
+import org.springframework.data.jpa.repository.Lock;
+import jakarta.persistence.LockModeType;
+
+public interface PaymentOrderRepository extends JpaRepository<PaymentOrder, Long> {
+
+    @Lock(LockModeType.PESSIMISTIC_WRITE)
+    @Query("SELECT p FROM PaymentOrder p WHERE p.id = :id")
+    Optional<PaymentOrder> findByIdForUpdate(@Param("id") Long id);
+
+    @Query("SELECT p FROM PaymentOrder p LEFT JOIN FETCH p.bid b LEFT JOIN FETCH b.project bp LEFT JOIN FETCH bp.user "
+        + "LEFT JOIN FETCH b.freelancer JOIN FETCH p.customer WHERE p.orderCode = :code")
+    Optional<PaymentOrder> findDetailedByOrderCode(@Param("code") String orderCode);
+
+    Optional<PaymentOrder> findByOrderCode(String orderCode);
+
+    @Query("SELECT p FROM PaymentOrder p JOIN FETCH p.bid WHERE p.projectId = :pid AND p.status IN :st")
+    List<PaymentOrder> findWithBidByProjectIdAndStatusIn(@Param("pid") Long projectId, @Param("st") List<String> statuses);
+
+    List<PaymentOrder> findByProjectIdAndStatusIn(Long projectId, List<String> statuses);
+
+    @EntityGraph(attributePaths = { "customer" })
+    Optional<PaymentOrder> findByOrderCodeAndCustomerId(String orderCode, Long customerId);
+}

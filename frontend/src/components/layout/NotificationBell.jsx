@@ -1,6 +1,8 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { Bell, Check } from 'iconoir-react';
-import { useNavigate, Link } from 'react-router-dom';
+import { Link } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
+
 import { AnimatePresence, motion } from 'motion/react';
 import { useNotifications } from '../../hooks/useNotifications';
 import { useI18n } from '../../hooks/useI18n';
@@ -108,7 +110,7 @@ const NotificationBell = () => {
       >
         <Bell className="h-5 w-5 text-slate-900" />
         {badge && (
-          <span className="absolute -top-0.5 -right-0.5 flex h-5 min-w-[20px] items-center justify-center rounded-full bg-red-500 px-1 text-[10px] font-bold leading-none text-white shadow-sm ring-2 ring-white">
+          <span className="absolute -top-0.5 -right-0.5 flex h-5 min-w-[20px] items-center justify-center rounded-full bg-primary-600 px-1 text-[10px] font-bold leading-none text-white shadow-sm ring-2 ring-white">
             {badge}
           </span>
         )}
@@ -185,3 +187,4 @@ const NotificationBell = () => {
 };
 
 export default NotificationBell;
+

@@ -1,5 +1,3 @@
-"use client";
-
 import React from 'react';
 
 /**
@@ -15,3 +13,4 @@ const Skeleton = ({ width = "w-full", height = "h-4", className = "" }) => {
 };
 
 export default Skeleton;
+

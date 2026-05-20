@@ -1,9 +1,9 @@
-"use client";
-
 import React, { useEffect, useRef, useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
+
 import { AnimatePresence } from 'motion/react';
-import { Bell, LogOut, Page, Settings, User } from 'iconoir-react';
+import { Bell, LogOut, Page, Settings, User, CheckCircleSolid } from 'iconoir-react';
 import { Caption } from '../common/Typography';
 import Avatar from '../common/Avatar';
 import { useAuth } from '../../hooks/useAuth';
@@ -46,7 +46,15 @@ const UserDropdown = ({ user }) => {
       >
         <Avatar size="sm" src={user?.avatarUrl || user?.avatar} />
         <div className="hidden flex-col items-start leading-none pr-2 md:flex">
-          <span className="text-sm font-bold text-secondary-900">{user?.fullName || user?.name || t('common.account')}</span>
+          <span className="flex items-center gap-1 text-sm font-bold text-secondary-900">
+            {user?.fullName || user?.name || t('common.account')}
+            {(user?.kycApproved || user?.verified) && (
+              <CheckCircleSolid
+                className="h-3.5 w-3.5 text-emerald-500 shadow-sm"
+                title={t('status.kyc.approved') || 'Đã xác thực danh tính'}
+              />
+            )}
+          </span>
           <Caption className="text-[10px] uppercase font-bold text-primary-600">{formatRole(user?.role, locale)}</Caption>
         </div>
       </button>
@@ -66,7 +74,7 @@ const UserDropdown = ({ user }) => {
                   <span className="relative flex h-5 w-5 items-center justify-center">
                     <item.icon className="h-5 w-5 text-slate-400" />
                     {item.badge && (
-                      <span className="absolute -right-2 -top-2 min-w-4 border border-white bg-red-500 px-1 text-[9px] font-black leading-4 text-white">
+                      <span className="absolute -right-2 -top-2 min-w-4 rounded-full border border-white bg-primary-600 px-1 text-[9px] font-bold leading-4 text-white">
                         {item.badge}
                       </span>
                     )}
@@ -96,3 +104,4 @@ const UserDropdown = ({ user }) => {
 };
 
 export default UserDropdown;
+

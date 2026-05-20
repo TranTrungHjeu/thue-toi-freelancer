@@ -1,5 +1,3 @@
-"use client";
-
 import React from 'react';
 import { Xmark } from 'iconoir-react';
 
@@ -41,3 +39,4 @@ const Tag = ({
 };
 
 export default Tag;
+

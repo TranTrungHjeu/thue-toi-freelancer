@@ -3,13 +3,10 @@ import { Client } from "@stomp/stompjs";
 import SockJS from "sockjs-client";
 import { useAuth } from "./useAuth";
 import { getAccessToken } from "../api/axiosClient";
+import { getWsBaseUrl } from "../api/realtimeClient";
 
-const API_BASE_URL =
-  import.meta.env.VITE_API_BASE_URL || "/api";
-const DEFAULT_WS_BASE_URL = API_BASE_URL.replace(/\/api\/?$/, "");
-const WS_BASE_URL = (
-  import.meta.env.VITE_WS_BASE_URL || DEFAULT_WS_BASE_URL
-).replace(/\/$/, "");
+const WS_BASE_URL = getWsBaseUrl();
+
 const NOTIFICATION_TOPIC_PREFIX = "/user/queue/notifications";
 
 const parseMessagePayload = (body) => {
@@ -28,10 +25,19 @@ export const useWebSocket = (onMessage, topics = []) => {
   const [isConnected, setIsConnected] = useState(false);
   const [connectionVersion, setConnectionVersion] = useState(0);
   const { user } = useAuth();
-  const normalizedTopics = useMemo(
-    () => [...new Set(topics.filter(Boolean))],
-    [topics],
+
+  const onMessageRef = useRef(onMessage);
+  useEffect(() => {
+    onMessageRef.current = onMessage;
+  }, [onMessage]);
+
+  const serializedTopics = JSON.stringify(
+    [...new Set(topics.filter(Boolean))].sort(),
   );
+
+  const normalizedTopics = useMemo(() => {
+    return JSON.parse(serializedTopics);
+  }, [serializedTopics]);
 
   useEffect(() => {
     if (!user?.id || normalizedTopics.length === 0) {
@@ -39,7 +45,7 @@ export const useWebSocket = (onMessage, topics = []) => {
     }
 
     const client = new Client({
-      webSocketFactory: () => new SockJS(`${WS_BASE_URL}/ws`),
+      webSocketFactory: () => new SockJS(`${WS_BASE_URL}/ws/stomp`),
       beforeConnect: () => {
         const accessToken = getAccessToken();
         client.connectHeaders = accessToken
@@ -52,10 +58,10 @@ export const useWebSocket = (onMessage, topics = []) => {
         setConnectionVersion((version) => version + 1);
         normalizedTopics.forEach((topic) => {
           client.subscribe(topic, (message) => {
-            if (typeof onMessage !== "function") {
+            if (typeof onMessageRef.current !== "function") {
               return;
             }
-            onMessage({
+            onMessageRef.current({
               channel: resolveChannel(topic),
               topic,
               payload: parseMessagePayload(message.body),
@@ -76,7 +82,7 @@ export const useWebSocket = (onMessage, topics = []) => {
       clientRef.current = null;
       setIsConnected(false);
     };
-  }, [normalizedTopics, onMessage, user?.id]);
+  }, [normalizedTopics, user?.id]);
 
   const sendMessage = (destination, body) => {
     if (clientRef.current && isConnected) {

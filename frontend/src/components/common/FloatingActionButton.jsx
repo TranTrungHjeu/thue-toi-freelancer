@@ -1,5 +1,3 @@
-"use client";
-
 import React from 'react';
 import { motion } from 'motion/react';
 import { Plus } from 'iconoir-react';
@@ -37,3 +35,4 @@ const FloatingActionButton = ({
 };
 
 export default FloatingActionButton;
+

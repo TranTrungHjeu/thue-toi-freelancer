@@ -112,3 +112,4 @@ const OtpInput = ({ value = '', onChange, length = 6, label, pasteLabel, error }
 };
 
 export default OtpInput;
+

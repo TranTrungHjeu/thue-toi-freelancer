@@ -1,5 +1,3 @@
-"use client";
-
 import React from 'react';
 import { H2, Caption, Text } from '../common/Typography';
 import { MoreHoriz, Plus } from 'iconoir-react';
@@ -60,3 +58,4 @@ const KanbanBoard = ({ columns = [], className = "" }) => {
 };
 
 export default KanbanBoard;
+

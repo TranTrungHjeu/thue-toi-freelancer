@@ -33,6 +33,8 @@ Demo cần chứng minh được 4 điểm:
    - user lấy từ `GET /api/v1/auth/profile`
    - role đang là `customer`
    - app dùng JWT access token và refresh cookie
+4. Nếu demo OTP, mở màn xác thực email và chỉ ra cooldown/expiry lấy từ `GET /api/v1/auth/verification-otp-status`.
+5. Nếu demo account security, dùng profile để gửi OTP đổi mật khẩu hoặc đổi email, nhấn mạnh backend yêu cầu mật khẩu hiện tại + OTP trước khi cập nhật.
 
 ### Màn 2. Khách hàng tạo project
 
@@ -84,11 +86,13 @@ Demo cần chứng minh được 4 điểm:
 
 1. Mở `Notifications`.
 2. Cho thấy type badge, unread badge ở header/sidebar/bottom nav, filter type/read-state, pagination, mark-as-read, mark-all-read và điều hướng bằng `link`.
-3. Mở cùng user ở 2 tab, mark read ở một tab để demo badge tab còn lại tự sync.
-4. Trigger action ở tab khác để demo realtime update qua WebSocket không cần refresh, ví dụ gửi message, tạo review, rút bid hoặc đổi trạng thái contract.
-5. Nếu có thời gian, tắt/mở lại backend hoặc mô phỏng reconnect rồi cho thấy inbox tự catch-up sau khi socket kết nối lại.
-6. Mở tài khoản `admin@gmail.com` và demo thêm KYC request, report submit hoặc admin broadcast nếu còn thời gian.
-7. Nêu các event đang được phủ:
+3. Nếu UI đang bật, demo archive/delete notification và preferences cho từng type.
+4. Mở cùng user ở 2 tab, mark read ở một tab để demo badge tab còn lại tự sync.
+5. Trigger action ở tab khác để demo realtime update qua WebSocket không cần refresh, ví dụ gửi message, tạo review, rút bid hoặc đổi trạng thái contract.
+6. Nếu có thời gian, tắt/mở lại backend hoặc mô phỏng reconnect rồi cho thấy inbox tự catch-up sau khi socket kết nối lại.
+7. Mở tài khoản `admin@gmail.com` và demo thêm KYC request, report submit hoặc admin broadcast nếu còn thời gian.
+8. Ở admin, mở delivery logs để chứng minh notification được ghi nhận theo channel/trạng thái.
+9. Nêu các event đang được phủ:
    - bid mới
    - bid bị từ chối, bị rút hoặc không được chọn
    - contract mới
