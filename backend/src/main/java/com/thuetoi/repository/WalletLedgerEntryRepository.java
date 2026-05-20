@@ -8,4 +8,6 @@ import java.util.List;
 public interface WalletLedgerEntryRepository extends JpaRepository<WalletLedgerEntry, Long> {
 
     List<WalletLedgerEntry> findByUserIdOrderByCreatedAtDesc(Long userId);
+
+    boolean existsByPaymentOrderIdAndEntryType(Long paymentOrderId, String entryType);
 }

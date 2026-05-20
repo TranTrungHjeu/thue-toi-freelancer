@@ -240,18 +240,20 @@ public class PaymentService {
         PaymentOrder detailed = paymentOrderRepository.findByIdForUpdate(order.getId())
             .orElseThrow(() -> new BusinessException("ERR_PAYMENT_01", "Không tìm thấy đơn thanh toán", HttpStatus.NOT_FOUND));
 
-        if (ST_PAID.equals(detailed.getStatus())) {
-            return; // Nếu đã xử lý thanh toán (PAID) trước đó rồi thì dừng lại ngay để tránh nạp tiền trùng lặp
+        if (!ST_PENDING.equals(detailed.getStatus()) && !ST_PAID.equals(detailed.getStatus())) {
+            return;
         }
 
-        detailed.setStatus(ST_PAID);
-        if (detailed.getPaidAt() == null) {
-            detailed.setPaidAt(LocalDateTime.now());
-        }
-        paymentOrderRepository.save(detailed);
+        if (ST_PENDING.equals(detailed.getStatus())) {
+            detailed.setStatus(ST_PAID);
+            if (detailed.getPaidAt() == null) {
+                detailed.setPaidAt(LocalDateTime.now());
+            }
+            paymentOrderRepository.save(detailed);
 
-        // Notify via WebSocket
-        paymentRealtimePublisher.publishStatusUpdate(detailed.getOrderCode(), ST_PAID, detailed.getProjectId());
+            // Notify via WebSocket
+            paymentRealtimePublisher.publishStatusUpdate(detailed.getOrderCode(), ST_PAID, detailed.getProjectId());
+        }
 
         // Load chi tiết (customer, project, bid) để phục vụ logic nghiệp vụ tiếp theo
         detailed = paymentOrderRepository.findDetailedByOrderCode(detailed.getOrderCode())
@@ -259,7 +261,7 @@ public class PaymentService {
 
         // Phân biệt đơn nạp tiền (deposit) và đơn thanh toán hợp đồng (contract checkout)
         if (detailed.getProjectId() == null) {
-            walletService.deposit(detailed.getCustomer().getId(), detailed.getAmount());
+            walletService.depositFromPaymentOrder(detailed.getCustomer().getId(), detailed.getId(), detailed.getAmount());
             return;
         }
 
@@ -351,12 +353,6 @@ public class PaymentService {
             return;
         }
         if ("Paid".equalsIgnoreCase(s) && ST_PENDING.equals(p.getStatus())) {
-            p.setStatus(ST_PAID);
-            p.setPaidAt(LocalDateTime.now());
-            paymentOrderRepository.save(p);
-
-            paymentRealtimePublisher.publishStatusUpdate(p.getOrderCode(), ST_PAID, p.getProjectId());
-
             afterPaymentReceived(
                 paymentOrderRepository.findByOrderCode(p.getOrderCode()).orElse(p)
             );

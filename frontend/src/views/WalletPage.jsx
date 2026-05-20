@@ -22,6 +22,7 @@ import { H1, H2, Text, Caption } from '../components/common/Typography';
 import { useWalletMe, useWalletLedger, useDepositWallet } from '../hooks/useWallet';
 import { formatCurrency, formatDateTime } from '../utils/formatters';
 import { useToast } from '../hooks/useToast';
+import { usePaymentWebSocket } from '../hooks/usePaymentWebSocket';
 
 const WalletPage = () => {
   const { addToast } = useToast();
@@ -41,12 +42,29 @@ const WalletPage = () => {
   const [actionLoading, setActionLoading] = useState(false);
 
   const [depositOrder, setDepositOrder] = useState(null); // Lưu thông tin đơn SePay
+  const [depositStatus, setDepositStatus] = useState('pending'); // pending | paid | failed | cancelled
+
+  usePaymentWebSocket(depositOrder?.orderCode, (data) => {
+    if (!data?.status) return;
+    setDepositStatus(data.status);
+    if (data.status === 'paid') {
+      addToast('Nạp tiền thành công! Số dư đã được cập nhật.', 'success');
+      refetchWallet();
+      refetchLedger();
+      setTimeout(() => {
+        handleCloseDepositModal();
+      }, 1800);
+    } else if (data.status === 'failed' || data.status === 'cancelled' || data.status === 'expired') {
+      addToast('Đơn nạp tiền không hoàn tất. Vui lòng thử lại.', 'error');
+    }
+  });
 
   // Lắng nghe action từ Dashboard chuyển sang để tự động kích hoạt Modal
   useEffect(() => {
     if (actionParam === 'deposit') {
       setIsDepositOpen(true);
       setDepositOrder(null);
+      setDepositStatus('pending');
 
       // Xóa param action khỏi URL để tránh mở lại modal khi refresh F5
       const newParams = new URLSearchParams(searchParams);
@@ -74,6 +92,7 @@ const WalletPage = () => {
       const response = await depositMutation.mutateAsync(amount);
       // response trả về có dạng { data: { qrCodeUrl, accountNumber, bankName, orderCode, ... } }
       setDepositOrder(response?.data || response);
+      setDepositStatus('pending');
       addToast('Đã tạo mã nạp tiền, vui lòng quét QR để thanh toán', 'success');
     } catch (err) {
       addToast(err?.response?.data?.message || err?.message || 'Nạp tiền thất bại!', 'error');
@@ -86,6 +105,7 @@ const WalletPage = () => {
     setIsDepositOpen(false);
     setDepositAmount('');
     setDepositOrder(null);
+    setDepositStatus('pending');
   };
 
   const handleWithdrawSubmit = async (e) => {
@@ -184,6 +204,7 @@ const WalletPage = () => {
               onClick={() => {
                 setIsDepositOpen(true);
                 setDepositOrder(null);
+                setDepositStatus('pending');
               }}
               className="flex-1 flex items-center justify-center py-2.5 rounded-lg bg-white hover:bg-slate-50 text-emerald-700 font-bold border border-emerald-200 transition-colors"
             >
@@ -354,6 +375,19 @@ const WalletPage = () => {
               </Button>
             </div>
           </form>
+        ) : depositStatus === 'paid' ? (
+          <div className="flex flex-col items-center justify-center py-10 text-center space-y-4">
+            <div className="w-20 h-20 rounded-full bg-emerald-100 flex items-center justify-center">
+              <CheckCircle className="w-12 h-12 text-emerald-600" />
+            </div>
+            <H2 className="text-2xl font-extrabold text-emerald-600">
+              Nạp tiền thành công!
+            </H2>
+            <Text className="text-sm text-slate-600 px-4">
+              Đã cộng <span className="font-bold text-slate-900">{formatCurrency(depositOrder.amount || Number(depositAmount))}</span> vào ví của bạn.
+            </Text>
+            <Text className="text-xs text-slate-400">Cửa sổ này sẽ tự đóng trong giây lát...</Text>
+          </div>
         ) : (
           <div className="flex flex-col items-center justify-center py-6 text-center space-y-6">
             <div className="p-4 bg-white border border-slate-200 shadow-sm rounded-2xl">
