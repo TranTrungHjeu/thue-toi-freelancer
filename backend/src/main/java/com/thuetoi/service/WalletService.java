@@ -91,6 +91,35 @@ public class WalletService {
     }
 
     @Transactional
+    public void depositFromPaymentOrder(Long userId, Long paymentOrderId, BigDecimal amount) {
+        if (walletLedgerEntryRepository.existsByPaymentOrderIdAndEntryType(paymentOrderId, "DEPOSIT")) {
+            return;
+        }
+
+        User user = userRepository.findByIdForUpdate(userId)
+                .orElseThrow(() -> new BusinessException("ERR_AUTH_01", "Người dùng không tồn tại", HttpStatus.NOT_FOUND));
+
+        user.setBalance((user.getBalance() != null ? user.getBalance() : BigDecimal.ZERO).add(amount));
+        userRepository.save(user);
+
+        WalletLedgerEntry entry = new WalletLedgerEntry();
+        entry.setUserId(userId);
+        entry.setPaymentOrderId(paymentOrderId);
+        entry.setAmount(amount);
+        entry.setEntryType("DEPOSIT");
+        entry.setDescription("Nạp tiền vào ví qua SePay");
+        walletLedgerEntryRepository.save(entry);
+
+        notificationService.createNotificationForUser(
+                userId,
+                "system",
+                "Nạp tiền thành công",
+                "Bạn đã nạp thành công " + amount + " VND vào ví.",
+                "/workspace/wallet"
+        );
+    }
+
+    @Transactional
     public void recordEscrowIn(Long customerId, Long contractId, Long paymentOrderId, BigDecimal amount, String projectTitle) {
         User customer = userRepository.findByIdForUpdate(customerId)
                 .orElseThrow(() -> new BusinessException("ERR_AUTH_01", "Người dùng không tồn tại", HttpStatus.NOT_FOUND));
