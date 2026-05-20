@@ -111,7 +111,7 @@ public class BidService {
         User projectOwner = project.getUser();
         telegramBotService.sendNotification(
             projectOwner.getTelegramChatId(),
-            "📩 *Có người ứng tuyển vào dự án của bạn*\n\nDự án: `" + project.getTitle() + "`\nFreelancer: " + resolveUserDisplayName(freelancer, "Freelancer") + "\nGiá đề xuất: " + price + " VND\n\n[Xem báo giá](https://thuetoi.vn/workspace/projects)"
+            "📩 *Có người ứng tuyển vào dự án của bạn*\n\nDự án: `" + project.getTitle() + "`\nFreelancer: " + resolveUserDisplayName(freelancer, "Freelancer") + "\nGiá đề xuất: " + price + " VND\n\n[Xem báo giá](https://thuetoi.id.vn/workspace/projects)"
         );
         return getRequiredBid(createdBid.getId());
     }

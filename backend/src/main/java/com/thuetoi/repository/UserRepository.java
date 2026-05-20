@@ -50,6 +50,11 @@ public interface UserRepository extends JpaRepository<User, Long> {
 
     List<User> findByRole(String role);
 
+    @Query("SELECT u FROM User u WHERE u.role = 'freelancer' AND u.telegramChatId IS NOT NULL")
+    List<User> findFreelancersWithTelegram();
+
+    Optional<User> findByTelegramChatId(String telegramChatId);
+
     @Query(
         value = """
             select distinct u
