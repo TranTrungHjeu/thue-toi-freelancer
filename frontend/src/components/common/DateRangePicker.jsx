@@ -1,5 +1,3 @@
-"use client";
-
 import React from 'react';
 import { Calendar, ArrowRight } from 'iconoir-react';
 import { Caption } from './Typography';
@@ -41,3 +39,4 @@ const DateRangePicker = ({
 };
 
 export default DateRangePicker;
+

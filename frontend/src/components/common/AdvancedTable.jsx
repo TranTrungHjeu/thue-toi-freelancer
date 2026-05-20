@@ -1,5 +1,3 @@
-"use client";
-
 import React, { useState } from 'react';
 import { NavArrowLeft, NavArrowRight, SortDown, SortUp } from 'iconoir-react';
 import Button from './Button';
@@ -10,14 +8,17 @@ import { useI18n } from '../../hooks/useI18n';
  * Advanced Table with Pagination and Sorting capability.
  * Strictly sharp, professional layout.
  */
-const AdvancedTable = ({ 
+const AdvancedTable = ({
   headers = [],
-  data = [], 
+  data = [],
   pageSize = 5,
   className = "",
   selectedIds = [],
   onSelectionChange = null,
-  rowIdKey = "id"
+  rowIdKey = "id",
+  onRowClick = null,
+  onRowContextMenu = null,
+  rowClassName = null
 }) => {
   const { t } = useI18n();
   const [currentPage, setCurrentPage] = useState(1);
@@ -79,8 +80,8 @@ const AdvancedTable = ({
             <tr>
               {onSelectionChange && (
                 <th className="px-6 py-4 w-10">
-                  <input 
-                    type="checkbox" 
+                  <input
+                    type="checkbox"
                     className="w-4 h-4 rounded border-slate-300 text-primary-600 focus:ring-primary-500 cursor-pointer"
                     onChange={handleSelectAll}
                     checked={paginatedData.length > 0 && paginatedData.every(item => selectedIds.includes(item[rowIdKey]))}
@@ -88,7 +89,7 @@ const AdvancedTable = ({
                 </th>
               )}
               {headers.map((header) => (
-                <th 
+                <th
                   key={header.key}
                   onClick={() => header.sortable && requestSort(header.key)}
                   className={`
@@ -108,17 +109,20 @@ const AdvancedTable = ({
           </thead>
           <tbody>
             {paginatedData.map((row, idx) => (
-              <tr 
-                key={idx} 
+              <tr
+                key={idx}
+                onClick={(e) => onRowClick && onRowClick(e, row)}
+                onContextMenu={(e) => onRowContextMenu && onRowContextMenu(e, row)}
                 className={`
                   border-b border-slate-50 hover:bg-slate-50/50 transition-colors
                   ${selectedIds.includes(row[rowIdKey]) ? '!bg-primary-50/50' : ''}
+                  ${rowClassName ? (typeof rowClassName === 'function' ? rowClassName(row) : rowClassName) : ''}
                 `}
               >
                 {onSelectionChange && (
                   <td className="px-6 py-4">
-                    <input 
-                      type="checkbox" 
+                    <input
+                      type="checkbox"
                       className="w-4 h-4 rounded border-slate-300 text-primary-600 focus:ring-primary-500 cursor-pointer"
                       checked={selectedIds.includes(row[rowIdKey])}
                       onChange={() => handleSelectRow(row[rowIdKey])}
@@ -146,9 +150,9 @@ const AdvancedTable = ({
             })}
           </Caption>
           <div className="flex gap-1">
-            <Button 
-              variant="outline" 
-              className="p-2 min-w-0" 
+            <Button
+              variant="outline"
+              className="p-2 min-w-0"
               disabled={currentPage === 1}
               onClick={() => setCurrentPage(prev => prev - 1)}
             >
@@ -164,9 +168,9 @@ const AdvancedTable = ({
                 {page}
               </Button>
             ))}
-            <Button 
-              variant="outline" 
-              className="p-2 min-w-0" 
+            <Button
+              variant="outline"
+              className="p-2 min-w-0"
               disabled={currentPage === totalPages}
               onClick={() => setCurrentPage(prev => prev + 1)}
             >
@@ -180,3 +184,4 @@ const AdvancedTable = ({
 };
 
 export default AdvancedTable;
+

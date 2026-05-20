@@ -1,7 +1,5 @@
-"use client";
-
 import React from 'react';
-import Link from 'next/link';
+import { Link } from 'react-router-dom';
 
 import { H1, H2, Text, Caption } from '../common/Typography';
 import Card from '../common/Card';
@@ -12,7 +10,7 @@ const AuthShell = ({ eyebrow, title, description, children, tips = [] }) => {
     <div className="min-h-screen bg-[linear-gradient(180deg,#f8fafc_0%,#f1f5f9_55%,#ecfccb_100%)]">
       <header className="border-b border-slate-200 bg-white/90 backdrop-blur-sm">
         <div className="mx-auto flex max-w-6xl items-center justify-between px-4 py-4 md:px-6">
-          <Link href="/" className="flex items-center gap-3">
+          <Link to="/" className="flex items-center gap-3">
             <div className="border-2 border-secondary-900 bg-secondary-900 px-3 py-1 text-sm font-black uppercase tracking-[0.24em] text-white">
               TT
             </div>
@@ -27,10 +25,10 @@ const AuthShell = ({ eyebrow, title, description, children, tips = [] }) => {
           </Link>
 
           <div className="flex items-center gap-3 text-sm font-semibold text-slate-600">
-            <Link href="/gallery" className="border-2 border-transparent px-3 py-2 hover:border-slate-200 hover:bg-white">
+            <Link to="/gallery" className="border-2 border-transparent px-3 py-2 hover:border-slate-200 hover:bg-white">
               Thư viện
             </Link>
-            <Link href="/api-lab" className="border-2 border-transparent px-3 py-2 hover:border-slate-200 hover:bg-white">
+            <Link to="/api-lab" className="border-2 border-transparent px-3 py-2 hover:border-slate-200 hover:bg-white">
               Phòng thử API
             </Link>
           </div>
@@ -75,3 +73,4 @@ const AuthShell = ({ eyebrow, title, description, children, tips = [] }) => {
 };
 
 export default AuthShell;
+

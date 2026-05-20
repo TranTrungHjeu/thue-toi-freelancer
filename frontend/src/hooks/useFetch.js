@@ -1,5 +1,3 @@
-"use client";
-
 import { useState, useCallback } from 'react';
 import axiosClient from '../api/axiosClient';
 import { createApiError } from '../utils/apiError';
@@ -53,3 +51,4 @@ export const useFetch = () => {
 };
 
 export default useFetch;
+

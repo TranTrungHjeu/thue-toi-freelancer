@@ -47,3 +47,4 @@ export function clearAiChatHistoryForUser(userId) {
     sessionStorage.removeItem(key);
   }
 }
+

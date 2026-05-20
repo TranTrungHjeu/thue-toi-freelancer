@@ -1,7 +1,4 @@
-"use client";
-
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
-import { useRouter } from 'next/navigation';
 import Card from '../components/common/Card';
 import Button from '../components/common/Button';
 import Input from '../components/common/Input';
@@ -13,10 +10,10 @@ import SearchInput from '../components/common/SearchInput';
 import Select from '../components/common/Select';
 import TagInput from '../components/common/TagInput';
 import FileUpload from '../components/common/FileUpload';
-import Modal from '../components/common/Modal';
 import StatMetricCard from '../components/common/StatMetricCard';
 import InfoPanel from '../components/common/InfoPanel';
 import Spinner from '../components/common/Spinner';
+import BidStatusStepper from '../components/common/BidStatusStepper';
 import { H1, H2, Text, Caption } from '../components/common/Typography';
 import { useAuth } from '../hooks/useAuth';
 import { useToast } from '../hooks/useToast';
@@ -33,8 +30,30 @@ import {
 } from '../utils/formatters';
 import { formatAttachmentSize, normalizeAttachments } from '../utils/attachments';
 import { splitApiFormError } from '../utils/formError';
+import Modal from '../components/common/Modal';
 import ReportModal from '../components/common/ReportModal';
-import { WarningTriangle } from 'iconoir-react';
+import PaymentConfirmationModal from '../components/common/PaymentConfirmationModal';
+import BidSelectionModal from '../components/common/BidSelectionModal';
+import PaymentReceiptModal from '../components/common/PaymentReceiptModal';
+import BidComparison from '../components/common/BidComparison';
+import VideoCallModal from '../components/common/VideoCallModal';
+import { usePaymentWebSocket } from '../hooks/usePaymentWebSocket';
+import {
+  WarningTriangle,
+  PageSearch,
+  Phone,
+  VideoCamera,
+  StatsUpSquare,
+  ArrowRight,
+  ArrowLeft,
+  CheckCircle,
+  CheckCircleSolid,
+  Clock,
+  Attachment,
+  User,
+  Activity,
+  Plus
+} from 'iconoir-react';
 
 const initialProjectForm = {
   title: '',
@@ -89,7 +108,7 @@ const getProjectsSupplementaryCopy = (locale) => {
     projectSkillsSuggestions: 'Gợi ý từ danh mục kỹ năng',
     invalidSkillMessage: 'Kỹ năng này chưa có trong danh mục dùng chung.',
     marketplaceFiltersTitle: 'Tìm kiếm trên marketplace',
-    marketplaceFiltersDescription: 'Kết hợp trạng thái và kỹ năng, sau đó lọc theo từ khóa ngay trên giao diện để thu hẹp danh sách nhanh hơn.',
+    marketplaceFiltersDescription: 'Lọc nhanh theo từ khóa, trạng thái và kỹ năng ngay trên giao diện để thu hẹp danh sách nhanh hơn.',
     marketplaceSearchPlaceholder: 'Tìm theo tiêu đề, mô tả, kỹ năng hoặc chủ dự án',
     marketplaceStatusLabel: 'Trạng thái',
     marketplaceSkillsLabel: 'Lọc theo kỹ năng',
@@ -112,6 +131,27 @@ const normalizeSkillNames = (skills) =>
   Array.isArray(skills)
     ? [...new Set(skills.map((skill) => `${skill || ''}`.trim()).filter(Boolean))]
     : [];
+
+const getCoverImageBySkills = (skills) => {
+  const skillNames = normalizeSkillNames(skills).map((s) => s.toLowerCase());
+
+  if (skillNames.some((s) => s.includes('design') || s.includes('ui') || s.includes('ux'))) {
+    return '/images/covers/design.webp';
+  }
+  if (skillNames.some((s) => s.includes('develop') || s.includes('code') || s.includes('program') || s.includes('javascript') || s.includes('react') || s.includes('node'))) {
+    return '/images/covers/development.webp';
+  }
+  if (skillNames.some((s) => s.includes('video') || s.includes('edit') || s.includes('motion'))) {
+    return '/images/covers/video.webp';
+  }
+  if (skillNames.some((s) => s.includes('marketing') || s.includes('seo') || s.includes('social'))) {
+    return '/images/covers/marketing.webp';
+  }
+  if (skillNames.some((s) => s.includes('writing') || s.includes('content') || s.includes('copy'))) {
+    return '/images/covers/writing.webp';
+  }
+  return '/images/covers/default.webp';
+};
 
 const matchesProjectKeyword = (project, keyword) => {
   const normalizedKeyword = `${keyword || ''}`.trim().toLowerCase();
@@ -168,7 +208,7 @@ const AttachmentLinks = ({ attachments, caption }) => {
   return (
     <div className="mt-4 flex flex-col gap-2">
       {caption && (
-        <Caption className="text-[11px] uppercase tracking-[0.18em] text-slate-500">
+        <Caption className="text-[10px] uppercase tracking-[0.18em] text-slate-400 font-semibold">
           {caption}
         </Caption>
       )}
@@ -178,11 +218,14 @@ const AttachmentLinks = ({ attachments, caption }) => {
             key={`${attachment.url}-${index}`}
             href={attachment.url}
             target="_blank"
-            rel="noreferrer"
-            className="border border-slate-300 bg-white px-3 py-2 text-xs font-semibold text-primary-700 underline-offset-2 hover:border-primary-500 hover:underline"
+            rel="noopener noreferrer"
+            className="inline-flex items-center gap-1.5 border border-slate-200 bg-white px-3 py-1.5 rounded-lg text-xs font-semibold text-primary-700 shadow-sm transition-all duration-200 hover:border-primary-500 hover:bg-slate-50 underline-offset-2 hover:underline"
           >
-            {attachment.name}
-            {formatAttachmentSize(attachment.size) ? ` - ${formatAttachmentSize(attachment.size)}` : ''}
+            <Attachment className="w-3.5 h-3.5 text-slate-400" />
+            <span className="truncate max-w-[180px]">{attachment.name}</span>
+            {formatAttachmentSize(attachment.size) ? (
+              <span className="text-[10px] text-slate-400 font-normal">({formatAttachmentSize(attachment.size)})</span>
+            ) : null}
           </a>
         ))}
       </div>
@@ -201,8 +244,13 @@ const buildProjectUpdatePayload = (project, statusOverride) => ({
   attachments: normalizeAttachments(project.attachments),
 });
 
+const GLASS_CARD_CLASS =
+  'border border-slate-200/80 bg-white/95 backdrop-blur-sm rounded-2xl shadow-[0_18px_45px_rgba(15,23,42,0.08)]';
+const SECTION_HEADER_CAPTION_CLASS =
+  'text-[10px] uppercase tracking-[0.2em] text-primary-700 font-bold';
+const SECTION_HEADER_TITLE_CLASS = 'mt-1 text-2xl font-bold text-slate-900 tracking-tight';
+
 const ProjectsPage = () => {
-  const router = useRouter();
   const { user } = useAuth();
   const { addToast } = useToast();
   const { locale, t } = useI18n();
@@ -217,45 +265,105 @@ const ProjectsPage = () => {
   const [skillCatalog, setSkillCatalog] = useState([]);
   const [loadingSkillCatalog, setLoadingSkillCatalog] = useState(false);
   const [selectedProject, setSelectedProject] = useState(null);
-  const [isQuotationModalOpen, setIsQuotationModalOpen] = useState(false);
-  const [isQuotationLoading, setIsQuotationLoading] = useState(false);
-  const [quotations, setQuotations] = useState([]);
-  const [quotationError, setQuotationError] = useState('');
+  const [selectedProjectBids, setSelectedProjectBids] = useState([]);
   const [submittingProject, setSubmittingProject] = useState(false);
   const [submittingBid, setSubmittingBid] = useState(false);
   const [projectFieldErrors, setProjectFieldErrors] = useState({});
   const [projectFormError, setProjectFormError] = useState('');
   const [bidFieldErrors, setBidFieldErrors] = useState({});
   const [bidFormError, setBidFormError] = useState('');
-  const visibleQuotationLoading = useMinimumLoadingState(isQuotationLoading, 500);
+  const [loadingProjectBids, setLoadingProjectBids] = useState(false);
+  const visibleProjectBidsLoading = useMinimumLoadingState(loadingProjectBids, 500);
   const [editingProjectId, setEditingProjectId] = useState(null);
   const [projectActionId, setProjectActionId] = useState(null);
   const [bidActionId, setBidActionId] = useState(null);
-  const [isConfirmModalOpen, setIsConfirmModalOpen] = useState(false);
-  const [isQrModalOpen, setIsQrModalOpen] = useState(false);
-  const [isPaymentLoading, setIsPaymentLoading] = useState(false);
-  const [paymentQrData, setPaymentQrData] = useState(null);
-  const [paymentError, setPaymentError] = useState('');
-  const [pendingCheckoutBidId, setPendingCheckoutBidId] = useState(null);
+  const [activePayment, setActivePayment] = useState(null);
   const [marketplaceSearchTerm, setMarketplaceSearchTerm] = useState('');
   const [marketplaceStatus, setMarketplaceStatus] = useState('open');
   const [marketplaceSkills, setMarketplaceSkills] = useState([]);
-  
+  const [isBidComposerOpen, setIsBidComposerOpen] = useState(false);
+  const [isMyBidsOpen, setIsMyBidsOpen] = useState(false);
+  const [isBidComposerLeaving, setIsBidComposerLeaving] = useState(false);
+  const [isMyBidsLeaving, setIsMyBidsLeaving] = useState(false);
+
+  // Client Modals
+  const [isProjectComposerOpen, setIsProjectComposerOpen] = useState(false);
+  const [isProjectComposerLeaving, setIsProjectComposerLeaving] = useState(false);
+  const [isBidsViewOpen, setIsBidsViewOpen] = useState(false);
+  const [isBidsViewLeaving, setIsBidsViewLeaving] = useState(false);
+
+  const openProjectComposer = () => {
+    resetProjectComposer();
+    setIsProjectComposerLeaving(false);
+    setIsProjectComposerOpen(true);
+  };
+
+  const closeProjectComposer = () => {
+    setIsProjectComposerLeaving(true);
+    setTimeout(() => {
+      setIsProjectComposerOpen(false);
+      setIsProjectComposerLeaving(false);
+    }, 180);
+  };
+
+  const openBidsView = async (project) => {
+    setSelectedProject(project);
+    setIsBidsViewLeaving(false);
+    setIsBidsViewOpen(true);
+    await loadProjectBids(project);
+  };
+
+  const closeBidsView = () => {
+    setIsBidsViewLeaving(true);
+    setTimeout(() => {
+      setIsBidsViewOpen(false);
+      setIsBidsViewLeaving(false);
+      setSelectedProject(null);
+    }, 180);
+  };
+
+  const closeBidComposer = () => {
+    setIsBidComposerLeaving(true);
+    setTimeout(() => {
+      setIsBidComposerOpen(false);
+      setIsBidComposerLeaving(false);
+      setSelectedProject(null);
+    }, 180);
+  };
+
+  const closeMyBids = () => {
+    setIsMyBidsLeaving(true);
+    setTimeout(() => {
+      setIsMyBidsOpen(false);
+      setIsMyBidsLeaving(false);
+    }, 180);
+  };
+
+  // Client Wizard Form Step (1: Basic, 2: Budget/Date, 3: Skills/Attachments)
+  const [formStep, setFormStep] = useState(1);
+
   // Report Modal State
   const [isReportModalOpen, setIsReportModalOpen] = useState(false);
   const [projectToReport, setProjectToReport] = useState(null);
 
+  // Structured Payment Flow States
+  const [showBidSelection, setShowBidSelection] = useState(false);
+  const [showPaymentConfirmation, setShowPaymentConfirmation] = useState(false);
+  const [showPaymentReceipt, setShowPaymentReceipt] = useState(false);
+  const [showBidComparison, setShowBidComparison] = useState(false);
+  const [selectedBidForCheckout, setSelectedBidForCheckout] = useState(null);
+  const [paymentResultData, setPaymentResultData] = useState(null);
+
+  // Call Modal State
+  const [isCallOpen, setIsCallOpen] = useState(false);
+  const [callRoomName, setCallRoomName] = useState('');
+  const [callDisplayName, setCallDisplayName] = useState('');
+  const [createdContractData, setCreatedContractData] = useState(null);
+  const [checkoutLoading, setCheckoutLoading] = useState(false);
+
   const isCustomer = user?.role === 'customer';
 
   const paymentStorageKey = useCallback((projectId) => `thuetoi:payment:${projectId}`, []);
-  const resetPaymentFlow = useCallback(() => {
-    setIsConfirmModalOpen(false);
-    setIsQrModalOpen(false);
-    setIsPaymentLoading(false);
-    setPaymentQrData(null);
-    setPaymentError('');
-    setPendingCheckoutBidId(null);
-  }, []);
 
   const loadSkillCatalog = useCallback(async () => {
     setLoadingSkillCatalog(true);
@@ -301,32 +409,19 @@ const ProjectsPage = () => {
     }
   }, [addToast, isCustomer, marketplaceSkills, marketplaceStatus, t, user?.id]);
 
-  const loadProjectBids = useCallback(async (project, options = {}) => {
-    if (!project?.id) {
-      return;
-    }
-
-    const { force = false } = options;
-    const sameProject = selectedProject?.id === project.id;
-    const hasQuotations = sameProject && quotations.length > 0;
-
+  const loadProjectBids = useCallback(async (project) => {
     setSelectedProject(project);
-    setQuotationError('');
-    if (!force && hasQuotations) {
-      return;
-    }
+    setLoadingProjectBids(true);
 
-    setIsQuotationLoading(true);
     try {
       const response = await marketplaceApi.getBidsByProject(project.id);
-      setQuotations(response.data || []);
+      setSelectedProjectBids(response.data || []);
     } catch (error) {
-      setQuotations([]);
-      setQuotationError(error?.message || t('toasts.projects.loadBidsError'));
+      addToast(error?.message || t('toasts.projects.loadBidsError'), 'error');
     } finally {
-      setIsQuotationLoading(false);
+      setLoadingProjectBids(false);
     }
-  }, [quotations.length, selectedProject?.id, t]);
+  }, [addToast, t]);
 
   useEffect(() => {
     loadPageData();
@@ -353,11 +448,7 @@ const ProjectsPage = () => {
           return;
         }
         if (p.status === 'pending' || p.status === 'paid') {
-          setPaymentQrData({ ...p, projectId: selectedProject.id });
-          if (p.status === 'pending') {
-            setIsQrModalOpen(true);
-          }
-          setPaymentError('');
+          setActivePayment({ ...p, projectId: selectedProject.id });
         }
         if (p.status === 'cancelled' || p.status === 'expired' || p.status === 'failed') {
           sessionStorage.removeItem(paymentStorageKey(selectedProject.id));
@@ -374,39 +465,24 @@ const ProjectsPage = () => {
     };
   }, [isCustomer, selectedProject?.id, selectedProject?.status, paymentStorageKey]);
 
-  useEffect(() => {
-    if (!paymentQrData?.orderCode || paymentQrData.status !== 'pending') {
-      return undefined;
-    }
-    const timer = setInterval(async () => {
-      try {
-        const r = await marketplaceApi.getPaymentByOrderCode(paymentQrData.orderCode);
-        const p = r?.data;
-        if (p) {
-          setPaymentQrData((prev) => {
-            if (!prev || prev.orderCode !== p.orderCode) {
-              return prev;
-            }
-            return { ...prev, ...p, projectId: prev.projectId };
-          });
+  const handleWebSocketStatusChange = useCallback(async (data) => {
+    if (data.orderCode === activePayment?.orderCode) {
+      setActivePayment((prev) => ({ ...prev, ...data }));
+
+      if (data.status === 'paid') {
+        if (activePayment.projectId) {
+          sessionStorage.removeItem(paymentStorageKey(activePayment.projectId));
         }
-        if (p?.status === 'paid') {
-          if (paymentQrData.projectId) {
-            sessionStorage.removeItem(paymentStorageKey(paymentQrData.projectId));
-          }
-          setIsQrModalOpen(false);
-          setPaymentQrData(null);
-          setPaymentError('');
-          addToast(copy.projectBids.paymentPaidToast, 'success');
-          await loadPageData();
-          router.push('/workspace');
-        }
-      } catch {
-        // ignore
+        addToast(copy.projectBids.paymentPaidToast, 'success');
+        await loadPageData();
       }
-    }, 3000);
-    return () => clearInterval(timer);
-  }, [paymentQrData?.orderCode, paymentQrData?.status, paymentQrData?.projectId, addToast, copy.projectBids.paymentPaidToast, loadPageData, paymentStorageKey, router]);
+    }
+  }, [activePayment?.orderCode, activePayment?.projectId, addToast, copy.projectBids.paymentPaidToast, loadPageData, paymentStorageKey]);
+
+  usePaymentWebSocket(
+    activePayment?.status === 'pending' ? activePayment?.orderCode : null,
+    handleWebSocketStatusChange
+  );
 
   const customerProjectSummary = useMemo(() => {
     return projects.reduce((accumulator, project) => {
@@ -476,6 +552,7 @@ const ProjectsPage = () => {
     setEditingProjectId(null);
     setProjectFieldErrors({});
     setProjectFormError('');
+    setFormStep(1);
   };
 
   const startEditingProject = (project) => {
@@ -492,10 +569,53 @@ const ProjectsPage = () => {
     });
     setProjectFieldErrors({});
     setProjectFormError('');
+    setFormStep(1);
+    setIsProjectComposerLeaving(false);
+    setIsProjectComposerOpen(true);
+  };
+
+  const validateStep = (step) => {
+    const errors = {};
+    if (step === 1) {
+      if (!projectForm.title.trim()) {
+        errors.title = copy.customerComposer.titleLabel + ' is required';
+      }
+      if (!projectForm.description.trim()) {
+        errors.description = copy.customerComposer.descriptionLabel + ' is required';
+      }
+    } else if (step === 2) {
+      if (!projectForm.budgetMin) {
+        errors.budgetMin = copy.customerComposer.budgetMinLabel + ' is required';
+      }
+      if (!projectForm.budgetMax) {
+        errors.budgetMax = copy.customerComposer.budgetMaxLabel + ' is required';
+      }
+      if (Number(projectForm.budgetMin) > Number(projectForm.budgetMax)) {
+        errors.budgetMax = 'Tối đa phải lớn hơn hoặc bằng Tối thiểu';
+      }
+    }
+    setProjectFieldErrors(errors);
+    return Object.keys(errors).length === 0;
+  };
+
+  const handleNextStep = () => {
+    if (validateStep(formStep)) {
+      setFormStep((prev) => prev + 1);
+    }
+  };
+
+  const handlePrevStep = () => {
+    setFormStep((prev) => prev - 1);
   };
 
   const handleSubmitProject = async (event) => {
-    event.preventDefault();
+    if (event) {
+      event.preventDefault();
+    }
+    if (!validateStep(formStep)) {
+      return;
+    }
+
     setSubmittingProject(true);
     setProjectFieldErrors({});
     setProjectFormError('');
@@ -528,6 +648,7 @@ const ProjectsPage = () => {
       }
       resetProjectComposer();
       await loadPageData();
+      closeProjectComposer();
     } catch (error) {
       const { fieldErrors, formError } = splitApiFormError(error, t('toasts.projects.saveError'));
       setProjectFieldErrors(fieldErrors);
@@ -556,78 +677,153 @@ const ProjectsPage = () => {
     }
   };
 
-  const handleStartCheckoutBid = (bidId) => {
-    setPendingCheckoutBidId(bidId);
-    setPaymentError('');
-    setIsConfirmModalOpen(true);
+  const handleSelectBidForCheckout = (bid) => {
+    setSelectedBidForCheckout(bid);
+    setShowBidSelection(true);
   };
 
-  const handleConfirmCheckoutBid = async () => {
-    if (!pendingCheckoutBidId) {
-      return;
-    }
-
-    const bidId = pendingCheckoutBidId;
-    setBidActionId(bidId);
-    setIsConfirmModalOpen(false);
-    setIsQrModalOpen(true);
-    setIsPaymentLoading(true);
-    setPaymentError('');
-
+  const handleConfirmCheckout = async (paymentMethod = 'sepay') => {
+    if (!selectedBidForCheckout) return;
+    setCheckoutLoading(true);
     try {
-      const response = await marketplaceApi.checkoutBid(bidId);
-      const payment = response?.data;
-      if (payment?.orderCode && selectedProject?.id) {
-        sessionStorage.setItem(paymentStorageKey(selectedProject.id), payment.orderCode);
-        setPaymentQrData({ ...payment, projectId: selectedProject.id });
+      if (paymentMethod === 'wallet') {
+        // Direct wallet payment
+        await marketplaceApi.payBidWithWallet(selectedBidForCheckout.id);
+        setPaymentResultData({
+          orderCode: `WALLET-${Date.now()}`,
+          amount: selectedBidForCheckout.price,
+          method: 'Ví điện tử',
+          status: 'paid',
+          createdAt: new Date()
+        });
+        addToast('Thanh toán thành công từ ví! Hợp đồng đã được tạo.', 'success');
+        setShowBidSelection(false);
+        await handlePaymentSuccess(); // This will show the receipt
       } else {
-        setPaymentQrData(null);
-        setPaymentError(copy.projectBids.paymentGenerateError);
+        // SePay (Bank Transfer) flow
+        const response = await marketplaceApi.checkoutBid(selectedBidForCheckout.id);
+        const payment = response?.data;
+        if (payment?.orderCode && selectedProject?.id) {
+          sessionStorage.setItem(paymentStorageKey(selectedProject.id), payment.orderCode);
+          setActivePayment({ ...payment, projectId: selectedProject.id });
+          setPaymentResultData({ ...payment, projectId: selectedProject.id });
+          setShowBidSelection(false);
+          setShowPaymentConfirmation(true);
+        }
       }
-      addToast(copy.projectBids.checkoutSuccess, 'success');
+
       await loadPageData();
       if (selectedProject) {
         const refreshed = (await marketplaceApi.getMyProjects())?.data || [];
         const next = refreshed.find((p) => p.id === selectedProject.id) || { ...selectedProject, status: 'pending_payment' };
         setSelectedProject(next);
-        await loadProjectBids(next, { force: true });
+        await loadProjectBids(next);
       }
     } catch (error) {
-      const message = error?.message || copy.projectBids.paymentGenerateError;
-      setPaymentQrData(null);
-      setPaymentError(message);
-      addToast(message, 'error');
+      addToast(error?.response?.data?.message || error?.message || t('toasts.projects.acceptError'), 'error');
     } finally {
-      setIsPaymentLoading(false);
-      setBidActionId(null);
-      setPendingCheckoutBidId(null);
+      setCheckoutLoading(false);
+    }
+  };
+
+  const handlePaymentSuccess = async () => {
+    setShowPaymentConfirmation(false);
+
+    // Fetch newly created contract for the project
+    try {
+      const contractsRes = await marketplaceApi.getMyContracts();
+      const contract = (contractsRes.data || []).find(c => c.projectId === selectedProject?.id);
+      setCreatedContractData({
+        id: contract?.id || 'NEW_CONTRACT',
+        projectTitle: selectedProject?.title || 'Dự án',
+        freelancerName: selectedBidForCheckout?.freelancer?.fullName || 'Freelancer',
+        startDate: new Date()
+      });
+      setShowPaymentReceipt(true);
+    } catch (e) {
+      console.error(e);
+      // Fallback
+      setCreatedContractData({
+        id: 'NEW_CONTRACT',
+        projectTitle: selectedProject?.title || 'Dự án',
+        freelancerName: selectedBidForCheckout?.freelancer?.fullName || 'Freelancer',
+        startDate: new Date()
+      });
+      setShowPaymentReceipt(true);
+    }
+  };
+
+  const handleStartCall = (isVideo) => {
+    if (!selectedProject) return;
+    const roomName = `thuetoi-contract-${selectedProject.id}`;
+    const displayName = user?.fullName || `Người dùng #${user?.id}`;
+    setCallRoomName(roomName);
+    setCallDisplayName(displayName);
+    setIsCallOpen(true);
+
+    const callType = isVideo ? 'Video' : 'Thoại';
+    const messageContent = `[CALL_INVITATION] ${callType}`;
+
+    marketplaceApi.sendMessage({
+      contractId: selectedProject.id, // Assuming project workspace maps to a contract
+      messageType: 'text',
+      content: messageContent,
+      attachments: []
+    }).then(() => {
+      loadProjectBids(selectedProject);
+    }).catch((err) => {
+      console.error('Error sending call notification message:', err);
+    });
+  };
+
+  const handlePaymentFailed = () => {
+    addToast('Thanh toán thất bại, vui lòng thử lại!', 'error');
+  };
+
+  const handleCheckoutBid = async (bidId) => {
+    // Legacy support: finding the bid from the project bids list
+    const bid = selectedProjectBids.find(b => b.id === bidId);
+    if (bid) {
+      handleSelectBidForCheckout(bid);
+    } else {
+      setBidActionId(bidId);
+      try {
+        const response = await marketplaceApi.checkoutBid(bidId);
+        const payment = response?.data;
+        if (payment?.orderCode && selectedProject?.id) {
+          sessionStorage.setItem(paymentStorageKey(selectedProject.id), payment.orderCode);
+          setActivePayment({ ...payment, projectId: selectedProject.id });
+          setPaymentResultData({ ...payment, projectId: selectedProject.id });
+          setShowPaymentConfirmation(true);
+        }
+        await loadPageData();
+      } catch (error) {
+        addToast(error?.message || t('toasts.projects.acceptError'), 'error');
+      } finally {
+        setBidActionId(null);
+      }
     }
   };
 
   const handleCancelActivePayment = async () => {
-    if (!paymentQrData?.orderCode) {
-      resetPaymentFlow();
+    if (!activePayment?.orderCode) {
       return;
     }
-    setIsPaymentLoading(true);
     try {
-      await marketplaceApi.cancelPaymentByOrderCode(paymentQrData.orderCode);
-      if (paymentQrData.projectId) {
-        sessionStorage.removeItem(paymentStorageKey(paymentQrData.projectId));
+      await marketplaceApi.cancelPaymentByOrderCode(activePayment.orderCode);
+      if (activePayment.projectId) {
+        sessionStorage.removeItem(paymentStorageKey(activePayment.projectId));
       }
-      resetPaymentFlow();
-      addToast(t('toasts.projects.cancelSuccess'), 'success');
+      setActivePayment(null);
       await loadPageData();
       if (selectedProject) {
         const refreshed = (await marketplaceApi.getMyProjects())?.data || [];
         const next = refreshed.find((p) => p.id === selectedProject.id) || selectedProject;
         setSelectedProject(next);
-        await loadProjectBids(next, { force: true });
+        await loadProjectBids(next);
       }
     } catch (error) {
       addToast(error?.message || t('toasts.projects.cancelError'), 'error');
-    } finally {
-      setIsPaymentLoading(false);
     }
   };
 
@@ -637,7 +833,7 @@ const ProjectsPage = () => {
       await marketplaceApi.updateBidStatus(bidId, 'rejected');
       addToast(t('toasts.projects.rejectSuccess'), 'success');
       if (selectedProject) {
-        await loadProjectBids(selectedProject, { force: true });
+        await loadProjectBids(selectedProject);
       }
       await loadPageData();
     } catch (error) {
@@ -662,9 +858,25 @@ const ProjectsPage = () => {
 
   const handleSubmitBid = async (event) => {
     event.preventDefault();
+
+    const fieldErrors = {};
     if (!selectedProject) {
       addToast(t('toasts.projects.selectProjectWarning'), 'warning');
-      return;
+      return false;
+    }
+    if (!bidForm.price || Number(bidForm.price) <= 0) {
+      fieldErrors.price = 'Vui lòng nhập mức giá đề xuất hợp lệ';
+    }
+    if (!bidForm.estimatedTime.trim()) {
+      fieldErrors.estimatedTime = 'Vui lòng nhập thời gian hoàn thành dự kiến';
+    }
+    if (!bidForm.message.trim()) {
+      fieldErrors.message = 'Vui lòng nhập nội dung thư giới thiệu';
+    }
+
+    if (Object.keys(fieldErrors).length > 0) {
+      setBidFieldErrors(fieldErrors);
+      return false;
     }
 
     setSubmittingBid(true);
@@ -688,10 +900,13 @@ const ProjectsPage = () => {
       setBidFieldErrors({});
       setBidFormError('');
       await loadPageData();
+      closeBidComposer();
+      return true;
     } catch (error) {
       const { fieldErrors, formError } = splitApiFormError(error, t('toasts.projects.submitError'));
       setBidFieldErrors(fieldErrors);
       setBidFormError(formError);
+      return false;
     } finally {
       setSubmittingBid(false);
     }
@@ -712,24 +927,6 @@ const ProjectsPage = () => {
     addToast(extraCopy.invalidSkillMessage, 'warning');
   };
 
-  const handleOpenQuotationModal = async (project) => {
-    setIsQuotationModalOpen(true);
-    await loadProjectBids(project);
-  };
-
-  const handleCloseQuotationModal = () => {
-    setIsQuotationModalOpen(false);
-    setQuotationError('');
-    setIsQuotationLoading(false);
-  };
-
-  const handleRetryQuotationLoad = async () => {
-    if (!selectedProject) {
-      return;
-    }
-    await loadProjectBids(selectedProject, { force: true });
-  };
-
   const resetMarketplaceFilters = () => {
     setMarketplaceSearchTerm('');
     setMarketplaceStatus('open');
@@ -737,45 +934,73 @@ const ProjectsPage = () => {
   };
 
   return (
-    <div className="flex flex-col gap-6">
-      <section>
-        <Card className="border-2 border-slate-200 bg-white p-6 md:p-8">
-          <Caption className="text-[11px] uppercase tracking-[0.18em] text-primary-700">
-            {copy.hero.caption}
-          </Caption>
-          <H1 className="mt-3 text-4xl">
-            {isCustomer ? copy.hero.titleCustomer : copy.hero.titleFreelancer}
-          </H1>
-          <Text className="mt-4 text-slate-600">
-            {copy.hero.description}
-          </Text>
-        </Card>
-      </section>
-
+    <div className="relative mx-auto flex w-full max-w-[1600px] flex-col gap-6">
+      <div className="pointer-events-none absolute inset-x-0 -top-20 -z-10 h-52 bg-gradient-to-r from-primary-100/60 via-sky-50/50 to-indigo-100/40 blur-2xl" />
       {isCustomer ? (
+        // CLIENT INTERFACE
         <>
-          <section className="grid gap-4 md:grid-cols-3">
-            <StatMetricCard label={copy.stats.total} value={customerProjectSummary.total} isLoading={visibleLoading} />
-            <StatMetricCard label={copy.stats.open} value={customerProjectSummary.open} isLoading={visibleLoading} />
-            <StatMetricCard label={copy.stats.cancelled} value={customerProjectSummary.cancelled} isLoading={visibleLoading} />
-          </section>
+          <div className="pointer-events-none absolute inset-x-0 top-0 -z-10 h-[360px] overflow-hidden rounded-3xl">
+            <div className="h-full w-full bg-[url('https://images.unsplash.com/photo-1454165804606-c3d57bc86b40?q=80&w=1974&auto=format&fit=crop')] bg-cover bg-center opacity-[0.11]" />
+            <div className="absolute inset-0 bg-gradient-to-b from-primary-100/40 via-white/60 to-white" />
+          </div>
 
-          <section className="grid gap-6 lg:grid-cols-[0.95fr_1.05fr]">
-            <Card className="border-2 border-slate-200 bg-white p-6">
-              <div className="flex items-start justify-between gap-4">
+          <section className="grid gap-6 lg:grid-cols-[1fr_1.15fr] items-start">
+            {/* Step-by-Step wizard for job creation */}
+            <Card id="client-project-composer" className={`${GLASS_CARD_CLASS} p-6`}>
+              <div className="flex items-start justify-between gap-4 border-b border-slate-100 pb-4">
                 <div>
-                  <Caption className="text-[11px] uppercase tracking-[0.18em] text-primary-700">
+                  <Caption className={SECTION_HEADER_CAPTION_CLASS}>
                     {editingProjectId ? copy.customerComposer.captionUpdate : copy.customerComposer.captionCreate}
                   </Caption>
-                  <H2 className="mt-2 text-2xl">
+                  <H2 className={SECTION_HEADER_TITLE_CLASS}>
                     {editingProjectId ? copy.customerComposer.titleUpdate : copy.customerComposer.titleCreate}
                   </H2>
                 </div>
                 {editingProjectId && (
-                  <Button variant="ghost" onClick={resetProjectComposer}>
+                  <Button variant="ghost" onClick={resetProjectComposer} className="text-xs">
                     {copy.customerComposer.cancelEdit}
                   </Button>
                 )}
+              </div>
+
+              {/* Wizard Steps Indicator */}
+              <div className="mt-6 flex items-center justify-between px-2 text-xs font-semibold text-slate-500">
+                <div className="flex flex-col items-center gap-1.5">
+                  <span className={`w-8 h-8 flex items-center justify-center rounded-full border-2 ${
+                    formStep === 1
+                      ? 'border-primary-600 bg-primary-50 text-primary-700'
+                      : formStep > 1
+                      ? 'border-emerald-500 bg-emerald-50 text-emerald-700'
+                      : 'border-slate-200'
+                  }`}>
+                    {formStep > 1 ? <CheckCircle className="w-5 h-5" /> : '1'}
+                  </span>
+                  <span className={formStep === 1 ? 'text-primary-700 font-bold' : ''}>Thông tin</span>
+                </div>
+                <div className="flex-1 h-0.5 bg-gradient-to-r from-primary-100 via-slate-100 to-slate-100 mx-4"></div>
+                <div className="flex flex-col items-center gap-1.5">
+                  <span className={`w-8 h-8 flex items-center justify-center rounded-full border-2 ${
+                    formStep === 2
+                      ? 'border-primary-600 bg-primary-50 text-primary-700'
+                      : formStep > 2
+                      ? 'border-emerald-500 bg-emerald-50 text-emerald-700'
+                      : 'border-slate-200'
+                  }`}>
+                    {formStep > 2 ? <CheckCircle className="w-5 h-5" /> : '2'}
+                  </span>
+                  <span className={formStep === 2 ? 'text-primary-700 font-bold' : ''}>Ngân sách</span>
+                </div>
+                <div className="flex-1 h-0.5 bg-gradient-to-r from-primary-100 via-slate-100 to-slate-100 mx-4"></div>
+                <div className="flex flex-col items-center gap-1.5">
+                  <span className={`w-8 h-8 flex items-center justify-center rounded-full border-2 ${
+                    formStep === 3
+                      ? 'border-primary-600 bg-primary-50 text-primary-700'
+                      : 'border-slate-200'
+                  }`}>
+                    3
+                  </span>
+                  <span className={formStep === 3 ? 'text-primary-700 font-bold' : ''}>Kỹ năng & Tệp</span>
+                </div>
               </div>
 
               {editingProjectId && (
@@ -784,172 +1009,269 @@ const ProjectsPage = () => {
                 </Callout>
               )}
 
-              <form className="mt-5 flex flex-col gap-4" onSubmit={handleSubmitProject}>
+              <form className="mt-6 flex flex-col gap-4" onSubmit={(e) => e.preventDefault()}>
                 {projectFormError && (
                   <InlineErrorBlock title={copy.customerComposer.errorTitle}>
                     {projectFormError}
                   </InlineErrorBlock>
                 )}
-                <Input label={copy.customerComposer.titleLabel} placeholder={copy.customerComposer.titlePlaceholder} value={projectForm.title} onChange={handleProjectFieldChange('title')} error={projectFieldErrors.title} />
-                <Textarea label={copy.customerComposer.descriptionLabel} placeholder={copy.customerComposer.descriptionPlaceholder} value={projectForm.description} onChange={handleProjectFieldChange('description')} error={projectFieldErrors.description} />
-                <div className="grid gap-4 md:grid-cols-2">
-                  <Input label={copy.customerComposer.budgetMinLabel} type="number" min="0" value={projectForm.budgetMin} onChange={handleProjectFieldChange('budgetMin')} error={projectFieldErrors.budgetMin} />
-                  <Input label={copy.customerComposer.budgetMaxLabel} type="number" min="0" value={projectForm.budgetMax} onChange={handleProjectFieldChange('budgetMax')} error={projectFieldErrors.budgetMax} />
-                </div>
-                <Input label={copy.customerComposer.deadlineLabel} type="date" value={projectForm.deadline} onChange={handleProjectFieldChange('deadline')} error={projectFieldErrors.deadline} />
-                <TagInput
-                  label={extraCopy.projectSkillsLabel}
-                  placeholder={extraCopy.projectSkillsPlaceholder}
-                  helperText={extraCopy.projectSkillsHint}
-                  initialTags={projectForm.skills}
-                  allowedTags={skillCatalog}
-                  disabled={loadingSkillCatalog || submittingProject}
-                  onInvalidTag={handleInvalidSkill}
-                  onChange={(skills) => {
-                    setProjectForm((previous) => ({ ...previous, skills }));
-                    setProjectFieldErrors((previous) => ({ ...previous, skills: '' }));
-                    setProjectFormError('');
-                  }}
-                  error={projectFieldErrors.skills}
-                />
-                {loadingSkillCatalog && (
-                  <Text className="text-sm text-slate-500">{extraCopy.skillCatalogLoading}</Text>
-                )}
-                {projectSkillSuggestions.length > 0 && (
-                  <div className="flex flex-col gap-2">
-                    <Caption className="text-[11px] uppercase tracking-[0.18em] text-slate-500">
-                      {extraCopy.projectSkillsSuggestions}
-                    </Caption>
-                    <div className="flex flex-wrap gap-2">
-                      {projectSkillSuggestions.map((skill) => (
-                        <button
-                          key={skill}
-                          type="button"
-                          disabled={loadingSkillCatalog || submittingProject}
-                          onClick={() => addProjectSkill(skill)}
-                          className="border border-slate-300 bg-slate-50 px-3 py-2 text-xs font-semibold text-secondary-900 transition-colors hover:border-primary-500 hover:text-primary-700 disabled:cursor-not-allowed disabled:opacity-50"
-                        >
-                          {skill}
-                        </button>
-                      ))}
-                    </div>
+
+                {/* STEP 1: General Info */}
+                {formStep === 1 && (
+                  <div className="flex flex-col gap-4 animate-fadeIn">
+                    <Input
+                      label={copy.customerComposer.titleLabel}
+                      placeholder={copy.customerComposer.titlePlaceholder}
+                      value={projectForm.title}
+                      onChange={handleProjectFieldChange('title')}
+                      error={projectFieldErrors.title}
+                    />
+                    <Textarea
+                      label={copy.customerComposer.descriptionLabel}
+                      placeholder={copy.customerComposer.descriptionPlaceholder}
+                      value={projectForm.description}
+                      onChange={handleProjectFieldChange('description')}
+                      error={projectFieldErrors.description}
+                      rows={6}
+                    />
                   </div>
                 )}
-                {editingProjectId && (
-                  <AttachmentLinks
-                    attachments={projectForm.existingAttachments}
-                    caption={extraCopy.attachmentsCaption}
-                  />
+
+                {/* STEP 2: Budget & Deadline */}
+                {formStep === 2 && (
+                  <div className="flex flex-col gap-4 animate-fadeIn">
+                    <div className="grid gap-4 md:grid-cols-2">
+                      <Input
+                        label={copy.customerComposer.budgetMinLabel}
+                        type="number"
+                        min="0"
+                        value={projectForm.budgetMin}
+                        onChange={handleProjectFieldChange('budgetMin')}
+                        error={projectFieldErrors.budgetMin}
+                      />
+                      <Input
+                        label={copy.customerComposer.budgetMaxLabel}
+                        type="number"
+                        min="0"
+                        value={projectForm.budgetMax}
+                        onChange={handleProjectFieldChange('budgetMax')}
+                        error={projectFieldErrors.budgetMax}
+                      />
+                    </div>
+                    <Input
+                      label={copy.customerComposer.deadlineLabel}
+                      type="date"
+                      value={projectForm.deadline}
+                      onChange={handleProjectFieldChange('deadline')}
+                      error={projectFieldErrors.deadline}
+                    />
+                  </div>
                 )}
-                <FileUpload
-                  label={extraCopy.projectAttachmentsLabel}
-                  value={projectForm.attachments}
-                  onChange={(attachments) => {
-                    setProjectForm((previous) => ({ ...previous, attachments }));
-                    setProjectFieldErrors((previous) => ({ ...previous, attachments: '' }));
-                    setProjectFormError('');
-                  }}
-                  maxFiles={projectAttachmentSlots}
-                  disabled={submittingProject || projectAttachmentSlots === 0}
-                  error={projectFieldErrors.attachments}
-                />
-                <Button type="submit" disabled={submittingProject}>
-                  {submittingProject
-                    ? (editingProjectId ? copy.customerComposer.submitUpdating : copy.customerComposer.submitCreating)
-                    : (editingProjectId ? copy.customerComposer.submitUpdate : copy.customerComposer.submitCreate)}
-                </Button>
+
+                {/* STEP 3: Skills & Attachments */}
+                {formStep === 3 && (
+                  <div className="flex flex-col gap-4 animate-fadeIn">
+                    <TagInput
+                      label={extraCopy.projectSkillsLabel}
+                      placeholder={extraCopy.projectSkillsPlaceholder}
+                      helperText={extraCopy.projectSkillsHint}
+                      initialTags={projectForm.skills}
+                      allowedTags={skillCatalog}
+                      disabled={loadingSkillCatalog || submittingProject}
+                      onInvalidTag={handleInvalidSkill}
+                      onChange={(skills) => {
+                        setProjectForm((previous) => ({ ...previous, skills }));
+                        setProjectFieldErrors((previous) => ({ ...previous, skills: '' }));
+                        setProjectFormError('');
+                      }}
+                      error={projectFieldErrors.skills}
+                    />
+                    {loadingSkillCatalog && (
+                      <Text className="text-sm text-slate-500">{extraCopy.skillCatalogLoading}</Text>
+                    )}
+                    {projectSkillSuggestions.length > 0 && (
+                      <div className="flex flex-col gap-2">
+                        <Caption className="text-[11px] uppercase tracking-[0.18em] text-slate-500 font-semibold">
+                          {extraCopy.projectSkillsSuggestions}
+                        </Caption>
+                        <div className="flex flex-wrap gap-2">
+                          {projectSkillSuggestions.map((skill) => (
+                            <button
+                              key={skill}
+                              type="button"
+                              disabled={loadingSkillCatalog || submittingProject}
+                              onClick={() => addProjectSkill(skill)}
+                              className="border border-slate-200 bg-slate-50/50 hover:bg-slate-50 px-3 py-1.5 rounded-lg text-xs font-semibold text-slate-700 transition-all hover:border-primary-500 hover:text-primary-700 disabled:cursor-not-allowed disabled:opacity-50"
+                            >
+                              {skill}
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                    {editingProjectId && (
+                      <AttachmentLinks
+                        attachments={projectForm.existingAttachments}
+                        caption={extraCopy.attachmentsCaption}
+                      />
+                    )}
+                    <FileUpload
+                      label={extraCopy.projectAttachmentsLabel}
+                      value={projectForm.attachments}
+                      onChange={(attachments) => {
+                        setProjectForm((previous) => ({ ...previous, attachments }));
+                        setProjectFieldErrors((previous) => ({ ...previous, attachments: '' }));
+                        setProjectFormError('');
+                      }}
+                      maxFiles={projectAttachmentSlots}
+                      disabled={submittingProject || projectAttachmentSlots === 0}
+                      error={projectFieldErrors.attachments}
+                    />
+                  </div>
+                )}
+
+                {/* Navigation Buttons */}
+                <div className="mt-6 flex justify-between gap-3 pt-4 border-t border-slate-100">
+                  {formStep > 1 ? (
+                    <Button type="button" variant="outline" onClick={handlePrevStep} className="flex items-center gap-2">
+                      <ArrowLeft className="w-4 h-4" /> Quay lại
+                    </Button>
+                  ) : (
+                    <div></div>
+                  )}
+
+                  {formStep < 3 ? (
+                    <Button type="button" onClick={handleNextStep} className="flex items-center gap-2">
+                      Tiếp tục <ArrowRight className="w-4 h-4" />
+                    </Button>
+                  ) : (
+                    <Button
+                      type="button"
+                      disabled={submittingProject}
+                      onClick={handleSubmitProject}
+                      className="bg-primary-600 hover:bg-primary-700 text-white font-bold transition-colors"
+                    >
+                      {submittingProject
+                        ? (editingProjectId ? copy.customerComposer.submitUpdating : copy.customerComposer.submitCreating)
+                        : (editingProjectId ? copy.customerComposer.submitUpdate : copy.customerComposer.submitCreate)}
+                    </Button>
+                  )}
+                </div>
               </form>
             </Card>
 
-            <Card className="border-2 border-slate-200 bg-white p-6">
-              <Caption className="text-[11px] uppercase tracking-[0.18em] text-primary-700">
-                {copy.customerList.caption}
-              </Caption>
-              <H2 className="mt-2 text-2xl">
-                {copy.customerList.title}
-              </H2>
-              <div className="mt-5 flex flex-col gap-3">
+            {/* List of customer's projects */}
+            <Card className={`${GLASS_CARD_CLASS} p-6`}>
+              <div className="flex items-center justify-between gap-3 border-b border-slate-100 pb-4">
+                <div>
+                  <Caption className={SECTION_HEADER_CAPTION_CLASS}>
+                    {copy.customerList.caption}
+                  </Caption>
+                  <H2 className={SECTION_HEADER_TITLE_CLASS}>
+                    {copy.customerList.title}
+                  </H2>
+                </div>
+                <Button
+                  type="button"
+                  onClick={() => {
+                    resetProjectComposer();
+                    setTimeout(() => {
+                      const composer = document.getElementById('client-project-composer');
+                      composer?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                    }, 0);
+                  }}
+                  className="flex items-center gap-1.5 bg-primary-600 px-3 py-2 text-xs text-white hover:bg-primary-700 shrink-0"
+                >
+                  <Plus className="h-3.5 w-3.5" />
+                  Đăng dự án mới
+                </Button>
+              </div>
+
+              {/* Compact Inline Stats Row */}
+              <div className="mt-4 grid grid-cols-3 gap-2 text-center text-xs">
+                <div className="rounded-xl bg-slate-50 border border-slate-100 p-2 flex flex-col items-center justify-center">
+                  <span className="text-[9px] font-semibold text-slate-400 uppercase tracking-wider block">Tổng số</span>
+                  <span className="text-base font-black text-slate-800 mt-0.5">{customerProjectSummary.total}</span>
+                </div>
+                <div className="rounded-xl bg-emerald-50/50 border border-emerald-100 p-2 flex flex-col items-center justify-center">
+                  <span className="text-[9px] font-semibold text-emerald-600 uppercase tracking-wider block">Đang tuyển</span>
+                  <span className="text-base font-black text-emerald-700 mt-0.5">{customerProjectSummary.open}</span>
+                </div>
+                <div className="rounded-xl bg-rose-50/50 border border-rose-100 p-2 flex flex-col items-center justify-center">
+                  <span className="text-[9px] font-semibold text-rose-600 uppercase tracking-wider block">Đã hủy</span>
+                  <span className="text-base font-black text-rose-700 mt-0.5">{customerProjectSummary.cancelled}</span>
+                </div>
+              </div>
+
+              <div className="mt-5 flex flex-col gap-4 max-h-[800px] overflow-y-auto pr-1">
                 {visibleLoading && (
-                  <div className="flex items-center justify-center border border-dashed border-slate-200 bg-slate-50 p-5">
+                  <div className="flex items-center justify-center rounded-xl border border-dashed border-slate-200 bg-slate-50 p-6">
                     <Spinner size="sm" label={extraCopy.marketplaceLoading} />
                   </div>
                 )}
 
                 {projects.map((project) => {
                   const statusMeta = getProjectStatusMeta(project.status, locale);
-                  const canManageProject = project.status === 'open' || project.status === 'cancelled';
-                  const isCancellingProject = projectActionId === project.id;
+                  const coverImage = getCoverImageBySkills(project.skills);
 
                   return (
-                    <div key={project.id} className="border border-slate-200 bg-slate-50 p-4">
-                      <div className="flex items-start justify-between gap-3">
+                    <button
+                      type="button"
+                      key={project.id}
+                      onClick={() => openBidsView(project)}
+                      className="group relative h-64 w-full overflow-hidden rounded-2xl text-left shadow-md transition-all duration-300 hover:-translate-y-1 hover:shadow-xl"
+                    >
+                      {/* Background Image with Blur */}
+                      <div className="absolute inset-0">
+                        <img
+                          src={coverImage}
+                          alt={project.title}
+                          className="h-full w-full object-cover blur-[2px] brightness-90 transition-transform duration-500 group-hover:scale-105"
+                        />
+                        <div className="absolute inset-0 bg-gradient-to-t from-slate-900/95 via-slate-900/50 to-slate-900/20" />
+                      </div>
+
+                      {/* Content Overlay */}
+                      <div className="relative z-10 flex h-full flex-col justify-end p-5">
                         <div>
-                          <div className="text-sm font-bold text-secondary-900">{project.title}</div>
-                          <Caption className="text-xs text-slate-500">
-                            {t('projectsPage.customerList.deadline', { date: formatDate(project.deadline, locale) })}
-                          </Caption>
-                        </div>
-                        <Badge color={statusMeta.color}>
-                          {statusMeta.label}
-                        </Badge>
-                      </div>
-                      <Text className="mt-3 text-sm text-slate-600">
-                        {project.description || copy.customerList.descriptionFallback}
-                      </Text>
-                      <div className="mt-3 text-sm font-semibold text-slate-700">
-                        {t('projectsPage.customerList.budget', { value: buildBudgetRange(project, locale) })}
-                      </div>
-                      {normalizeSkillNames(project.skills).length > 0 && (
-                        <div className="mt-4 flex flex-col gap-2">
-                          <Caption className="text-[11px] uppercase tracking-[0.18em] text-slate-500">
-                            {extraCopy.skillsCaption}
-                          </Caption>
-                          <div className="flex flex-wrap gap-2">
-                            {normalizeSkillNames(project.skills).map((skill) => (
-                              <Badge key={`${project.id}-${skill}`} color="info">
-                                {skill}
-                              </Badge>
-                            ))}
+                          <div className="mb-3 flex items-start justify-between gap-3">
+                            <h3 className="line-clamp-2 text-base font-bold leading-snug text-white transition-colors group-hover:text-primary-300">
+                              {project.title}
+                            </h3>
+                            <Badge color={statusMeta.color} className="bg-white/95 text-[9px] font-bold shadow-sm backdrop-blur-md shrink-0">
+                              {statusMeta.label}
+                            </Badge>
                           </div>
+
+                          <div className="space-y-1.5 text-white/90">
+                            <div className="flex items-center gap-2 text-xs">
+                              <Clock className="h-3.5 w-3.5 shrink-0" />
+                              <span className="font-medium">{formatDate(project.deadline, locale)}</span>
+                            </div>
+
+                            <div className="flex items-center gap-2 text-sm font-bold text-primary-300">
+                              <span className="inline-block h-2 w-2 rounded-full bg-primary-400 shrink-0"></span>
+                              <span>{buildBudgetRange(project, locale)}</span>
+                            </div>
+                          </div>
+
+                          {normalizeSkillNames(project.skills).length > 0 && (
+                            <div className="mt-3 flex flex-wrap gap-1.5">
+                              {normalizeSkillNames(project.skills).slice(0, 3).map((skill) => (
+                                <span key={skill} className="rounded-md border border-white/30 bg-white/20 px-2 py-1 text-[10px] font-semibold text-white backdrop-blur-sm">
+                                  {skill}
+                                </span>
+                              ))}
+                              {normalizeSkillNames(project.skills).length > 3 && (
+                                <span className="rounded-md border border-white/20 bg-white/10 px-2 py-1 text-[10px] font-semibold text-white/80 backdrop-blur-sm">
+                                  +{normalizeSkillNames(project.skills).length - 3}
+                                </span>
+                              )}
+                            </div>
+                          )}
                         </div>
-                      )}
-                      <AttachmentLinks
-                        attachments={project.attachments}
-                        caption={extraCopy.attachmentsCaption}
-                      />
-                      <div className="mt-4 flex flex-wrap gap-3">
-                        <Button variant="outline" onClick={() => handleOpenQuotationModal(project)}>
-                          {copy.customerList.viewBids}
-                        </Button>
-                        {canManageProject && (
-                          <Button variant="ghost" onClick={() => startEditingProject(project)}>
-                            {copy.customerList.edit}
-                          </Button>
-                        )}
-                        {project.status === 'open' && (
-                          <Button
-                            variant="danger"
-                            disabled={isCancellingProject}
-                            onClick={() => handleCancelProject(project)}
-                          >
-                            {isCancellingProject ? copy.customerList.cancelling : copy.customerList.cancel}
-                          </Button>
-                        )}
-                        {!isCustomer && (
-                          <Button 
-                            variant="ghost" 
-                            className="text-red-500 hover:bg-red-50"
-                            onClick={() => {
-                              setProjectToReport(project);
-                              setIsReportModalOpen(true);
-                            }}
-                          >
-                            <WarningTriangle className="w-4 h-4 mr-2" />
-                            {t('reportModal.submitBtn')}
-                          </Button>
-                        )}
                       </div>
-                    </div>
+                    </button>
                   );
                 })}
 
@@ -962,495 +1284,634 @@ const ProjectsPage = () => {
             </Card>
           </section>
 
-        </>
-      ) : (
-        <section className="grid gap-6 lg:grid-cols-[1.05fr_0.95fr]">
-            <Card className="border-2 border-slate-200 bg-white p-6">
-              <Caption className="text-[11px] uppercase tracking-[0.18em] text-primary-700">
-                {copy.marketplace.caption}
-              </Caption>
-              <H2 className="mt-2 text-2xl">
-                {copy.marketplace.title}
-              </H2>
-              <InfoPanel className="mt-5">
-                <div className="flex items-start justify-between gap-4">
-                  <div>
-                    <Caption className="text-[11px] uppercase tracking-[0.18em] text-primary-700">
-                      {extraCopy.marketplaceFiltersTitle}
+          {/* Project Bids & Payment panel for Clients (Modal) */}
+          {(isBidsViewOpen || isBidsViewLeaving) && selectedProject && (
+            <div className={`ui-modal-backdrop fixed inset-0 z-[1000] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm ${isBidsViewLeaving ? 'is-leaving' : ''}`}>
+              <div className={`ui-modal-panel relative w-full max-w-5xl h-[90vh] bg-white border border-slate-200/80 rounded-none shadow-[0_25px_60px_rgba(15,23,42,0.18)] flex flex-col ${isBidsViewLeaving ? 'is-leaving' : ''}`}>
+                <div className="flex items-start justify-between gap-4 p-5 border-b border-slate-100 shrink-0 bg-slate-50/50 rounded-none">
+                  <div className="min-w-0">
+                    <Caption className={SECTION_HEADER_CAPTION_CLASS}>
+                      {copy.projectBids.caption}
                     </Caption>
-                    <Text className="mt-2 text-sm text-slate-600">
-                      {extraCopy.marketplaceFiltersDescription}
-                    </Text>
+                    <H2 className="mt-1 text-lg font-bold text-slate-900 tracking-tight leading-snug truncate">
+                      {t('projectsPage.projectBids.title', { title: selectedProject.title })}
+                    </H2>
                   </div>
-                  <Button type="button" variant="ghost" onClick={resetMarketplaceFilters}>
-                    {extraCopy.marketplaceResetFilters}
-                  </Button>
+              <div className="flex items-center gap-2 shrink-0">
+                <button
+                  type="button"
+                  onClick={closeBidsView}
+                  className="w-9 h-9 rounded-none border border-slate-200 hover:bg-red-50 flex items-center justify-center text-slate-400 hover:text-red-500 transition-colors text-sm shadow-sm"
+                >
+                  ✕
+                </button>
+              </div>
                 </div>
-                <div className="mt-4 grid gap-4 md:grid-cols-[1.1fr_0.9fr]">
-                  <SearchInput
-                    value={marketplaceSearchTerm}
-                    onChange={(event) => setMarketplaceSearchTerm(event.target.value)}
-                    placeholder={extraCopy.marketplaceSearchPlaceholder}
-                  />
-                  <Select
-                    label={extraCopy.marketplaceStatusLabel}
-                    value={marketplaceStatus}
-                    options={marketplaceStatusOptions}
-                    disabled={visibleLoading}
-                    onChange={(event) => setMarketplaceStatus(event.target.value)}
-                  />
-                </div>
-                <div className="mt-4 flex flex-col gap-3">
-                  <TagInput
-                    label={extraCopy.marketplaceSkillsLabel}
-                    placeholder={extraCopy.marketplaceSkillsPlaceholder}
-                    helperText={extraCopy.marketplaceSkillsHint}
-                    initialTags={marketplaceSkills}
-                    allowedTags={skillCatalog}
-                    disabled={loadingSkillCatalog || visibleLoading}
-                    onInvalidTag={handleInvalidSkill}
-                    onChange={setMarketplaceSkills}
-                  />
-                  {loadingSkillCatalog && (
-                    <Text className="text-sm text-slate-500">{extraCopy.skillCatalogLoading}</Text>
-                  )}
-                  <div className="flex flex-wrap gap-2">
-                    {marketplaceSkillSuggestions.map((skill) => (
-                      <button
-                        key={skill}
-                        type="button"
-                        disabled={loadingSkillCatalog || visibleLoading}
-                        onClick={() => addMarketplaceSkill(skill)}
-                        className="border border-slate-300 bg-white px-3 py-2 text-xs font-semibold text-secondary-900 transition-colors hover:border-primary-500 hover:text-primary-700 disabled:cursor-not-allowed disabled:opacity-50"
-                      >
-                        {skill}
-                      </button>
-                    ))}
-                    {skillCatalog.length > 0 && marketplaceSkillSuggestions.length === 0 && (
-                      <Text className="text-sm text-slate-500">
-                        {extraCopy.marketplaceNoSkillMatches}
-                      </Text>
-                    )}
-                  </div>
-                </div>
-              </InfoPanel>
-              <div className="mt-5 flex flex-col gap-3">
-                {visibleLoading && (
-                  <div className="flex items-center justify-center border border-dashed border-slate-200 bg-slate-50 p-5">
-                    <Spinner size="sm" label={extraCopy.marketplaceLoading} />
+
+                <div className="flex-1 p-6 overflow-y-auto">
+                  <Card className={`${GLASS_CARD_CLASS} p-6`}>
+                {selectedProjectBids.length >= 2 && (
+                  <div className="border-b border-slate-100 pb-4 mb-4 flex justify-end">
+                    <Button
+                      variant="ghost"
+                      className="text-xs font-bold text-primary-600 flex items-center gap-1.5 py-1 px-2"
+                      onClick={() => setShowBidComparison(true)}
+                    >
+                      <PageSearch className="w-4 h-4" /> So sánh các báo giá ({selectedProjectBids.length})
+                    </Button>
                   </div>
                 )}
 
-                {filteredMarketplaceProjects.map((project) => {
-                  const statusMeta = getProjectStatusMeta(project.status, locale);
+              <AttachmentLinks attachments={selectedProject.attachments} />
+
+              <div className="mt-5 flex flex-col gap-4">
+                {visibleProjectBidsLoading && (
+                  <div className="flex items-center justify-center rounded-xl border border-dashed border-slate-200 bg-slate-50 p-6">
+                    <Spinner size="sm" label={copy.projectBids.loading} />
+                  </div>
+                )}
+
+                {!visibleProjectBidsLoading && selectedProjectBids.map((bid) => {
+                  const statusMeta = getBidStatusMeta(bid.status, locale);
+                  const isHandlingBid = bidActionId === bid.id;
+                  const canProcessBid =
+                    (selectedProject.status === 'open' || selectedProject.status === 'pending_payment') && bid.status === 'pending';
+
                   return (
-                    <InfoPanel key={project.id}>
+                    <div key={bid.id} className="border border-slate-200/70 bg-white p-4 rounded-2xl shadow-[0_8px_22px_rgba(15,23,42,0.07)] transition-all duration-300 hover:-translate-y-0.5 hover:shadow-[0_16px_32px_rgba(37,99,235,0.12)]">
                       <div className="flex items-start justify-between gap-3">
-                        <div>
-                          <div className="text-sm font-bold text-secondary-900">{project.title}</div>
-                          <Caption className="text-xs text-slate-500">
-                            {t('projectsPage.marketplace.owner', { name: project.user?.fullName || t('projectsPage.marketplace.ownerFallback', { id: project.user?.id || '---' }) })}
-                          </Caption>
-                        </div>
-                        <Badge color={statusMeta.color}>
-                          {statusMeta.label}
-                        </Badge>
-                      </div>
-                      <Text className="mt-3 text-sm text-slate-600">
-                        {project.description || copy.marketplace.descriptionFallback}
-                      </Text>
-                      <div className="mt-3 text-sm font-semibold text-slate-700">
-                        {t('projectsPage.marketplace.budget', { value: buildBudgetRange(project, locale) })}
-                      </div>
-                      <div className="mt-2 text-sm text-slate-500">
-                        {t('projectsPage.marketplace.deadline', { date: formatDate(project.deadline, locale) })}
-                      </div>
-                      {normalizeSkillNames(project.skills).length > 0 && (
-                        <div className="mt-4 flex flex-col gap-2">
-                          <Caption className="text-[11px] uppercase tracking-[0.18em] text-slate-500">
-                            {extraCopy.skillsCaption}
-                          </Caption>
-                          <div className="flex flex-wrap gap-2">
-                            {normalizeSkillNames(project.skills).map((skill) => (
-                              <Badge key={`${project.id}-${skill}`} color="info">
-                                {skill}
-                              </Badge>
-                            ))}
+                        <div className="flex items-center gap-2">
+                          <span className="w-8 h-8 rounded-full bg-primary-50 text-primary-700 flex items-center justify-center font-bold text-sm">
+                            {bid.freelancer?.fullName?.charAt(0) || 'F'}
+                          </span>
+                          <div>
+                            <div className="flex items-center gap-1 text-sm font-bold text-slate-800">
+                              {bid.freelancer?.fullName || t('projectsPage.projectBids.freelancerFallback', { id: bid.freelancer?.id || bid.id })}
+                              {bid.freelancer?.kycApproved && (
+                                <CheckCircleSolid className="h-4 w-4 text-emerald-500 shadow-sm" title={locale === 'vi' ? 'Tài khoản đã xác minh danh tính' : 'Verified Identity'} />
+                              )}
+                            </div>
+                            <Caption className="text-xs text-slate-400 mt-0.5">
+                              {t('projectsPage.projectBids.proposedAt', { value: formatDateTime(bid.createdAt, locale) })}
+                            </Caption>
                           </div>
                         </div>
-                      )}
-                      <AttachmentLinks
-                        attachments={project.attachments}
-                        caption={extraCopy.attachmentsCaption}
-                      />
-                      <div className="mt-4">
-                        <Button variant="outline" onClick={() => setSelectedProject(project)}>
-                          {copy.marketplace.select}
-                        </Button>
+                        <BidStatusStepper status={bid.status} locale={locale} />
                       </div>
-                    </InfoPanel>
+
+                      <div className="mt-4 grid grid-cols-2 gap-4 text-xs border-t border-b border-slate-100 py-3 my-3">
+                        <div>
+                          <p className="text-slate-400 font-medium">Báo giá</p>
+                          <p className="text-sm font-bold text-primary-700 mt-0.5">
+                            {t('projectsPage.projectBids.price', { value: formatCurrency(bid.price, locale) })}
+                          </p>
+                        </div>
+                        <div>
+                          <p className="text-slate-400 font-medium">Thời gian hoàn thành</p>
+                          <p className="text-sm font-bold text-slate-700 mt-0.5">
+                            {bid.estimatedTime || copy.projectBids.estimatedFallback}
+                          </p>
+                        </div>
+                      </div>
+
+                      <div className="text-xs text-slate-600 bg-white p-3 rounded-lg border border-slate-100 leading-relaxed">
+                        <p className="font-semibold text-slate-500 mb-1">Thư giới thiệu:</p>
+                        {bid.message || copy.projectBids.messageFallback}
+                      </div>
+
+                      <AttachmentLinks attachments={bid.attachments} />
+
+                      {canProcessBid && (
+                        <div className="mt-4 flex flex-wrap gap-2 pt-3 border-t border-slate-100">
+                          <Button disabled={isHandlingBid} onClick={() => handleCheckoutBid(bid.id)} className="text-xs py-1.5">
+                            {isHandlingBid ? copy.projectBids.processing : copy.projectBids.accept}
+                          </Button>
+                          <Button disabled={isHandlingBid} variant="danger" onClick={() => handleRejectBid(bid.id)} className="text-xs py-1.5">
+                            {isHandlingBid ? copy.projectBids.processing : copy.projectBids.reject}
+                          </Button>
+                        </div>
+                      )}
+                    </div>
                   );
                 })}
 
-              {!visibleLoading && projects.length === 0 && (
-                <Callout type="info" title={copy.marketplace.emptyTitle}>
-                  {copy.marketplace.emptyDescription}
-                </Callout>
-              )}
-              {!visibleLoading && projects.length > 0 && filteredMarketplaceProjects.length === 0 && (
-                <Callout type="info" title={extraCopy.marketplaceFiltersEmptyTitle}>
-                  {extraCopy.marketplaceFiltersEmptyDescription}
-                </Callout>
-              )}
-            </div>
-          </Card>
-
-          <div className="flex flex-col gap-6">
-            <Card className="border-2 border-slate-200 bg-white p-6">
-              <Caption className="text-[11px] uppercase tracking-[0.18em] text-primary-700">
-                {copy.bidComposer.caption}
-              </Caption>
-              <H2 className="mt-2 text-2xl">
-                {selectedProject ? t('projectsPage.bidComposer.titleSelected', { title: selectedProject.title }) : copy.bidComposer.titleDefault}
-              </H2>
-              {!selectedProject ? (
-                <Callout type="info" title={copy.bidComposer.emptyTitle}>
-                  {copy.bidComposer.emptyDescription}
-                </Callout>
-              ) : (
-                <form className="mt-5 flex flex-col gap-4" onSubmit={handleSubmitBid}>
-                  {bidFormError && (
-                    <InlineErrorBlock title={copy.bidComposer.errorTitle}>
-                      {bidFormError}
-                    </InlineErrorBlock>
-                  )}
-                  <Input label={copy.bidComposer.priceLabel} type="number" min="0" value={bidForm.price} onChange={handleBidFieldChange('price')} error={bidFieldErrors.price} />
-                  <Input label={copy.bidComposer.estimatedLabel} placeholder={copy.bidComposer.estimatedPlaceholder} value={bidForm.estimatedTime} onChange={handleBidFieldChange('estimatedTime')} error={bidFieldErrors.estimatedTime} />
-                  <Textarea label={copy.bidComposer.messageLabel} placeholder={copy.bidComposer.messagePlaceholder} value={bidForm.message} onChange={handleBidFieldChange('message')} error={bidFieldErrors.message} />
-                  <FileUpload
-                    label={extraCopy.bidAttachmentsLabel}
-                    value={bidForm.attachments}
-                    onChange={(attachments) => {
-                      setBidForm((previous) => ({ ...previous, attachments }));
-                      setBidFieldErrors((previous) => ({ ...previous, attachments: '' }));
-                      setBidFormError('');
-                    }}
-                    maxFiles={5}
-                    disabled={submittingBid}
-                    error={bidFieldErrors.attachments}
-                  />
-                  <Button type="submit" disabled={submittingBid}>
-                    {submittingBid ? copy.bidComposer.submitting : copy.bidComposer.submit}
-                  </Button>
-                </form>
-              )}
-            </Card>
-
-            <Card className="border-2 border-slate-200 bg-white p-6">
-              <Caption className="text-[11px] uppercase tracking-[0.18em] text-primary-700">
-                {copy.myBids.caption}
-              </Caption>
-              <H2 className="mt-2 text-2xl">
-                {copy.myBids.title}
-              </H2>
-              <div className="mt-5 flex flex-col gap-3">
-                {myBids.map((bid) => {
-                  const statusMeta = getBidStatusMeta(bid.status, locale);
-                  const isHandlingBid = bidActionId === bid.id;
-
-                  return (
-                    <InfoPanel key={bid.id}>
-                      <div className="flex items-start justify-between gap-3">
-                        <div>
-                          <div className="text-sm font-bold text-secondary-900">
-                            {bid.project?.title || t('projectsPage.myBids.projectFallback', { id: bid.project?.id || bid.id })}
-                          </div>
-                          <Caption className="text-xs text-slate-500">
-                            {t('projectsPage.myBids.price', { value: formatCurrency(bid.price, locale) })}
-                          </Caption>
-                        </div>
-                        <Badge color={statusMeta.color}>
-                          {statusMeta.label}
-                        </Badge>
+                {activePayment
+                  && selectedProject
+                  && activePayment.projectId === selectedProject.id && (
+                    <InfoPanel className="mt-5 border border-amber-200 bg-amber-50/70 p-5 rounded-xl">
+                      <div className="text-sm font-bold text-amber-900 flex items-center gap-1.5">
+                        <Activity className="w-5 h-5 text-amber-600" />
+                        {copy.projectBids.paymentBlockTitle}
                       </div>
-                      <Text className="mt-3 text-sm text-slate-600">
-                        {bid.message || copy.myBids.messageFallback}
-                      </Text>
-                      <Text className="mt-2 text-sm text-slate-500">
-                        {t('projectsPage.myBids.estimatedTime', { value: bid.estimatedTime || copy.myBids.estimatedFallback })}
-                      </Text>
-                      <AttachmentLinks
-                        attachments={bid.attachments}
-                        caption={extraCopy.attachmentsCaption}
-                      />
-                      {bid.status === 'pending' && (
-                        <div className="mt-4">
-                          <Button disabled={isHandlingBid} variant="danger" onClick={() => handleWithdrawBid(bid.id)}>
-                            {isHandlingBid ? copy.myBids.processing : copy.myBids.withdraw}
+                      <div className="mt-4 grid gap-3 md:grid-cols-3 text-xs text-slate-800 bg-white p-4 rounded-xl border border-amber-100">
+                        <div>
+                          <span className="text-[10px] font-semibold uppercase tracking-wider text-slate-400">{copy.projectBids.paymentStatus}</span>
+                          <div className="font-mono text-sm font-bold text-slate-800 mt-0.5">{activePayment.status}</div>
+                        </div>
+                        <div>
+                          <span className="text-[10px] font-semibold uppercase tracking-wider text-slate-400">Mã đơn hàng</span>
+                          <div className="font-mono text-sm font-bold text-slate-800 mt-0.5 break-all">{activePayment.orderCode}</div>
+                        </div>
+                        <div>
+                          <span className="text-[10px] font-semibold uppercase tracking-wider text-slate-400">{copy.projectBids.paymentAmount}</span>
+                          <div className="text-sm font-extrabold text-primary-700 mt-0.5">{formatCurrency(activePayment.amount, locale)}</div>
+                        </div>
+                        {activePayment.bankName && (
+                          <div>
+                            <span className="text-[10px] font-semibold uppercase tracking-wider text-slate-400">{copy.projectBids.paymentBank}</span>
+                            <div className="font-bold text-slate-700 mt-0.5">{activePayment.bankName}</div>
+                          </div>
+                        )}
+                        {activePayment.vaNumber && (
+                          <div>
+                            <span className="text-[10px] font-semibold uppercase tracking-wider text-slate-400">{copy.projectBids.paymentVa}</span>
+                            <div className="font-mono font-bold text-slate-800 mt-0.5">{activePayment.vaNumber}</div>
+                          </div>
+                        )}
+                        {activePayment.vaHolderName && (
+                          <div>
+                            <span className="text-[10px] font-semibold uppercase tracking-wider text-slate-400">{copy.projectBids.paymentHolder}</span>
+                            <div className="font-bold text-slate-700 mt-0.5">{activePayment.vaHolderName}</div>
+                          </div>
+                        )}
+                      </div>
+
+                      {activePayment.expiredAt && (
+                        <div className="mt-3 text-[11px] text-amber-700 flex items-center gap-1 font-semibold">
+                          <Clock className="w-3.5 h-3.5" />
+                          Hết hạn thanh toán: {formatDateTime(activePayment.expiredAt, locale)}
+                        </div>
+                      )}
+
+                      {(activePayment.vietqrUrl || (activePayment.qrCodeData && String(activePayment.qrCodeData).startsWith('data:image'))) && (
+                        <div className="mt-4 flex flex-col items-center border border-dashed border-amber-200 bg-white p-4 rounded-xl">
+                          <img
+                            src={activePayment.vietqrUrl || activePayment.qrCodeData}
+                            alt="VietQR"
+                            className="max-w-[200px] border border-slate-100 rounded-lg p-1.5 shadow-sm bg-white"
+                          />
+                          <p className="mt-2 text-[10px] text-slate-400 text-center">
+                            Quét mã QR bằng ứng dụng ngân hàng của bạn để thanh toán tự động
+                          </p>
+                        </div>
+                      )}
+
+                      {!activePayment.vietqrUrl && activePayment.qrCodeUrl && (
+                        <a
+                          href={activePayment.qrCodeUrl}
+                          className="mt-3 inline-flex items-center gap-1 text-sm font-semibold text-primary-700 hover:text-primary-800 underline underline-offset-2"
+                          target="_blank"
+                          rel="noreferrer"
+                        >
+                          Mở liên kết thanh toán <ArrowRight className="w-4 h-4" />
+                        </a>
+                      )}
+
+                      {activePayment.status === 'pending' && (
+                        <div className="mt-4 pt-3 border-t border-amber-200 flex justify-end">
+                          <Button type="button" variant="ghost" onClick={handleCancelActivePayment} className="text-xs text-amber-700 hover:bg-amber-100/50">
+                            {copy.projectBids.paymentCancel}
                           </Button>
                         </div>
                       )}
                     </InfoPanel>
-                  );
-                })}
+                )}
 
-                {!visibleLoading && myBids.length === 0 && (
-                  <Callout type="info" title={copy.myBids.emptyTitle}>
-                    {copy.myBids.emptyDescription}
+                {!visibleProjectBidsLoading && selectedProjectBids.length === 0 && (
+                  <Callout type="info" title={copy.projectBids.emptyTitle}>
+                    {copy.projectBids.emptyDescription}
                   </Callout>
                 )}
               </div>
-            </Card>
+                  </Card>
+                </div>
+              </div>
+            </div>
+          )}
+        </>
+      ) : (
+        // FREELANCER GRID VIEW FOR MARKETPLACE
+        <div className="flex w-full flex-col gap-6">
+          <div className="flex flex-wrap items-center justify-between gap-4 border-b border-slate-100 pb-4">
+            <div>
+              <Caption className={SECTION_HEADER_CAPTION_CLASS}>
+                {copy.marketplace.caption}
+              </Caption>
+              <H2 className={SECTION_HEADER_TITLE_CLASS}>
+                {copy.marketplace.title}
+              </H2>
+            </div>
+            <div className="flex gap-2">
+              <Button
+                variant="outline"
+                className="text-xs font-bold flex items-center gap-1.5"
+                onClick={() => {
+                  setIsMyBidsLeaving(false);
+                  setIsMyBidsOpen(true);
+                }}
+              >
+                <StatsUpSquare className="w-4 h-4" /> Báo giá đã gửi ({myBids.length})
+              </Button>
+            </div>
           </div>
-        </section>
-      )}
 
-      <Modal
-        isOpen={isQuotationModalOpen}
-        onClose={handleCloseQuotationModal}
-        title={selectedProject ? t('projectsPage.projectBids.title', { title: selectedProject.title }) : copy.projectBids.caption}
-      >
-        <div className="flex max-h-[72vh] flex-col gap-4 overflow-y-auto pr-1">
-          {selectedProject && (
-            <>
+          {/* Smart Filters Panel */}
+          <InfoPanel className="w-full border border-slate-100 rounded-xl bg-slate-50/50">
+            <div className="flex items-center justify-between gap-4 border-b border-slate-200/50 pb-3 mb-3">
               <div>
-                <Badge color={getProjectStatusMeta(selectedProject.status, locale).color}>
-                  {getProjectStatusMeta(selectedProject.status, locale).label}
-                </Badge>
+                <Caption className="text-[10px] uppercase tracking-[0.15em] text-primary-700 font-bold">
+                  {extraCopy.marketplaceFiltersTitle}
+                </Caption>
               </div>
-              <AttachmentLinks
-                attachments={selectedProject.attachments}
-                caption={extraCopy.attachmentsCaption}
+              <Button type="button" variant="ghost" onClick={resetMarketplaceFilters} className="text-xs text-slate-500 hover:text-primary-700 py-1 px-2.5">
+                {extraCopy.marketplaceResetFilters}
+              </Button>
+            </div>
+
+            <div className="grid gap-4 md:grid-cols-[1.2fr_0.8fr]">
+              <SearchInput
+                value={marketplaceSearchTerm}
+                onChange={(event) => setMarketplaceSearchTerm(event.target.value)}
+                placeholder={extraCopy.marketplaceSearchPlaceholder}
+                className="bg-white"
               />
-            </>
-          )}
+              <Select
+                value={marketplaceStatus}
+                options={marketplaceStatusOptions}
+                disabled={visibleLoading}
+                onChange={(event) => setMarketplaceStatus(event.target.value)}
+                className="bg-white"
+                aria-label={extraCopy.marketplaceStatusLabel}
+              />
+            </div>
+          </InfoPanel>
 
-          {visibleQuotationLoading && (
-            <div className="flex items-center gap-3 rounded-md border border-slate-200 bg-slate-50 px-3 py-3">
-              <Spinner size="sm" />
-              <Text className="text-sm text-slate-600">{copy.projectBids.loading}</Text>
+          {/* Marketplace Grid List */}
+          {visibleLoading && (
+            <div className="flex items-center justify-center border border-dashed border-slate-200 bg-slate-50 p-12 rounded-2xl">
+              <Spinner size="sm" label={extraCopy.marketplaceLoading} />
             </div>
           )}
 
-          {!visibleQuotationLoading && quotationError && (
-            <div className="flex flex-col gap-3">
-              <InlineErrorBlock title={copy.projectBids.loadErrorTitle}>
-                {quotationError}
-              </InlineErrorBlock>
-              <div className="flex justify-end">
-                <Button type="button" variant="outline" onClick={handleRetryQuotationLoad}>
-                  {copy.projectBids.retryLoad}
-                </Button>
-              </div>
-            </div>
-          )}
+          {!visibleLoading && (
+            <div className="grid w-full min-w-0 gap-4">
+              {filteredMarketplaceProjects.map((project) => {
+                const statusMeta = getProjectStatusMeta(project.status, locale);
+                const coverImage = getCoverImageBySkills(project.skills);
 
-          {!visibleQuotationLoading && !quotationError && quotations.map((bid) => {
-            const statusMeta = getBidStatusMeta(bid.status, locale);
-            const isHandlingBid = bidActionId === bid.id;
-            const canProcessBid =
-              selectedProject && (selectedProject.status === 'open' || selectedProject.status === 'pending_payment') && bid.status === 'pending';
-
-            return (
-              <div key={bid.id} className="border border-slate-200 bg-slate-50 p-4">
-                <div className="flex items-start justify-between gap-3">
-                  <div>
-                    <div className="text-sm font-bold text-secondary-900">
-                      {bid.freelancer?.fullName || t('projectsPage.projectBids.freelancerFallback', { id: bid.freelancer?.id || bid.id })}
+                return (
+                  <div
+                    key={project.id}
+                    className="group relative flex w-full min-w-0 flex-col overflow-hidden rounded-xl border border-slate-200/70 bg-white transition-all duration-300 hover:-translate-y-0.5 hover:border-primary-300 hover:shadow-[0_10px_20px_rgba(15,23,42,0.06)] sm:flex-row"
+                    onClick={() => {
+                      setSelectedProject(project);
+                      setIsBidComposerLeaving(false);
+                      setIsBidComposerOpen(true);
+                    }}
+                  >
+                    <div className="relative h-32 w-full shrink-0 overflow-hidden sm:h-auto sm:w-48 lg:w-56">
+                      <img
+                        src={coverImage}
+                        alt="Project Cover"
+                        className="h-full w-full object-cover transition-transform duration-700 ease-out group-hover:scale-105"
+                      />
+                      <div className="absolute inset-0 bg-gradient-to-t from-slate-900/85 via-slate-900/35 to-transparent sm:bg-gradient-to-r" />
+                      <div className="absolute left-2 top-2 flex flex-wrap gap-1">
+                        {normalizeSkillNames(project.skills).slice(0, 2).map((skill) => (
+                          <span key={skill} className="rounded-md border border-white/20 bg-black/40 px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-wider text-white backdrop-blur-md">
+                            {skill}
+                          </span>
+                        ))}
+                      </div>
+                      <div className="absolute bottom-2 left-2">
+                        <span className="inline-block rounded border border-primary-500/30 bg-black/50 px-2 py-0.5 text-[11px] font-extrabold text-primary-300 backdrop-blur-md">
+                          {t('projectsPage.marketplace.budget', { value: buildBudgetRange(project, locale) }).replace('Ngân sách: ', '')}
+                        </span>
+                      </div>
                     </div>
-                    <Caption className="text-xs text-slate-500">
-                      {t('projectsPage.projectBids.proposedAt', { value: formatDateTime(bid.createdAt, locale) })}
-                    </Caption>
-                  </div>
-                  <Badge color={statusMeta.color}>
-                    {statusMeta.label}
-                  </Badge>
-                </div>
-                <div className="mt-3 text-sm font-semibold text-slate-700">
-                  {t('projectsPage.projectBids.price', { value: formatCurrency(bid.price, locale) })}
-                </div>
-                <Text className="mt-2 text-sm text-slate-600">
-                  {bid.message || copy.projectBids.messageFallback}
-                </Text>
-                <Text className="mt-2 text-sm text-slate-500">
-                  {t('projectsPage.projectBids.estimatedTime', { value: bid.estimatedTime || copy.projectBids.estimatedFallback })}
-                </Text>
-                <AttachmentLinks
-                  attachments={bid.attachments}
-                  caption={extraCopy.attachmentsCaption}
-                />
-                {canProcessBid && (
-                  <div className="mt-4 flex flex-wrap gap-3">
-                    <Button disabled={isHandlingBid} onClick={() => handleStartCheckoutBid(bid.id)}>
-                      {isHandlingBid ? copy.projectBids.processing : copy.projectBids.accept}
-                    </Button>
-                    <Button disabled={isHandlingBid} variant="danger" onClick={() => handleRejectBid(bid.id)}>
-                      {isHandlingBid ? copy.projectBids.processing : copy.projectBids.reject}
-                    </Button>
-                  </div>
-                )}
-              </div>
-            );
-          })}
 
-          {!visibleQuotationLoading && !quotationError && paymentQrData
-            && selectedProject
-            && paymentQrData.projectId === selectedProject.id
-            && paymentQrData.status === 'pending' && (
-              <InfoPanel className="border-2 border-amber-200 bg-amber-50/90">
-                <div className="text-sm font-bold text-amber-900">
-                  {copy.projectBids.paymentPendingTitle}
-                </div>
-                <Text className="mt-2 text-sm text-slate-700">{copy.projectBids.paymentPendingDescription}</Text>
-                <div className="mt-4 flex flex-wrap gap-3">
-                  <Button type="button" onClick={() => setIsQrModalOpen(true)}>
-                    {copy.projectBids.openQrModal}
-                  </Button>
-                  <Button type="button" variant="ghost" onClick={handleCancelActivePayment}>
-                    {copy.projectBids.paymentCancel}
-                  </Button>
-                </div>
-              </InfoPanel>
+                    <div className="flex min-w-0 flex-1 flex-col justify-between p-3.5 sm:p-4">
+                      <div>
+                        <div className="flex items-start justify-between gap-3">
+                          <div className="min-w-0">
+                            <h3 className="line-clamp-2 text-sm font-bold leading-snug text-slate-900 transition-colors group-hover:text-primary-600">
+                              {project.title}
+                            </h3>
+                            <div className="mt-1 flex items-center gap-1.5 text-[10px] font-medium text-slate-500">
+                              <User className="h-3 w-3 text-slate-400" />
+                              <span className="truncate">{t('projectsPage.marketplace.owner', { name: project.user?.fullName || t('projectsPage.marketplace.ownerFallback', { id: project.user?.id || '---' }) })}</span>
+                              {project.user?.kycApproved && (
+                                <CheckCircleSolid className="h-3.5 w-3.5 shrink-0 text-emerald-500 shadow-sm" title={locale === 'vi' ? 'Tài khoản đã xác minh danh tính' : 'Verified Identity'} />
+                              )}
+                            </div>
+                          </div>
+                          <Badge color={statusMeta.color} className="shrink-0 text-[9px] px-1.5 py-0.5 font-bold">
+                            {statusMeta.label}
+                          </Badge>
+                        </div>
+
+                        <Text className="mt-2 line-clamp-2 text-[11px] leading-relaxed text-slate-600 sm:text-xs">
+                          {project.description || copy.marketplace.descriptionFallback}
+                        </Text>
+                      </div>
+
+                      <div className="mt-3 flex flex-wrap items-center justify-between gap-2 border-t border-slate-100 pt-2.5">
+                        <div className="flex items-center gap-1 text-[11px] font-medium text-slate-500">
+                          <Clock className="h-3.5 w-3.5 text-slate-400" />
+                          {formatDate(project.deadline, locale)}
+                        </div>
+                        <Button
+                          variant="ghost"
+                          className="text-[11px] font-bold text-primary-600 transition-all hover:bg-primary-50 px-2 py-1 h-auto"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setSelectedProject(project);
+                            setIsBidComposerLeaving(false);
+                            setIsBidComposerOpen(true);
+                          }}
+                        >
+                          Gửi báo giá <ArrowRight className="ml-1 h-3 w-3" />
+                        </Button>
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
           )}
 
-          {!visibleQuotationLoading && !quotationError && quotations.length === 0 && (
-            <Callout type="info" title={copy.projectBids.emptyTitle}>
-              {copy.projectBids.emptyDescription}
+          {!visibleLoading && projects.length === 0 && (
+            <Callout type="info" title={copy.marketplace.emptyTitle}>
+              {copy.marketplace.emptyDescription}
             </Callout>
           )}
 
-          <div className="mt-2 flex flex-col-reverse gap-3 sm:flex-row sm:justify-end">
-            <Button type="button" variant="ghost" onClick={handleCloseQuotationModal}>
-              {copy.projectBids.closeModal}
-            </Button>
-          </div>
-        </div>
-      </Modal>
-
-      <Modal
-        isOpen={isConfirmModalOpen}
-        onClose={() => {
-          setIsConfirmModalOpen(false);
-          setPendingCheckoutBidId(null);
-          setPaymentError('');
-        }}
-        title={copy.projectBids.confirmModalTitle}
-      >
-        <div className="flex flex-col gap-4">
-          <Text className="text-sm text-slate-700">
-            {copy.projectBids.confirmModalDescription}
-          </Text>
-          <div className="flex flex-col-reverse gap-3 sm:flex-row sm:justify-end">
-            <Button
-              type="button"
-              variant="ghost"
-              onClick={() => {
-                setIsConfirmModalOpen(false);
-                setPendingCheckoutBidId(null);
-                setPaymentError('');
-              }}
-            >
-              {copy.projectBids.confirmModalCancel}
-            </Button>
-            <Button type="button" onClick={handleConfirmCheckoutBid}>
-              {copy.projectBids.confirmModalConfirm}
-            </Button>
-          </div>
-        </div>
-      </Modal>
-
-      <Modal
-        isOpen={isQrModalOpen}
-        onClose={() => setIsQrModalOpen(false)}
-        title={copy.projectBids.qrModalTitle}
-      >
-        <div className="flex max-h-[70vh] flex-col gap-4 overflow-y-auto pr-1">
-          {isPaymentLoading && (
-            <div className="flex items-center gap-3 rounded-md border border-slate-200 bg-slate-50 px-3 py-3">
-              <Spinner size="sm" />
-              <Text className="text-sm text-slate-600">{copy.projectBids.paymentLoading}</Text>
-            </div>
+          {!visibleLoading && projects.length > 0 && filteredMarketplaceProjects.length === 0 && (
+            <Callout type="info" title={extraCopy.marketplaceFiltersEmptyTitle}>
+              {extraCopy.marketplaceFiltersEmptyDescription}
+            </Callout>
           )}
+        </div>
+      )}
 
-          {paymentError && (
-            <InlineErrorBlock title={copy.projectBids.paymentErrorTitle}>
-              {paymentError}
-            </InlineErrorBlock>
-          )}
-
-          {!isPaymentLoading && !paymentError && paymentQrData && (
-            <div className="grid gap-4">
-              {(paymentQrData.vietqrUrl || (paymentQrData.qrCodeData && String(paymentQrData.qrCodeData).startsWith('data:image'))) && (
-                <div className="mx-auto w-full max-w-[260px] border border-slate-200 bg-white p-3">
-                  <img
-                    src={paymentQrData.vietqrUrl || paymentQrData.qrCodeData}
-                    alt="VietQR"
-                    className="h-auto w-full"
-                  />
-                </div>
-              )}
-
-              {!paymentQrData.vietqrUrl && paymentQrData.qrCodeUrl && (
-                <a
-                  href={paymentQrData.qrCodeUrl}
-                  className="inline-block text-sm font-semibold text-primary-700 underline"
-                  target="_blank"
-                  rel="noreferrer"
-                >
-                  {copy.projectBids.openQrLink}
-                </a>
-              )}
-
-              <div className="grid gap-3 text-sm text-slate-800 sm:grid-cols-2">
-                {paymentQrData.amount != null && (
-                  <div>
-                    <Text className="text-xs font-semibold uppercase text-slate-500">{copy.projectBids.paymentAmount}</Text>
-                    <div className="font-semibold">{formatCurrency(paymentQrData.amount, locale)}</div>
-                  </div>
-                )}
-                {paymentQrData.description && (
-                  <div>
-                    <Text className="text-xs font-semibold uppercase text-slate-500">{copy.projectBids.paymentDescription}</Text>
-                    <div className="break-words">{paymentQrData.description}</div>
-                  </div>
-                )}
-                {paymentQrData.orderCode && (
-                  <div className="sm:col-span-2">
-                    <Text className="text-xs font-semibold uppercase text-slate-500">{copy.projectBids.paymentOrderCode}</Text>
-                    <div className="font-mono text-xs break-all">{paymentQrData.orderCode}</div>
-                  </div>
-                )}
-                {paymentQrData.bankName && (
-                  <div>
-                    <Text className="text-xs font-semibold uppercase text-slate-500">{copy.projectBids.paymentBank}</Text>
-                    <div>{paymentQrData.bankName}</div>
-                  </div>
-                )}
-                {paymentQrData.vaNumber && (
-                  <div>
-                    <Text className="text-xs font-semibold uppercase text-slate-500">{copy.projectBids.paymentVa}</Text>
-                    <div className="font-mono">{paymentQrData.vaNumber}</div>
-                  </div>
-                )}
+      {/* BID COMPOSER MODAL (FLOATING PREMIUM LAYOUT) */}
+      {(isBidComposerOpen || isBidComposerLeaving) && selectedProject && (
+        <div className={`ui-modal-backdrop fixed inset-0 z-[1000] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm ${isBidComposerLeaving ? 'is-leaving' : ''}`}>
+          <div className={`ui-modal-panel relative w-full max-w-2xl bg-white border border-slate-200/80 rounded-2xl shadow-[0_25px_60px_rgba(15,23,42,0.18)] max-h-[90vh] flex flex-col ${isBidComposerLeaving ? 'is-leaving' : ''}`}>
+            {/* Modal Header */}
+            <div className="flex items-start justify-between gap-4 p-6 border-b border-slate-100 shrink-0">
+              <div>
+                <Caption className={SECTION_HEADER_CAPTION_CLASS}>
+                  {copy.bidComposer.caption}
+                </Caption>
+                <H2 className="mt-1 text-xl font-bold text-slate-900 tracking-tight leading-snug">
+                  {t('projectsPage.bidComposer.titleSelected', { title: selectedProject.title })}
+                </H2>
               </div>
+              <button
+                type="button"
+                onClick={closeBidComposer}
+                className="w-8 h-8 rounded-full border border-slate-200 hover:bg-slate-50 flex items-center justify-center text-slate-500 transition-colors"
+              >
+                ✕
+              </button>
             </div>
-          )}
 
-          <div className="mt-2 flex flex-col-reverse gap-3 sm:flex-row sm:justify-end">
-            <Button
-              type="button"
-              variant="ghost"
-              disabled={isPaymentLoading}
-              onClick={handleCancelActivePayment}
-            >
-              {copy.projectBids.paymentCancel}
-            </Button>
+            {/* Modal Content */}
+            <div className="p-6 overflow-y-auto flex flex-col gap-6">
+              {/* Miniature Project Details view for Upwork feel */}
+              <div className="bg-gradient-to-br from-slate-50 to-white border border-slate-200/70 rounded-2xl p-4 text-xs shadow-[inset_0_1px_0_rgba(255,255,255,0.8)]">
+                <div className="flex justify-between items-start">
+                  <h4 className="font-bold text-slate-800 text-sm">Chi tiết yêu cầu dự án</h4>
+                  <Badge color={getProjectStatusMeta(selectedProject.status, locale).color}>
+                    {getProjectStatusMeta(selectedProject.status, locale).label}
+                  </Badge>
+                </div>
+                <p className="text-slate-600 mt-2.5 leading-relaxed whitespace-pre-line text-xs font-normal">
+                  {selectedProject.description}
+                </p>
+
+                <div className="mt-4 pt-3 border-t border-slate-200/50 grid grid-cols-2 gap-3 text-[11px]">
+                  <div>
+                    <span className="text-slate-400 font-medium">Ngân sách dự kiến</span>
+                    <div className="font-bold text-slate-800 mt-0.5">
+                      {buildBudgetRange(selectedProject, locale)}
+                    </div>
+                  </div>
+                  <div>
+                    <span className="text-slate-400 font-medium">Ngày hạn chót</span>
+                    <div className="font-bold text-slate-800 mt-0.5">
+                      {formatDate(selectedProject.deadline, locale)}
+                    </div>
+                  </div>
+                </div>
+
+                {normalizeSkillNames(selectedProject.skills).length > 0 && (
+                  <div className="mt-4 pt-3 border-t border-slate-200/50">
+                    <span className="text-slate-400 font-medium">Kỹ năng yêu cầu:</span>
+                    <div className="mt-1.5 flex flex-wrap gap-1">
+                      {normalizeSkillNames(selectedProject.skills).map((skill) => (
+                        <Badge key={`detail-${selectedProject.id}-${skill}`} color="info" className="text-[9px] py-0.5 px-2">
+                          {skill}
+                        </Badge>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                <AttachmentLinks attachments={selectedProject.attachments} />
+              </div>
+
+              {/* Proposal Form */}
+              <form className="flex flex-col gap-4 border-t border-slate-100 pt-4" onSubmit={handleSubmitBid}>
+                <h4 className="font-bold text-slate-800 text-sm">Gửi báo giá của bạn</h4>
+                <Input
+                  label={copy.bidComposer.priceLabel}
+                  type="number"
+                  min="0"
+                  value={bidForm.price}
+                  onChange={handleBidFieldChange('price')}
+                  error={bidFieldErrors.price}
+                />
+                <Input
+                  label={copy.bidComposer.estimatedLabel}
+                  placeholder={copy.bidComposer.estimatedPlaceholder}
+                  value={bidForm.estimatedTime}
+                  onChange={handleBidFieldChange('estimatedTime')}
+                  error={bidFieldErrors.estimatedTime}
+                />
+                <Textarea
+                  label={copy.bidComposer.messageLabel}
+                  placeholder={copy.bidComposer.messagePlaceholder}
+                  value={bidForm.message}
+                  onChange={handleBidFieldChange('message')}
+                  error={bidFieldErrors.message}
+                  rows={4}
+                />
+                <FileUpload
+                  label={extraCopy.bidAttachmentsLabel}
+                  value={bidForm.attachments}
+                  onChange={(attachments) => {
+                    setBidForm((previous) => ({ ...previous, attachments }));
+                    setBidFieldErrors((previous) => ({ ...previous, attachments: '' }));
+                    setBidFormError('');
+                  }}
+                  maxFiles={5}
+                  disabled={submittingBid}
+                  error={bidFieldErrors.attachments}
+                />
+                <div className="flex justify-end gap-3 border-t border-slate-100 pt-4 mt-2">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={closeBidComposer}
+                  >
+                    Hủy bỏ
+                  </Button>
+                  <Button
+                    type="submit"
+                    disabled={submittingBid}
+                    className="bg-primary-600 hover:bg-primary-700 text-white font-bold transition-colors"
+                  >
+                    {submittingBid ? copy.bidComposer.submitting : copy.bidComposer.submit}
+                  </Button>
+                </div>
+              </form>
+            </div>
           </div>
         </div>
+      )}
+
+      {/* MY BIDS MODAL (FLOATING VIEW OF SUBMITTED PROPOSALS) */}
+      {(isMyBidsOpen || isMyBidsLeaving) && (
+        <div className={`ui-modal-backdrop fixed inset-0 z-[1000] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm ${isMyBidsLeaving ? 'is-leaving' : ''}`}>
+          <div className={`ui-modal-panel relative w-full max-w-2xl bg-white border border-slate-200/80 rounded-2xl shadow-[0_25px_60px_rgba(15,23,42,0.18)] max-h-[90vh] flex flex-col ${isMyBidsLeaving ? 'is-leaving' : ''}`}>
+            {/* Modal Header */}
+            <div className="flex items-center justify-between p-6 border-b border-slate-100 shrink-0">
+              <div>
+                <Caption className={SECTION_HEADER_CAPTION_CLASS}>
+                  {copy.myBids.caption}
+                </Caption>
+                <H2 className="mt-1 text-xl font-bold text-slate-900 tracking-tight">
+                  {copy.myBids.title}
+                </H2>
+              </div>
+              <button
+                type="button"
+                onClick={closeMyBids}
+                className="w-8 h-8 rounded-full border border-slate-200 hover:bg-slate-50 flex items-center justify-center text-slate-500 transition-colors"
+              >
+                ✕
+              </button>
+            </div>
+
+            {/* Modal Content */}
+            <div className="p-6 overflow-y-auto flex flex-col gap-4">
+              {myBids.map((bid) => {
+                const statusMeta = getBidStatusMeta(bid.status, locale);
+                const isHandlingBid = bidActionId === bid.id;
+
+                return (
+                  <div key={bid.id} className="border border-slate-200/70 bg-white hover:border-primary-300 hover:shadow-[0_14px_30px_rgba(15,23,42,0.1)] p-4 rounded-2xl transition-all duration-300">
+                    <div className="flex items-start justify-between gap-3">
+                      <div className="min-w-0 flex-1">
+                        <div className="text-xs font-bold text-slate-800 truncate">
+                          {bid.project?.title || t('projectsPage.myBids.projectFallback', { id: bid.project?.id || bid.id })}
+                        </div>
+                        <Caption className="text-[10px] text-slate-400 mt-1 flex items-center gap-1 font-semibold">
+                          Đề xuất lúc: {formatDateTime(bid.createdAt, locale)}
+                        </Caption>
+                      </div>
+                      <BidStatusStepper status={bid.status} locale={locale} />
+                    </div>
+
+                    <div className="mt-3 grid grid-cols-2 gap-3 text-[11px] border-t border-slate-100 pt-2 pb-1 my-2">
+                      <div>
+                        <span className="text-slate-400 font-medium">Giá đề xuất</span>
+                        <div className="font-bold text-primary-700">
+                          {t('projectsPage.myBids.price', { value: formatCurrency(bid.price, locale) })}
+                        </div>
+                      </div>
+                      <div>
+                        <span className="text-slate-400 font-medium">Thời gian hoàn thành</span>
+                        <div className="font-bold text-slate-700">
+                          {bid.estimatedTime || copy.myBids.estimatedFallback}
+                        </div>
+                      </div>
+                    </div>
+
+                    <Text className="mt-2 text-xs text-slate-500 line-clamp-2 leading-relaxed">
+                      {bid.message || copy.myBids.messageFallback}
+                    </Text>
+
+                    <AttachmentLinks attachments={bid.attachments} />
+
+                    {bid.status === 'pending' && (
+                      <div className="mt-3 pt-3 border-t border-slate-100/60">
+                        <Button
+                          disabled={isHandlingBid}
+                          variant="danger"
+                          onClick={() => handleWithdrawBid(bid.id)}
+                          className="text-[10px] py-1 px-2.5 font-bold"
+                        >
+                          {isHandlingBid ? copy.myBids.processing : copy.myBids.withdraw}
+                        </Button>
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
+
+              {!visibleLoading && myBids.length === 0 && (
+                <Callout type="info" title={copy.myBids.emptyTitle}>
+                  {copy.myBids.emptyDescription}
+                </Callout>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Payment Flow Modals */}
+      <BidSelectionModal
+        isOpen={showBidSelection}
+        onClose={() => setShowBidSelection(false)}
+        bid={selectedBidForCheckout}
+        onConfirm={handleConfirmCheckout}
+        isLoading={checkoutLoading}
+      />
+
+      <PaymentConfirmationModal
+        isOpen={showPaymentConfirmation}
+        onClose={() => setShowPaymentConfirmation(false)}
+        orderCode={paymentResultData?.orderCode}
+        amount={paymentResultData?.amount}
+        projectTitle={selectedProject?.title}
+        onPaymentSuccess={handlePaymentSuccess}
+        onPaymentFailed={handlePaymentFailed}
+      />
+
+      <PaymentReceiptModal
+        isOpen={showPaymentReceipt}
+        onClose={() => setShowPaymentReceipt(false)}
+        payment={paymentResultData}
+        contract={createdContractData}
+      />
+
+      <Modal
+        isOpen={showBidComparison}
+        onClose={() => setShowBidComparison(false)}
+        title="So sánh các báo giá"
+        size="xl"
+      >
+        <BidComparison
+          bids={selectedProjectBids}
+          onSelectBid={handleSelectBidForCheckout}
+        />
       </Modal>
 
       {/* Report Modal */}
-      <ReportModal 
+      <ReportModal
         isOpen={isReportModalOpen}
         onClose={() => setIsReportModalOpen(false)}
         targetType="PROJECT"

@@ -8,8 +8,14 @@ import org.springframework.data.repository.query.Param;
 
 import java.util.List;
 import java.util.Optional;
+import org.springframework.data.jpa.repository.Lock;
+import jakarta.persistence.LockModeType;
 
 public interface PaymentOrderRepository extends JpaRepository<PaymentOrder, Long> {
+
+    @Lock(LockModeType.PESSIMISTIC_WRITE)
+    @Query("SELECT p FROM PaymentOrder p WHERE p.id = :id")
+    Optional<PaymentOrder> findByIdForUpdate(@Param("id") Long id);
 
     @Query("SELECT p FROM PaymentOrder p JOIN FETCH p.bid b JOIN FETCH b.project bp JOIN FETCH bp.user "
         + "JOIN FETCH b.freelancer JOIN FETCH p.customer WHERE p.orderCode = :code")

@@ -1,5 +1,3 @@
-"use client";
-
 import React, { useEffect, useState } from 'react';
 import { 
   Settings, 
@@ -269,3 +267,4 @@ const SettingCard = ({ icon, label, description, value, unit, placeholder, type 
 };
 
 export default AdminSettingsPage;
+

@@ -17,21 +17,22 @@ public class AuthUserResponse {
     private String education;
     private Boolean isActive;
     private Boolean verified;
+    private Boolean kycApproved;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
 
     public AuthUserResponse() {
     }
 
-    public AuthUserResponse(Long id, String email, String fullName, String role, String avatarUrl, String profileDescription, Boolean isActive, Boolean verified, LocalDateTime createdAt, LocalDateTime updatedAt) {
-        this(id, email, fullName, role, avatarUrl, profileDescription, null, null, null, null, null, isActive, verified, createdAt, updatedAt);
+    public AuthUserResponse(Long id, String email, String fullName, String role, String avatarUrl, String profileDescription, Boolean isActive, Boolean verified, Boolean kycApproved, LocalDateTime createdAt, LocalDateTime updatedAt) {
+        this(id, email, fullName, role, avatarUrl, profileDescription, null, null, null, null, null, isActive, verified, kycApproved, createdAt, updatedAt);
     }
 
-    public AuthUserResponse(Long id, String email, String fullName, String role, String avatarUrl, String profileDescription, List<String> skills, Boolean isActive, Boolean verified, LocalDateTime createdAt, LocalDateTime updatedAt) {
-        this(id, email, fullName, role, avatarUrl, profileDescription, skills, null, null, null, null, isActive, verified, createdAt, updatedAt);
+    public AuthUserResponse(Long id, String email, String fullName, String role, String avatarUrl, String profileDescription, List<String> skills, Boolean isActive, Boolean verified, Boolean kycApproved, LocalDateTime createdAt, LocalDateTime updatedAt) {
+        this(id, email, fullName, role, avatarUrl, profileDescription, skills, null, null, null, null, isActive, verified, kycApproved, createdAt, updatedAt);
     }
 
-    public AuthUserResponse(Long id, String email, String fullName, String role, String avatarUrl, String profileDescription, List<String> skills, String phone, String location, Integer experienceYears, String education, Boolean isActive, Boolean verified, LocalDateTime createdAt, LocalDateTime updatedAt) {
+    public AuthUserResponse(Long id, String email, String fullName, String role, String avatarUrl, String profileDescription, List<String> skills, String phone, String location, Integer experienceYears, String education, Boolean isActive, Boolean verified, Boolean kycApproved, LocalDateTime createdAt, LocalDateTime updatedAt) {
         this.id = id;
         this.email = email;
         this.fullName = fullName;
@@ -45,6 +46,7 @@ public class AuthUserResponse {
         this.education = education;
         this.isActive = isActive;
         this.verified = verified;
+        this.kycApproved = kycApproved;
         this.createdAt = createdAt;
         this.updatedAt = updatedAt;
     }
@@ -151,6 +153,14 @@ public class AuthUserResponse {
 
     public void setVerified(Boolean verified) {
         this.verified = verified;
+    }
+
+    public Boolean getKycApproved() {
+        return kycApproved;
+    }
+
+    public void setKycApproved(Boolean kycApproved) {
+        this.kycApproved = kycApproved;
     }
 
     public LocalDateTime getCreatedAt() {

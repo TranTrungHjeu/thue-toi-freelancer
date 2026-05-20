@@ -1,39 +1,50 @@
-"use client";
-
 import React, { useState, useMemo } from 'react';
-import { usePathname, useSearchParams, useRouter } from 'next/navigation';
+import { useLocation, useSearchParams, useNavigate } from 'react-router-dom';
 
-import { Bell, Home, Page, PageSearch, ProfileCircle, ViewGrid, Group, Settings, Reports, Coins, ShieldCheck, Megaphone, WarningTriangle, Database } from 'iconoir-react';
+import { Bell, Home, Page, PageSearch, ProfileCircle, ViewGrid, Group, Settings, Reports, Coins, ShieldCheck, Megaphone, WarningTriangle, Database, Wallet } from 'iconoir-react';
 import Header from './Header';
 import Sidebar from './Sidebar';
 import MobileDrawer from './MobileDrawer';
 import BottomNav from './BottomNav';
 import LoadingOverlay from '../common/LoadingOverlay';
-import AiChatbot from '../features/AiChatbot';
+import ChatManager from './ChatManager';
+import IncomingCallModal from '../common/IncomingCallModal';
+import VideoCallModal from '../common/VideoCallModal';
 import { useAuth } from '../../hooks/useAuth';
 import { useI18n } from '../../hooks/useI18n';
 import { useNotifications } from '../../hooks/useNotifications';
 
 const MainLayout = ({ children }) => {
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
+  const [activeCall, setActiveCall] = useState(null);
   const { user, loading, logout } = useAuth();
-  const pathname = usePathname();
-  const searchParams = useSearchParams();
-  const router = useRouter();
-  const location = ({ pathname, search: searchParams.toString() });
+  const location = useLocation();
+  const [searchParams] = useSearchParams();
+  const navigate = useNavigate();
   const { t } = useI18n();
-  const { unreadCount } = useNotifications();
+  const { unreadCount, incomingCall, setIncomingCall } = useNotifications();
+
+  const handleAcceptCall = () => {
+    if (incomingCall) {
+      setActiveCall(incomingCall);
+      setIncomingCall(null);
+    }
+  };
+
+  const handleDeclineCall = () => {
+    setIncomingCall(null);
+  };
 
   // Security Route Guard and RBAC
   React.useEffect(() => {
     if (!loading && !user) {
-      router.replace('/auth/login');
+      navigate('/auth/login', { replace: true });
       return;
     }
-    if (user && pathname.startsWith('/workspace/admin') && user.role?.toLowerCase() !== 'admin') {
-      router.replace('/workspace');
+    if (user && location.pathname.startsWith('/workspace/admin') && user.role?.toLowerCase() !== 'admin') {
+      navigate('/workspace', { replace: true });
     }
-  }, [loading, user, pathname, router]);
+  }, [loading, user, location.pathname, navigate]);
 
   const role = (user?.role || '').toLowerCase();
   const notificationBadge = unreadCount > 0 ? (unreadCount > 99 ? '99+' : String(unreadCount)) : null;
@@ -92,6 +103,7 @@ const MainLayout = ({ children }) => {
             { label: t('layout.navigation.dashboard'), href: '/workspace', icon: Home },
             { label: t('layout.navigation.projects'), href: '/workspace/projects', icon: ViewGrid },
             { label: t('layout.navigation.contracts'), href: '/workspace/contracts', icon: PageSearch },
+            { label: 'Wallet', href: '/workspace/wallet', icon: Wallet },
             ...commonWorkspaceItems,
           ],
         }
@@ -106,6 +118,7 @@ const MainLayout = ({ children }) => {
           { label: t('layout.navigation.dashboard'), href: '/workspace', icon: Home },
           { label: t('layout.navigation.findJobs'), href: '/workspace/projects', icon: PageSearch },
           { label: t('layout.navigation.myContracts'), href: '/workspace/contracts', icon: ViewGrid },
+          { label: 'Wallet', href: '/workspace/wallet', icon: Wallet },
           ...commonWorkspaceItems,
         ],
       }
@@ -157,7 +170,7 @@ const MainLayout = ({ children }) => {
     return <LoadingOverlay isActive={true} />;
   }
 
-  if (pathname.startsWith('/workspace/admin') && role !== 'admin') {
+  if (location.pathname.startsWith('/workspace/admin') && role !== 'admin') {
     return null;
   }
 
@@ -174,7 +187,7 @@ const MainLayout = ({ children }) => {
         onLogout={logout}
       />
 
-      <div className="relative z-10 flex flex-1 pt-16 pb-16 lg:pb-0">
+      <div className="flex flex-1 pt-16 pb-16 lg:pb-0">
         <div className="hidden lg:block">
           <Sidebar navigation={navigation} currentPath={location.pathname} />
         </div>
@@ -186,9 +199,25 @@ const MainLayout = ({ children }) => {
       </div>
 
       <BottomNav items={mobileNavigation} currentPath={location.pathname} />
-      <AiChatbot user={user} />
+      <ChatManager />
+
+      <IncomingCallModal
+        isOpen={!!incomingCall}
+        callerName={incomingCall?.callerName}
+        callType={incomingCall?.callType}
+        onAccept={handleAcceptCall}
+        onDecline={handleDeclineCall}
+      />
+
+      <VideoCallModal
+        isOpen={!!activeCall}
+        onClose={() => setActiveCall(null)}
+        roomName={activeCall?.roomName}
+        displayName={user?.fullName || `Người dùng #${user?.id}`}
+      />
     </div>
   );
 };
 
 export default MainLayout;
+

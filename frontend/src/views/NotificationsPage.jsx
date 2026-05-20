@@ -1,7 +1,5 @@
-"use client";
-
 import React, { useMemo } from 'react';
-import { useRouter } from 'next/navigation';
+import { useNavigate } from 'react-router-dom';
 
 import Card from '../components/common/Card';
 import Button from '../components/common/Button';
@@ -103,7 +101,7 @@ const getNotificationsPageCopy = (locale) => {
 };
 
 const NotificationsPage = () => {
-  const router = useRouter();
+  const navigate = useNavigate();
   const { locale } = useI18n();
   const copy = useMemo(() => getNotificationsPageCopy(locale), [locale]);
   const {
@@ -151,7 +149,7 @@ const NotificationsPage = () => {
         // Navigation should not be blocked by a transient read-state update failure.
       }
     }
-    router.push(notification.link);
+    navigate(notification.link);
   };
 
   return (
@@ -355,3 +353,4 @@ const NotificationsPage = () => {
 };
 
 export default NotificationsPage;
+

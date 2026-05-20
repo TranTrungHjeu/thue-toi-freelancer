@@ -1,5 +1,3 @@
-"use client";
-
 import React from 'react';
 import { AnimatePresence, motion } from 'motion/react';
 import Spinner from './Spinner';
@@ -32,3 +30,4 @@ const LoadingOverlay = ({
 };
 
 export default LoadingOverlay;
+

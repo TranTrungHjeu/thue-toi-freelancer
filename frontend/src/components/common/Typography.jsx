@@ -26,3 +26,4 @@ export const Caption = ({ children, className = '', ...props }) => (
     {children}
   </span>
 );
+

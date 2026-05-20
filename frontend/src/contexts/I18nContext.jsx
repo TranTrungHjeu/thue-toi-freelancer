@@ -1,5 +1,3 @@
-"use client";
-
 import { useEffect, useMemo, useState } from 'react';
 import { I18nContext } from './i18n-context';
 import {
@@ -46,4 +44,5 @@ export const I18nProvider = ({ children }) => {
     </I18nContext.Provider>
   );
 };
+
 

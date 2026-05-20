@@ -1,5 +1,3 @@
-"use client";
-
 import React, { useId, useMemo, useState } from 'react';
 import { Upload, Xmark, Notes } from 'iconoir-react';
 import { Text, Caption } from '../common/Typography';
@@ -128,3 +126,4 @@ const FileUpload = ({
 };
 
 export default FileUpload;
+

@@ -29,8 +29,8 @@ public class AiChatController {
 
     @PostMapping("/chat")
     public ApiResponse<AiChatReplyDto> chat(@Valid @RequestBody AiChatRequest request, Principal principal) {
-        currentUserProvider.requireCurrentUserId(principal);
-        String reply = aiChatService.reply(request.getMessages());
-        return ApiResponse.success("OK", new AiChatReplyDto(reply));
+        Long currentUserId = currentUserProvider.requireCurrentUserId(principal);
+        AiChatReplyDto reply = aiChatService.reply(currentUserId, request.getMessages());
+        return ApiResponse.success("OK", reply);
     }
 }

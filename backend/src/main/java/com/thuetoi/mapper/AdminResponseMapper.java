@@ -137,6 +137,9 @@ public class AdminResponseMapper {
             toUserSummary(usersById.get(request.getUserId())),
             request.getStatus(),
             request.getNote(),
+            request.getIdNumber(),
+            request.getFullName(),
+            request.getBirthday(),
             request.getCreatedAt(),
             request.getUpdatedAt()
         );

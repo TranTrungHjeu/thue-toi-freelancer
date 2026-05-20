@@ -1,35 +1,62 @@
 import React from 'react';
+import { Link } from 'react-router-dom';
 
-function formatInlineBold(text) {
+function parseInlineElements(text) {
   if (text == null || text === '') {
     return null;
   }
-  const nodes = [];
-  let remaining = text;
-  let k = 0;
-  while (remaining.length > 0) {
-    const start = remaining.indexOf('**');
-    if (start === -1) {
-      nodes.push(<span key={`t-${k++}`}>{remaining}</span>);
-      break;
+
+  // A regex that matches **bold** or [label](url)
+  const regex = /(\*\*([^*]+)\*\*|\[([^\]]+)\]\(([^)]+)\))/g;
+  const parts = [];
+  let lastIndex = 0;
+  let match;
+  let key = 0;
+
+  while ((match = regex.exec(text)) !== null) {
+    const matchIndex = match.index;
+
+    // Add preceding text if any
+    if (matchIndex > lastIndex) {
+      parts.push(<span key={`t-${key++}`}>{text.substring(lastIndex, matchIndex)}</span>);
     }
-    if (start > 0) {
-      nodes.push(<span key={`t-${k++}`}>{remaining.slice(0, start)}</span>);
+
+    if (match[2] !== undefined) {
+      // It's a bold text
+      parts.push(
+        <strong key={`b-${key++}`} className="font-semibold text-slate-950">
+          {match[2]}
+        </strong>
+      );
+    } else if (match[3] !== undefined && match[4] !== undefined) {
+      // It's a markdown link
+      const label = match[3];
+      const url = match[4];
+
+      if (url.startsWith('/')) {
+        parts.push(
+          <Link key={`l-${key++}`} to={url} className="font-bold text-primary-600 underline hover:text-primary-700">
+            {label}
+          </Link>
+        );
+      } else {
+        parts.push(
+          <a key={`a-${key++}`} href={url} target="_blank" rel="noopener noreferrer" className="font-bold text-primary-600 underline hover:text-primary-700">
+            {label}
+          </a>
+        );
+      }
     }
-    const after = remaining.slice(start + 2);
-    const end = after.indexOf('**');
-    if (end === -1) {
-      nodes.push(<span key={`t-${k++}`}>{remaining.slice(start)}</span>);
-      break;
-    }
-    nodes.push(
-      <strong key={`b-${k++}`} className="font-semibold text-slate-900">
-        {after.slice(0, end)}
-      </strong>
-    );
-    remaining = after.slice(end + 2);
+
+    lastIndex = regex.lastIndex;
   }
-  return nodes;
+
+  // Add remaining text
+  if (lastIndex < text.length) {
+    parts.push(<span key={`t-${key++}`}>{text.substring(lastIndex)}</span>);
+  }
+
+  return parts.length > 0 ? parts : text;
 }
 
 /**
@@ -114,7 +141,7 @@ function renderChunk(chunk, keyPrefix) {
       >
         {chunk.items.map((item, li) => (
           <li key={`${keyPrefix}-li-${li}`} className="pl-0.5">
-            {formatInlineBold(item)}
+            {parseInlineElements(item)}
           </li>
         ))}
       </ol>
@@ -128,7 +155,7 @@ function renderChunk(chunk, keyPrefix) {
       >
         {chunk.items.map((item, li) => (
           <li key={`${keyPrefix}-li-${li}`} className="pl-0.5">
-            {formatInlineBold(item)}
+            {parseInlineElements(item)}
           </li>
         ))}
       </ul>
@@ -139,7 +166,7 @@ function renderChunk(chunk, keyPrefix) {
       {chunk.lines.map((line, li) => (
         <React.Fragment key={`${keyPrefix}-ln-${li}`}>
           {li > 0 && <br />}
-          {formatInlineBold(line)}
+          {parseInlineElements(line)}
         </React.Fragment>
       ))}
     </div>
@@ -173,3 +200,4 @@ export function AiChatRichText({ text, className = '' }) {
 }
 
 export default AiChatRichText;
+

@@ -20,3 +20,4 @@ export const CV_FIELD_KEYS = [
  * @property {number|null} experienceYears
  * @property {string|null} education
  */
+

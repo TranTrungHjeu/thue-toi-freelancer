@@ -1,10 +1,8 @@
-"use client";
-
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { AnimatePresence, motion } from 'framer-motion';
 import { X } from 'lucide-react';
-import { useRouter } from 'next/navigation';
+import { useNavigate } from 'react-router-dom';
 
 import gsap from 'gsap';
 import Input from '../common/Input';
@@ -38,21 +36,18 @@ const getModeIndex = (value) => {
 const panelVariants = {
   initial: (direction = 1) => ({
     opacity: 0,
-    x: direction > 0 ? 18 : -18,
-    y: 8,
-    scale: 0.985,
+    x: direction > 0 ? 30 : -30,
+    scale: 0.96,
   }),
   animate: {
     opacity: 1,
     x: 0,
-    y: 0,
     scale: 1,
   },
   exit: (direction = 1) => ({
     opacity: 0,
-    x: direction > 0 ? -18 : 18,
-    y: -8,
-    scale: 0.985,
+    x: direction > 0 ? -30 : 30,
+    scale: 0.96,
   }),
 };
 const MotionDiv = motion.div;
@@ -93,14 +88,19 @@ const normalizeMode = (value) => (
   value === 'register' || value === 'verify' ? value : 'login'
 );
 
+const normalizeRegisterRole = (value) => (
+  value === 'freelancer' ? 'freelancer' : 'customer'
+);
+
 const AuthModal = ({
   isOpen,
   onClose,
   initialMode = 'login',
   initialEmail = '',
+  initialRegisterRole = 'customer',
   redirectTo = '/workspace',
 }) => {
-  const router = useRouter();
+  const navigate = useNavigate();
   const { login } = useAuth();
   const { addToast } = useToast();
   const { t, locale } = useI18n();
@@ -151,6 +151,7 @@ const AuthModal = ({
 
     const nextMode = normalizeMode(initialMode);
     const resolvedEmail = `${initialEmail || ''}`.trim();
+    const resolvedRegisterRole = normalizeRegisterRole(initialRegisterRole);
 
     setMode(nextMode);
     setPanelDirection(1);
@@ -170,12 +171,13 @@ const AuthModal = ({
     setLoginForm({ email: nextMode === 'login' ? resolvedEmail : '', password: '' });
     setRegisterForm({
       ...createInitialRegisterForm(),
+      role: resolvedRegisterRole,
       email: nextMode === 'register' ? resolvedEmail : '',
     });
     setVerifyForm({ email: resolvedEmail, otp: '' });
     lastAutoSubmittedOtpRef.current = '';
     wasOpenRef.current = true;
-  }, [initialEmail, initialMode, isOpen]);
+  }, [initialEmail, initialMode, initialRegisterRole, isOpen]);
 
   useEffect(() => {
     if (!isOpen || typeof document === 'undefined') {
@@ -303,8 +305,8 @@ const AuthModal = ({
     await login(email, password);
     addToast(t('toasts.auth.loginSuccess'), 'success');
     handleClose();
-    router.replace(redirectTo || '/workspace');
-  }, [addToast, handleClose, login, router, redirectTo, t]);
+    navigate(redirectTo || '/workspace', { replace: true });
+  }, [addToast, handleClose, login, navigate, redirectTo, t]);
 
   const submitVerification = useCallback(async () => {
     setVerifySubmitting(true);
@@ -477,6 +479,13 @@ const AuthModal = ({
                     <h2 className="auth-modal-title">
                       {mode === 'login' ? t('authPages.login.title') : mode === 'register' ? t('authPages.register.title') : t('authPages.verify.title')}
                     </h2>
+                    <p className="mt-1.5 text-xs text-slate-400 leading-relaxed font-sans font-medium">
+                      {mode === 'login'
+                        ? (locale === 'vi' ? 'Đăng nhập để kết nối với các đối tác và chuyên gia hàng đầu.' : 'Sign in to connect with top-tier partners and experts.')
+                        : mode === 'register'
+                        ? (locale === 'vi' ? 'Tham gia cộng đồng để khám phá cơ hội và nâng tầm dự án.' : 'Join the community to unlock opportunities and elevate your projects.')
+                        : (locale === 'vi' ? 'Xác thực email của bạn để bảo mật tài khoản tuyệt đối.' : 'Verify your email to ensure ultimate account security.')}
+                    </p>
                   </div>
                   <button
                     type="button"
@@ -484,7 +493,7 @@ const AuthModal = ({
                     disabled={isPrimaryAuthSubmitting}
                     className="auth-modal-close disabled:cursor-not-allowed disabled:opacity-60"
                   >
-                    <X className="h-4 w-4" />
+                    <X className="h-4.5 w-4.5" />
                   </button>
                 </div>
 
@@ -609,10 +618,14 @@ const AuthModal = ({
                     </button>
                   </div>
 
-                  <Button type="submit" disabled={loginSubmitting} className="mt-1 w-full py-3.5 text-[15px]">
+                  <Button
+                    type="submit"
+                    disabled={loginSubmitting}
+                    className="mt-2 w-full py-3.5 text-[15px] font-bold tracking-wide rounded-xl border-0 bg-gradient-to-r from-primary-600 to-emerald-500 hover:from-primary-500 hover:to-emerald-400 text-white shadow-lg shadow-primary-950/20 hover:shadow-primary-950/40 transition-all duration-300 transform hover:-translate-y-0.5 active:translate-y-0 active:scale-[0.98] cursor-pointer flex items-center justify-center gap-2"
+                  >
                     {loginSubmitting ? (
                       <>
-                        <Spinner size="sm" inline tone="current" className="text-white shrink-0" />
+                        <Spinner size="sm" inline tone="current" className="text-white shrink-0 animate-spin" />
                         {t('authPages.login.submitting')}
                       </>
                     ) : t('authPages.login.submit')}
@@ -691,10 +704,14 @@ const AuthModal = ({
                     className="[&_textarea]:min-h-0 [&_textarea]:h-[88px] [&_textarea]:resize-none"
                   />
 
-                  <Button type="submit" disabled={registerSubmitting} className="mt-1 w-full py-3.5 text-[15px]">
+                  <Button
+                    type="submit"
+                    disabled={registerSubmitting}
+                    className="mt-2 w-full py-3.5 text-[15px] font-bold tracking-wide rounded-xl border-0 bg-gradient-to-r from-primary-600 to-emerald-500 hover:from-primary-500 hover:to-emerald-400 text-white shadow-lg shadow-primary-950/20 hover:shadow-primary-950/40 transition-all duration-300 transform hover:-translate-y-0.5 active:translate-y-0 active:scale-[0.98] cursor-pointer flex items-center justify-center gap-2"
+                  >
                     {registerSubmitting ? (
                       <>
-                        <Spinner size="sm" inline tone="current" className="text-white shrink-0" />
+                        <Spinner size="sm" inline tone="current" className="text-white shrink-0 animate-spin" />
                         {t('authPages.register.submitting')}
                       </>
                     ) : t('authPages.register.submit')}
@@ -753,8 +770,17 @@ const AuthModal = ({
                     )}
                   </div>
 
-                  <Button type="submit" disabled={verifySubmitting} className="mt-1 w-full py-3.5 text-[15px]">
-                    {verifySubmitting ? t('authPages.verify.submitting') : t('authPages.verify.submit')}
+                  <Button
+                    type="submit"
+                    disabled={verifySubmitting}
+                    className="mt-2 w-full py-3.5 text-[15px] font-bold tracking-wide rounded-xl border-0 bg-gradient-to-r from-primary-600 to-emerald-500 hover:from-primary-500 hover:to-emerald-400 text-white shadow-lg shadow-primary-950/20 hover:shadow-primary-950/40 transition-all duration-300 transform hover:-translate-y-0.5 active:translate-y-0 active:scale-[0.98] cursor-pointer flex items-center justify-center gap-2"
+                  >
+                    {verifySubmitting ? (
+                      <>
+                        <Spinner size="sm" inline tone="current" className="text-white shrink-0 animate-spin" />
+                        {t('authPages.verify.submitting')}
+                      </>
+                    ) : t('authPages.verify.submit')}
                   </Button>
 
                   <div className="flex items-center justify-between gap-3 text-sm">
@@ -797,3 +823,4 @@ const AuthModal = ({
 };
 
 export default AuthModal;
+

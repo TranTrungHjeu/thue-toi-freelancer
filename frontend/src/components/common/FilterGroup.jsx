@@ -1,5 +1,3 @@
-"use client";
-
 import React from 'react';
 import { Caption } from '../common/Typography';
 
@@ -62,3 +60,4 @@ const FilterGroup = ({
 };
 
 export default FilterGroup;
+

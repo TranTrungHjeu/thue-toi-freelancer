@@ -47,6 +47,7 @@ public class AiChatService {
     private final ObjectMapper objectMapper;
 
     private final ProjectRepository projectRepository;
+    private final com.thuetoi.repository.UserRepository userRepository;
 
     @Value("${app.ai.chat.project-context-max:40}")
     private int projectContextMax;
@@ -66,12 +67,13 @@ public class AiChatService {
     @Value("${app.ai.chat.system-prompt:Bạn là trợ lý AI của nền tảng Thuê Tôi (freelancer marketplace). Trả lời ngắn gọn, thân thiện, tiếng Việt nếu người dùng dùng tiếng Việt; không bịa đặt tính năng không có; không yêu cầu mật khẩu hay OTP. Khi nói về dự án, chỉ dựa vào danh sách dự án được cung cấp trong system instruction (ID, tiêu đề, trạng thái, ngân sách, kỹ năng, mô tả rút gọn).}")
     private String systemPrompt;
 
-    public AiChatService(ObjectMapper objectMapper, ProjectRepository projectRepository) {
+    public AiChatService(ObjectMapper objectMapper, ProjectRepository projectRepository, com.thuetoi.repository.UserRepository userRepository) {
         this.objectMapper = objectMapper;
         this.projectRepository = projectRepository;
+        this.userRepository = userRepository;
     }
 
-    public String reply(List<AiChatMessageDto> messages) {
+    public com.thuetoi.dto.ai.AiChatReplyDto reply(Long currentUserId, List<AiChatMessageDto> messages) {
         if (geminiApiKey == null || geminiApiKey.isBlank()) {
             throw new BusinessException(
                 "ERR_AI_01",
@@ -84,8 +86,73 @@ public class AiChatService {
             throw new BusinessException("ERR_AI_02", "Nội dung hội thoại không hợp lệ", HttpStatus.BAD_REQUEST);
         }
 
-        String requestBody = buildGeminiChatBody(sanitized);
-        return executeGeminiGenerate(requestBody);
+        String userQuery = sanitized.get(sanitized.size() - 1).getContent();
+
+        // Build prompt with dynamic context
+        String requestBody = buildGeminiChatBody(currentUserId, userQuery, sanitized);
+        String replyText = executeGeminiGenerate(requestBody);
+
+        // Parse structured items
+        List<com.thuetoi.dto.ai.AiChatResultItem> items = new java.util.ArrayList<>();
+
+        // Match project tokens
+        java.util.regex.Pattern projectPattern = java.util.regex.Pattern.compile("@@PROJECT\\((\\d+)\\)@@");
+        java.util.regex.Matcher projectMatcher = projectPattern.matcher(replyText);
+        Set<Long> processedProjectIds = new java.util.HashSet<>();
+        while (projectMatcher.find()) {
+            try {
+                Long projectId = Long.parseLong(projectMatcher.group(1));
+                if (processedProjectIds.add(projectId)) {
+                    projectRepository.findById(projectId).ifPresent(p -> {
+                        items.add(new com.thuetoi.dto.ai.AiChatResultItem(
+                            "project",
+                            p.getId().toString(),
+                            p.getTitle(),
+                            "Ngân sách: " + formatBudgetRange(p.getBudgetMin(), p.getBudgetMax()),
+                            "/workspace/projects?projectId=" + p.getId()
+                        ));
+                    });
+                }
+            } catch (Exception ignored) {}
+        }
+
+        // Match freelancer tokens
+        java.util.regex.Pattern freelancerPattern = java.util.regex.Pattern.compile("@@FREELANCER\\((\\d+)\\)@@");
+        java.util.regex.Matcher freelancerMatcher = freelancerPattern.matcher(replyText);
+        Set<Long> processedFreelancerIds = new java.util.HashSet<>();
+        while (freelancerMatcher.find()) {
+            try {
+                Long freelancerId = Long.parseLong(freelancerMatcher.group(1));
+                if (processedFreelancerIds.add(freelancerId)) {
+                    userRepository.findById(freelancerId).ifPresent(u -> {
+                        String skillsStr = u.getSkills().stream().map(Skill::getName).collect(Collectors.joining(", "));
+                        items.add(new com.thuetoi.dto.ai.AiChatResultItem(
+                            "freelancer",
+                            u.getId().toString(),
+                            u.getFullName(),
+                            skillsStr.isEmpty() ? "Chưa cập nhật kỹ năng" : "Kỹ năng: " + skillsStr,
+                            "/profile/" + u.getId()
+                        ));
+                    });
+                }
+            } catch (Exception ignored) {}
+        }
+
+        // Clean up tokens in reply text so they don't look ugly
+        String cleanedReply = replyText;
+        for (com.thuetoi.dto.ai.AiChatResultItem item : items) {
+            if ("project".equals(item.getType())) {
+                cleanedReply = cleanedReply.replace("@@PROJECT(" + item.getId() + ")@@", "[" + item.getTitle() + "](/workspace/projects?projectId=" + item.getId() + ")");
+            } else if ("freelancer".equals(item.getType())) {
+                cleanedReply = cleanedReply.replace("@@FREELANCER(" + item.getId() + ")@@", "[" + item.getTitle() + "](/profile/" + item.getId() + ")");
+            }
+        }
+
+        // Final fallback replacement for any rogue tokens
+        cleanedReply = cleanedReply.replaceAll("@@PROJECT\\(\\d+\\)@@", "");
+        cleanedReply = cleanedReply.replaceAll("@@FREELANCER\\(\\d+\\)@@", "");
+
+        return new com.thuetoi.dto.ai.AiChatReplyDto(cleanedReply.trim(), items);
     }
 
     private List<AiChatMessageDto> sanitizeMessages(List<AiChatMessageDto> messages) {
@@ -163,11 +230,81 @@ public class AiChatService {
         return c;
     }
 
-    private String buildFullSystemInstructionText() {
-        String base = systemPrompt == null ? "" : systemPrompt;
-        return base + "\n\n---\nDữ liệu dự án đang có trên nền tảng (trạng thái open hoặc in_progress). "
-            + "Chỉ được mô tả hoặc so sánh các dự án có trong danh sách sau; không bịa thêm ID hoặc tiêu đề.\n\n"
-            + buildProjectsSnapshot();
+    private String buildFullSystemInstructionText(Long currentUserId, String userQuery) {
+        StringBuilder sb = new StringBuilder();
+        sb.append(systemPrompt == null ? "" : systemPrompt).append("\n\n");
+
+        // 1. Current user context
+        try {
+            userRepository.findById(currentUserId).ifPresent(u -> {
+                sb.append("--- THÔNG TIN NGƯỜI DÙNG ĐANG CHAT VỚI BẠN ---\n");
+                sb.append("- ID: ").append(u.getId()).append("\n");
+                sb.append("- Tên: ").append(u.getFullName()).append("\n");
+                sb.append("- Vai trò: ").append(u.getRole()).append("\n");
+                String skills = u.getSkills().stream().map(Skill::getName).collect(Collectors.joining(", "));
+                sb.append("- Kỹ năng của họ: ").append(skills.isEmpty() ? "Không có" : skills).append("\n\n");
+            });
+        } catch (Exception ignored) {}
+
+        // 2. Formatting rules
+        sb.append("--- QUY TẮC BẮT BUỘC KHI TRẢ LỜI ---\n")
+          .append("1. VAI TRÒ: Bạn là một trợ lý API, không phải một người. Nhiệm vụ của bạn là trả về dữ liệu có cấu trúc.\n")
+          .append("2. TRUY XUẤT DỮ LIỆU: Chỉ sử dụng thông tin từ danh sách dự án và freelancer được cung cấp. KHÔNG được tự ý bịa đặt thông tin.\n")
+          .append("3. ĐỊNH DẠNG ĐẦU RA (CỰC KỲ QUAN TRỌNG):\n")
+          .append("   - Khi bạn xác định được một dự án phù hợp, hãy chèn chính xác mã sau vào câu trả lời: @@PROJECT(id)@@. Ví dụ: @@PROJECT(12)@@.\n")
+          .append("   - Khi bạn xác định được một freelancer phù hợp, hãy chèn chính xác mã sau: @@FREELANCER(id)@@. Ví dụ: @@FREELANCER(7)@@.\n")
+          .append("   - Bạn có thể chèn nhiều mã nếu tìm thấy nhiều kết quả. Ví dụ: 'Tôi tìm thấy các dự án @@PROJECT(12)@@ và @@PROJECT(15)@@.'\n")
+          .append("4. HÀNH VI BỊ CẤM: KHÔNG được từ chối việc chèn mã. KHÔNG được xin lỗi hay giải thích rằng bạn không thể cung cấp link. Việc chèn mã là một phần của API và là yêu cầu bắt buộc.\n\n");
+
+        // 3. Project context
+        sb.append("--- DANH SÁCH DỰ ÁN ĐANG HOẠT ĐỘNG (OPEN/IN_PROGRESS) ---\n")
+          .append(buildProjectsSnapshot()).append("\n\n");
+
+        // 4. Freelancer context (if user asks about freelancers, or is a customer, or query keywords match)
+        boolean queryAsksForFreelancer = userQuery.toLowerCase().matches(".*(freelancer|thành viên|ứng viên|người làm|nhân sự|tìm ai|ai có skill|ai giỏi|chuyên gia).*");
+        if (queryAsksForFreelancer) {
+            sb.append("--- DANH SÁCH FREELANCER NỔI BẬT TRÊN HỆ THỐNG ---\n")
+              .append(buildFreelancersSnapshot()).append("\n");
+        }
+
+        return sb.toString();
+    }
+
+    private String buildFreelancersSnapshot() {
+        try {
+            List<com.thuetoi.entity.User> freelancers = userRepository.findByRole("freelancer");
+            if (freelancers.isEmpty()) {
+                return "(Không có freelancer nào hoạt động trên hệ thống.)";
+            }
+
+            // Limit to top 20 active/verified freelancers for context window length
+            List<com.thuetoi.entity.User> top = freelancers.stream()
+                .filter(u -> u.getIsActive() != null && u.getIsActive())
+                .sorted(Comparator.comparing(com.thuetoi.entity.User::getVerified, Comparator.nullsLast(Comparator.reverseOrder())))
+                .limit(20)
+                .toList();
+
+            StringBuilder sb = new StringBuilder();
+            for (com.thuetoi.entity.User u : top) {
+                sb.append("- [id=").append(u.getId()).append("] ");
+                sb.append(u.getFullName());
+                sb.append(" | trạng_thái=").append(u.getIsActive() ? "active" : "inactive");
+                sb.append(" | xác_thực=").append(u.getVerified() != null && u.getVerified() ? "đã_xác_thực" : "chưa_xác_thực");
+                String skills = u.getSkills().stream().map(Skill::getName).collect(Collectors.joining(", "));
+                if (!skills.isEmpty()) {
+                    sb.append(" | kỹ_năng=").append(skills);
+                }
+                String desc = ellipsis(u.getProfileDescription(), 150);
+                if (!desc.isEmpty()) {
+                    sb.append(" | mô_tả=").append(desc);
+                }
+                sb.append('\n');
+            }
+            return sb.toString().trim();
+        } catch (Exception ex) {
+            log.warn("Failed to build freelancers snapshot", ex);
+            return "(Không thể lấy danh sách freelancer.)";
+        }
     }
 
     private String buildProjectsSnapshot() {
@@ -266,15 +403,15 @@ public class AiChatService {
         return t.substring(0, Math.max(0, maxLen - 1)) + "…";
     }
 
-    private String buildGeminiChatBody(List<AiChatMessageDto> messages) {
+    private String buildGeminiChatBody(Long currentUserId, String userQuery, List<AiChatMessageDto> messages) {
         try {
             ObjectNode root = objectMapper.createObjectNode();
             ObjectNode systemInstruction = root.putObject("systemInstruction");
             ArrayNode sysParts = systemInstruction.putArray("parts");
-            sysParts.addObject().put("text", buildFullSystemInstructionText());
+            sysParts.addObject().put("text", buildFullSystemInstructionText(currentUserId, userQuery));
 
             ObjectNode generationConfig = root.putObject("generationConfig");
-            generationConfig.put("temperature", 0.65);
+            generationConfig.put("temperature", 0.35); // Lower temperature for more analytical results
             generationConfig.put("maxOutputTokens", MAX_OUTPUT_TOKENS);
 
             ArrayNode contents = root.putArray("contents");

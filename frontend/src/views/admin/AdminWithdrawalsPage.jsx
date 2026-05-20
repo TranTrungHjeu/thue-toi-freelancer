@@ -1,5 +1,3 @@
-"use client";
-
 import React, { useEffect, useState, useCallback, useMemo } from 'react';
 import { 
   Search, 
@@ -319,3 +317,4 @@ const AdminWithdrawalsPage = () => {
 };
 
 export default AdminWithdrawalsPage;
+

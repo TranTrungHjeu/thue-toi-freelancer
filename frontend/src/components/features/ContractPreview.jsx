@@ -1,5 +1,3 @@
-"use client";
-
 import React from 'react';
 import { H2, Text, Caption } from '../common/Typography';
 import { Page, Download, EditPencil } from 'iconoir-react';
@@ -82,3 +80,4 @@ const ContractPreview = ({
 };
 
 export default ContractPreview;
+

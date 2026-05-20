@@ -1,5 +1,3 @@
-"use client";
-
 import React from 'react';
 import { H2, Text } from '../common/Typography';
 import Button from '../common/Button';
@@ -37,3 +35,4 @@ const EmptyState = ({
 };
 
 export default EmptyState;
+

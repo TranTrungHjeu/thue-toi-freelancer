@@ -1,8 +1,6 @@
-"use client";
-
 import React, { useEffect, useState, useCallback } from 'react';
-import { 
-  ShieldCheck, 
+import {
+  ShieldCheck,
   Mail,
 } from 'iconoir-react';
 import { H1, Text, Caption } from '../../components/common/Typography';
@@ -98,6 +96,34 @@ const AdminKycPage = () => {
               <Mail className="w-3 h-3" /> {row.user?.email || 'N/A'}
             </span>
           </div>
+        </div>
+      )
+    },
+    {
+      key: 'ocrData',
+      label: 'Thông tin AI (OCR)',
+      render: (_, row) => (
+        <div className="flex flex-col gap-1 py-1">
+          {row.idNumber ? (
+            <>
+              <div className="flex items-center gap-2">
+                <span className="text-[10px] font-bold text-slate-400 uppercase w-12">Số ID:</span>
+                <span className="text-xs font-semibold text-slate-700">{row.idNumber}</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <span className="text-[10px] font-bold text-slate-400 uppercase w-12">Họ tên:</span>
+                <span className={`text-xs font-bold ${row.fullName?.toLowerCase() === row.user?.fullName?.toLowerCase() ? 'text-emerald-600' : 'text-amber-600'}`}>
+                  {row.fullName}
+                </span>
+              </div>
+              <div className="flex items-center gap-2">
+                <span className="text-[10px] font-bold text-slate-400 uppercase w-12">NS:</span>
+                <span className="text-xs font-medium text-slate-600">{row.birthday}</span>
+              </div>
+            </>
+          ) : (
+            <span className="text-[10px] text-slate-400 italic">Không có dữ liệu OCR</span>
+          )}
         </div>
       )
     },
@@ -255,3 +281,4 @@ const AdminKycPage = () => {
 };
 
 export default AdminKycPage;
+

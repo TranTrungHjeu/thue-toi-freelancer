@@ -110,122 +110,124 @@ export const messages = {
       openMenu: "Mở menu",
       notSignedIn: "Chưa đăng nhập",
       logout: "Đăng xuất",
-      version: "Bản thử nghiệm 1.0.0",
+      version: "Phiên bản 1.0.0",
+      conversations: "Tin nhắn",
       navigation: {
-        workspace: "Bàn làm việc",
+        workspace: "Khu làm việc",
         tools: "Công cụ",
-        dashboard: "Bảng điều khiển",
+        dashboard: "Tổng quan",
         projects: "Dự án",
         contracts: "Hợp đồng",
         myContracts: "Hợp đồng của tôi",
-        findJobs: "Tìm việc làm",
+        findJobs: "Tìm việc",
         rent: "Thuê",
         notifications: "Thông báo",
         profile: "Hồ sơ",
-        gallery: "Thư viện mẫu",
-        apiLab: "Kiểm thử API",
-        adminDashboard: "Bảng điều hành",
-        adminUsers: "Quản trị người dùng",
-        adminProjects: "Kiểm duyệt dự án",
-        adminKyc: "Xác thực danh tính",
-        adminReports: "Báo cáo vi phạm",
-        adminFinance: "Trung tâm tài chính",
-        adminWithdrawals: "Phê duyệt rút tiền",
-        adminBroadcast: "Thông báo hệ thống",
-        adminSkills: "Danh mục chuyên môn",
-        adminSettings: "Cài đặt hệ thống",
-        adminLogs: "Nhật ký hệ thống",
+        gallery: "Thư viện",
+        apiLab: "Thử API",
+        adminDashboard: "Bảng điều khiển",
+        adminUsers: "Quản lý người dùng",
+        adminProjects: "Duyệt dự án",
+        adminKyc: "Xác thực",
+        adminReports: "Báo cáo",
+        adminFinance: "Tài chính",
+        adminWithdrawals: "Rút tiền",
+        adminBroadcast: "Thông báo",
+        adminSkills: "Kỹ năng",
+        adminSettings: "Cài đặt",
+        adminLogs: "Nhật ký",
       },
       adminSections: {
-        moderation: "Điều hành & Kiểm duyệt",
-        finance: "Tài chính & Thu nhập",
-        system: "Quản trị hệ thống",
+        moderation: "Kiểm duyệt",
+        finance: "Tài chính",
+        system: "Hệ thống",
       },
       aiChat: {
         openLabel: "Mở trợ lý AI",
         title: "Trợ lý Thuê Tôi",
-        subtitle: "Gợi ý theo dự án đang mở và đang làm trên nền tảng",
-        placeholder: "Hỏi về workspace, dự án, hồ sơ…",
+        subtitle: "Hỗ trợ về dự án, hợp đồng và hồ sơ của bạn",
+        placeholder: "Hỏi về dự án, hợp đồng, hồ sơ…",
         send: "Gửi",
-        thinking: "Đang trả lời…",
-        empty: "Xin chào! Mình có thể gợi ý cách dùng nền tảng, không thay bạn thao tác bảo mật.",
+        thinking: "Đang suy nghĩ…",
+        empty:
+          "Xin chào! Mình có thể giúp bạn hiểu cách dùng nền tảng. Hỏi bất cứ điều gì nhé!",
         close: "Đóng",
-        error: "Không nhận được phản hồi. Thử lại sau.",
-        configMissing: "Chưa cấu hình GEMINI_API_KEY trên máy chủ.",
+        error: "Không nhận được phản hồi. Vui lòng thử lại.",
+        configMissing: "Chưa cấu hình API key trên máy chủ.",
       },
     },
     landing: {
       tagline: "Nền tảng kết nối Khách hàng và Freelancer",
       gallery: "Thư viện",
       login: "Đăng nhập",
-      getStarted: "Bắt đầu",
+      getStarted: "Bắt đầu ngay",
       heroBadge: "Làm việc nhanh, rõ ràng",
       heroTitle:
-        "Nơi Khách hàng và Freelancer bắt đầu dự án một cách chuyên nghiệp.",
+        "Nơi Khách hàng và Freelancer kết nối, trao đổi báo giá và chốt hợp đồng.",
       heroDescription:
-        "Đăng dự án, nhận báo giá và theo dõi hợp đồng trong một không gian làm việc thống nhất.",
-      createAccount: "Tạo tài khoản mới",
+        "Đăng dự án, nhận báo giá từ Freelancer, và quản lý hợp đồng tất cả ở một nơi.",
+      createAccount: "Tạo tài khoản",
       enterWorkspace: "Vào khu làm việc",
-      apiLab: "Phòng thử API",
+      apiLab: "Thử API",
       processTitle: "Cách hoạt động",
       stepLabel: "Bước {index}",
       steps: [
         {
-          title: "Bắt đầu đúng vai trò",
+          title: "Chọn vai trò phù hợp",
           description:
-            "Khách hàng đăng dự án, Freelancer gửi báo giá. Mỗi vai trò có trải nghiệm phù hợp ngay từ đầu.",
+            "Khách hàng đăng dự án, Freelancer tìm việc. Mỗi vai trò có giao diện riêng phù hợp.",
           icon: "userBag",
         },
         {
           title: "Xác thực email",
           description:
-            "Tài khoản chỉ đăng nhập sau khi xác thực email thành công.",
+            "Xác thực email để kích hoạt tài khoản và bắt đầu sử dụng nền tảng.",
           icon: "shieldCheck",
         },
         {
-          title: "Bàn làm việc tập trung",
+          title: "Quản lý tất cả ở một nơi",
           description:
-            "Theo dõi mọi biến động của dự án, hợp đồng và thông báo realtime tại một nơi duy nhất.",
+            "Xem dự án, hợp đồng, thông báo và tin nhắn tất cả trong một khu làm việc.",
           icon: "lock",
         },
       ],
       roleCards: [
         {
           eyebrow: "Khách hàng",
-          title: "Đăng dự án, xét duyệt báo giá và quản lý hợp đồng",
+          title: "Đăng dự án và tìm Freelancer phù hợp",
           bullets: [
-            "Công bố dự án mới",
-            "Lựa chọn Freelancer phù hợp",
-            "Kiểm soát các mốc bàn giao",
+            "Đăng dự án nhanh chóng",
+            "Nhận báo giá từ nhiều Freelancer",
+            "Quản lý hợp đồng và thanh toán",
           ],
         },
         {
           eyebrow: "Freelancer",
-          title: "Tiếp cận dự án triệu đô và gửi báo giá cạnh tranh",
+          title: "Tìm việc làm và kiếm thu nhập",
           bullets: [
-            "Khám phá các dự án đang mở",
-            "Gửi báo giá chuyên nghiệp",
-            "Quản lý tiến độ công việc",
+            "Duyệt các dự án đang tuyển",
+            "Gửi báo giá cạnh tranh",
+            "Hoàn thành công việc và nhận tiền",
           ],
         },
       ],
       featureCards: [
         {
-          title: "Điều phối dự án",
+          title: "Kết nối trực tiếp",
           description:
-            "Kết nối Khách hàng và Freelancer một cách liền mạch trên cùng một hệ sinh thái.",
+            "Khách hàng và Freelancer gặp nhau trên một nền tảng duy nhất, không trung gian.",
           icon: "page",
         },
         {
-          title: "Danh tính và Quyền hạn",
+          title: "Phân quyền rõ ràng",
           description:
-            "Hệ thống phân quyền thông minh giúp bảo vệ dữ liệu và chức năng đúng vai trò.",
+            "Mỗi vai trò có quyền hạn riêng, đảm bảo an toàn dữ liệu và công bằng cho cả hai bên.",
           icon: "profileCircle",
         },
         {
-          title: "Bảo mật tuyệt đối",
+          title: "Thanh toán an toàn",
           description:
-            "Cơ chế xác thực đa tầng đảm bảo quyền lợi và sự riêng tư cho mọi giao dịch.",
+            "Tiền được giữ an toàn cho đến khi công việc hoàn thành, bảo vệ cả Khách hàng và Freelancer.",
           icon: "lock",
         },
       ],
@@ -236,56 +238,56 @@ export const messages = {
       login: {
         navAction: "Đăng ký",
         title: "Chào mừng trở lại",
-        description: "Đăng nhập để quản lý dự án, báo giá và hợp đồng.",
-        errorTitle: "Không thể đăng nhập",
+        description: "Đăng nhập để quản lý dự án, hợp đồng và báo giá.",
+        errorTitle: "Đăng nhập không thành công",
         emailLabel: "Email",
         emailPlaceholder: "ban@thuetoi.vn",
         passwordLabel: "Mật khẩu",
         passwordPlaceholder: "••••••••",
-        rememberMe: "Ghi nhớ đăng nhập",
+        rememberMe: "Ghi nhớ tôi",
         unverifiedLink: "Chưa xác thực email?",
         submit: "Đăng nhập",
-        submitting: "Đang đăng nhập...",
-        workspaceShortcut: "Vào workspace",
+        submitting: "Đang xử lý...",
+        workspaceShortcut: "Vào khu làm việc",
         footerPrompt: "Chưa có tài khoản?",
-        footerAction: "Tạo ngay",
+        footerAction: "Tạo tài khoản mới",
       },
       register: {
         navAction: "Đăng nhập",
         title: "Tạo tài khoản mới",
         description:
-          "Chọn đúng vai trò để hệ thống gửi mã xác thực email và kích hoạt tài khoản.",
-        errorTitle: "Không thể tiếp tục",
+          "Chọn vai trò của bạn, rồi hệ thống sẽ gửi mã xác thực email để kích hoạt tài khoản.",
+        errorTitle: "Không thể tạo tài khoản",
         fullNameLabel: "Họ và tên",
         fullNamePlaceholder: "Nguyễn Văn A",
         emailLabel: "Email",
         emailPlaceholder: "ban@thuetoi.vn",
-        roleLabel: "Vai trò",
+        roleLabel: "Bạn là",
         passwordLabel: "Mật khẩu",
-        passwordPlaceholder: "Ít nhất 6 ký tự",
-        profileDescriptionLabel: "Mô tả ngắn",
+        passwordPlaceholder: "Tối thiểu 6 ký tự",
+        profileDescriptionLabel: "Giới thiệu bản thân",
         profileDescriptionPlaceholder:
-          "Giới thiệu ngắn về nhu cầu thuê hoặc năng lực chuyên môn của bạn.",
-        submit: "Đăng ký",
-        submitting: "Đang tạo tài khoản...",
+          "Nêu tóm tắt nhu cầu hoặc kỹ năng của bạn để Freelancer/Khách hàng hiểu rõ hơn.",
+        submit: "Tạo tài khoản",
+        submitting: "Đang tạo...",
         footerPrompt: "Đã có tài khoản?",
-        footerAction: "Đăng nhập ngay",
+        footerAction: "Đăng nhập",
       },
       verify: {
         navAction: "Đăng nhập",
         title: "Xác thực email",
         description:
-          "Kiểm tra hộp thư và nhập mã 6 chữ số để kích hoạt tài khoản.",
-        errorTitle: "Không thể xác thực",
+          "Kiểm tra email của bạn và nhập mã 6 chữ số để kích hoạt tài khoản.",
+        errorTitle: "Xác thực không thành công",
         emailLabel: "Email",
         emailPlaceholder: "ban@thuetoi.vn",
-        submit: "Xác thực tài khoản",
+        submit: "Xác thực ngay",
         submitting: "Đang xác thực...",
-        resendLabel: "Chưa nhận được?",
-        resend: "Gửi lại mã xác thực",
-        resending: "Đang gửi lại...",
-        backToRegister: "Quay lại đăng ký",
-        loginAction: "Đã xác thực? Đăng nhập",
+        resendLabel: "Chưa nhận được mã?",
+        resend: "Gửi lại mã",
+        resending: "Đang gửi...",
+        backToRegister: "Quay lại",
+        loginAction: "Đã xác thực? Đăng nhập ngay",
       },
     },
     profilePage: {
@@ -296,14 +298,17 @@ export const messages = {
       hero: {
         caption: "Hồ sơ người dùng",
         title: "Hồ sơ của tôi",
-        description: "Quản lý thông tin cá nhân, vai trò và các cài đặt liên quan đến tài khoản.",
+        description:
+          "Quản lý thông tin cá nhân, vai trò và các cài đặt liên quan đến tài khoản.",
         refresh: "Đồng bộ lại",
         refreshing: "Đang đồng bộ...",
       },
       roleCallout: {
         title: "Vai trò hiện tại",
-        customerDescription: "Bạn đang sử dụng tài khoản Khách hàng để đăng dự án, xét duyệt báo giá và quản lý hợp đồng.",
-        freelancerDescription: "Bạn đang sử dụng tài khoản Freelancer để tìm dự án, gửi báo giá và quản lý tiến độ công việc.",
+        customerDescription:
+          "Bạn đang sử dụng tài khoản Khách hàng để đăng dự án, xét duyệt báo giá và quản lý hợp đồng.",
+        freelancerDescription:
+          "Bạn đang sử dụng tài khoản Freelancer để tìm dự án, gửi báo giá và quản lý tiến độ công việc.",
       },
       identity: {
         caption: "Thông tin cá nhân",
@@ -333,7 +338,8 @@ export const messages = {
       cvAutoFill: {
         caption: "CV Autofill",
         title: "Cập nhật hồ sơ từ PDF CV",
-        description: "Tải lên file CV PDF, hệ thống sẽ đọc nội dung bằng AI và cho phép bạn chọn từng field trước khi cập nhật vào hồ sơ.",
+        description:
+          "Tải lên file CV PDF, hệ thống sẽ đọc nội dung bằng AI và cho phép bạn chọn từng field trước khi cập nhật vào hồ sơ.",
         uploadTitle: "Upload CV PDF",
         uploadHint: "Chỉ hỗ trợ .pdf — tối đa 1000 KB",
         selectedFileLabel: "File đã chọn",
@@ -352,9 +358,11 @@ export const messages = {
         selectAll: "Chọn tất cả",
         clear: "Xóa file",
         mappingCaption: "Mapping dữ liệu",
-        mappingDescription: "fullName, email, phone, location, bio, skills, experienceYears và education sẽ được map vào hồ sơ hiện có.",
+        mappingDescription:
+          "fullName, email, phone, location, bio, skills, experienceYears và education sẽ được map vào hồ sơ hiện có.",
         privacyCaption: "Lưu ý",
-        privacyDescription: "Email chỉ được cập nhật sau khi bạn bấm xác nhận. Kỹ năng sẽ đồng bộ vào danh mục kỹ năng chuẩn của hệ thống.",
+        privacyDescription:
+          "Email chỉ được cập nhật sau khi bạn bấm xác nhận. Kỹ năng sẽ đồng bộ vào danh mục kỹ năng chuẩn của hệ thống.",
         invalidFile: "Vui lòng chọn file PDF hợp lệ.",
         fields: {
           fullNameLabel: "Họ và tên",
@@ -375,7 +383,8 @@ export const messages = {
         useCvEmailForChangeButton: "Dùng email trong CV cho ô Email mới",
         useCvEmailForChangeHint:
           "Chỉ điền sẵn ô đổi email và chuyển sang tab bảo mật. Bạn vẫn phải nhập mật khẩu, gửi OTP và xác nhận.",
-        useCvEmailSameAsCurrent: "Email trong CV trùng với email đăng nhập hiện tại.",
+        useCvEmailSameAsCurrent:
+          "Email trong CV trùng với email đăng nhập hiện tại.",
       },
     },
     toasts: {
@@ -401,14 +410,16 @@ export const messages = {
         refreshError: "Không thể đồng bộ hồ sơ.",
         cvExtractSuccess: "Đã đọc xong file CV.",
         cvExtractError: "Không thể trích xuất dữ liệu từ CV.",
-        cvFileTooLarge: "File PDF vượt quá 1000 KB. Vui lòng chọn file nhỏ hơn.",
+        cvFileTooLarge:
+          "File PDF vượt quá 1000 KB. Vui lòng chọn file nhỏ hơn.",
         cvUpdateSuccess: "Đã cập nhật hồ sơ từ CV thành công.",
         cvUpdateError: "Không thể cập nhật hồ sơ từ CV.",
         cvEmailPrefilledForChange:
           "Đã điền email mới từ CV. Vui lòng nhập mật khẩu và gửi OTP tới email mới.",
-        cvEmailSameAsCurrent: "Email trong CV trùng với email đăng nhập hiện tại.",
+        cvEmailSameAsCurrent:
+          "Email trong CV trùng với email đăng nhập hiện tại.",
         cvEmailReverify:
-          "Email đăng nhập đã đổi từ CV: tài khoản tạm chưa xác thực. Kiểm tra hộp thư email mới để lấy OTP, dùng mục xác thực email hoặc \"Gửi lại mã\". Các phiên đăng nhập khác có thể đã bị đăng xuất.",
+          'Email đăng nhập đã đổi từ CV: tài khoản tạm chưa xác thực. Kiểm tra hộp thư email mới để lấy OTP, dùng mục xác thực email hoặc "Gửi lại mã". Các phiên đăng nhập khác có thể đã bị đăng xuất.',
       },
       dashboard: {
         loadError: "Không thể tải trang tổng quan.",
@@ -659,10 +670,12 @@ export const messages = {
         bulkLock: "Khóa đã chọn",
         bulkUnlock: "Mở khóa đã chọn",
         bulkConfirmTitle: "Áp dụng cho {count} tài khoản",
-        selfStatusError: "Không thể khóa hoặc mở khóa chính tài khoản đang đăng nhập.",
+        selfStatusError:
+          "Không thể khóa hoặc mở khóa chính tài khoản đang đăng nhập.",
         detailLoadError: "Không thể tải chi tiết người dùng.",
         emptyTitle: "Không tìm thấy người dùng",
-        emptyDesc: "Thử đổi bộ lọc hoặc từ khóa để xem lại danh sách tài khoản.",
+        emptyDesc:
+          "Thử đổi bộ lọc hoặc từ khóa để xem lại danh sách tài khoản.",
         projectsMetric: "Dự án",
         bidsMetric: "Báo giá",
         contractsMetric: "Hợp đồng",
@@ -838,7 +851,8 @@ export const messages = {
         ERR_CONTRACT_02: "Dự án này đã có hợp đồng.",
         ERR_MILESTONE_01: "Không tìm thấy mốc thanh toán.",
         ERR_NOTIFICATION_01: "Không tìm thấy thông báo.",
-        ERR_FILE_01: "Tệp không hợp lệ. Vui lòng kiểm tra định dạng, tên và dung lượng.",
+        ERR_FILE_01:
+          "Tệp không hợp lệ. Vui lòng kiểm tra định dạng, tên và dung lượng.",
         ERR_FILE_02: "Không thể tải tệp lên. Vui lòng thử lại.",
         ERR_FILE_03: "Ngữ cảnh tải tệp không hợp lệ.",
         ERR_SYS_01: "Hệ thống đang bận. Vui lòng thử lại sau.",
@@ -978,6 +992,7 @@ export const messages = {
       notSignedIn: "Not signed in",
       logout: "Sign out",
       version: "Preview build 1.0.0",
+      conversations: "Conversations",
       navigation: {
         workspace: "Workspace",
         tools: "Tools",
@@ -1014,7 +1029,8 @@ export const messages = {
         placeholder: "Ask about the workspace, projects, profile…",
         send: "Send",
         thinking: "Thinking…",
-        empty: "Hi! I can explain how the platform works; I cannot act on security steps for you.",
+        empty:
+          "Hi! I can explain how the platform works; I cannot act on security steps for you.",
         close: "Close",
         error: "No response. Please try again.",
         configMissing: "GEMINI_API_KEY is not configured on the server.",
@@ -1162,14 +1178,17 @@ export const messages = {
       hero: {
         caption: "User profile",
         title: "My Profile",
-        description: "Manage your personal information, role, and account-related settings.",
+        description:
+          "Manage your personal information, role, and account-related settings.",
         refresh: "Sync profile",
         refreshing: "Syncing...",
       },
       roleCallout: {
         title: "Current role",
-        customerDescription: "You are using a Customer account to post projects, review bids, and manage contracts.",
-        freelancerDescription: "You are using a Freelancer account to find projects, submit bids, and manage your work progress.",
+        customerDescription:
+          "You are using a Customer account to post projects, review bids, and manage contracts.",
+        freelancerDescription:
+          "You are using a Freelancer account to find projects, submit bids, and manage your work progress.",
       },
       identity: {
         caption: "Personal information",
@@ -1199,7 +1218,8 @@ export const messages = {
       cvAutoFill: {
         caption: "CV Autofill",
         title: "Update profile from PDF CV",
-        description: "Upload a PDF CV, let AI read it, and choose which fields to update before saving to your profile.",
+        description:
+          "Upload a PDF CV, let AI read it, and choose which fields to update before saving to your profile.",
         uploadTitle: "Upload CV PDF",
         uploadHint: "PDF only — max 1000 KB",
         selectedFileLabel: "Selected file",
@@ -1211,16 +1231,19 @@ export const messages = {
         previewCaption: "Update preview",
         previewTitle: "Information that will be updated",
         selectedCount: "{count} field selected",
-        emptyPreview: "No CV data yet. Upload a PDF file to preview parsed information.",
+        emptyPreview:
+          "No CV data yet. Upload a PDF file to preview parsed information.",
         confirm: "Confirm update",
         updating: "Updating...",
         cancel: "Cancel",
         selectAll: "Select all",
         clear: "Clear file",
         mappingCaption: "Data mapping",
-        mappingDescription: "fullName, email, phone, location, bio, skills, experienceYears, and education will be mapped to the existing profile.",
+        mappingDescription:
+          "fullName, email, phone, location, bio, skills, experienceYears, and education will be mapped to the existing profile.",
         privacyCaption: "Note",
-        privacyDescription: "Email is updated only after you confirm. Skills are synchronized against the system skill catalog.",
+        privacyDescription:
+          "Email is updated only after you confirm. Skills are synchronized against the system skill catalog.",
         invalidFile: "Please choose a valid PDF file.",
         fields: {
           fullNameLabel: "Full name",
@@ -1241,7 +1264,8 @@ export const messages = {
         useCvEmailForChangeButton: "Use CV email for new email field",
         useCvEmailForChangeHint:
           "This only prefills the change-email form and opens the Security tab. You must still enter your password, send OTP, and confirm.",
-        useCvEmailSameAsCurrent: "The CV email matches your current login email.",
+        useCvEmailSameAsCurrent:
+          "The CV email matches your current login email.",
       },
     },
     toasts: {
@@ -1267,7 +1291,8 @@ export const messages = {
         refreshError: "Could not sync the profile.",
         cvExtractSuccess: "CV file parsed successfully.",
         cvExtractError: "Could not extract data from the CV.",
-        cvFileTooLarge: "This PDF is larger than 1000 KB. Please choose a smaller file.",
+        cvFileTooLarge:
+          "This PDF is larger than 1000 KB. Please choose a smaller file.",
         cvUpdateSuccess: "Profile updated from CV successfully.",
         cvUpdateError: "Could not update the profile from CV.",
         cvEmailPrefilledForChange:
@@ -1513,10 +1538,12 @@ export const messages = {
         bulkLock: "Lock selected",
         bulkUnlock: "Unlock selected",
         bulkConfirmTitle: "Apply to {count} accounts",
-        selfStatusError: "You cannot lock or unlock the account currently signed in.",
+        selfStatusError:
+          "You cannot lock or unlock the account currently signed in.",
         detailLoadError: "Could not load user details.",
         emptyTitle: "No users found",
-        emptyDesc: "Try changing filters or search keywords to inspect the account list again.",
+        emptyDesc:
+          "Try changing filters or search keywords to inspect the account list again.",
         projectsMetric: "Projects",
         bidsMetric: "Bids",
         contractsMetric: "Contracts",

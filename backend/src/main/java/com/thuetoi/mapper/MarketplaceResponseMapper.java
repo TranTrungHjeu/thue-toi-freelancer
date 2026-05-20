@@ -214,7 +214,8 @@ public class MarketplaceResponseMapper {
             user.getFullName(),
             user.getRole(),
             user.getAvatarUrl(),
-            toSkillNames(user.getSkills())
+            toSkillNames(user.getSkills()),
+            user.getKycApproved() != null ? user.getKycApproved() : false
         );
     }
 

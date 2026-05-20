@@ -9,3 +9,4 @@ const InfoPanel = ({ className = '', children }) => {
 };
 
 export default InfoPanel;
+

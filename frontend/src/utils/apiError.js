@@ -179,3 +179,4 @@ export const createApiError = (error, fallbackMessage = '', locale = getActiveLo
 
 export const getUserFacingErrorMessage = (error, fallbackMessage = '', locale = getActiveLocale()) =>
   createApiError(error, fallbackMessage, locale).message;
+

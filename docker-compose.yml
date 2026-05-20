@@ -1,6 +1,6 @@
 services:
   # ----------------------------------------------
-  # MySQL 
+  # MySQL
   # ----------------------------------------------
   mysql-db:
     image: mysql:8.0
@@ -48,12 +48,13 @@ services:
       SEPAY_BANK_ACCOUNT_XID: ${SEPAY_BANK_ACCOUNT_XID}
       SEPAY_VA_PREFIX: ${SEPAY_VA_PREFIX:-}
       SEPAY_WEBHOOK_SECRET: ${SEPAY_WEBHOOK_SECRET}
+      FPT_AI_API_KEY: ${FPT_AI_API_KEY}
     depends_on:
       mysql-db:
         condition: service_healthy
 
   # ----------------------------------------------
-  # Frontend React
+  # Frontend React + Vite
   # ----------------------------------------------
   frontend:
     build:
@@ -70,8 +71,8 @@ services:
     volumes:
       - ./frontend/src:/app/src
       - ./frontend/public:/app/public
-      - ./frontend/jsconfig.json:/app/jsconfig.json
-      - ./frontend/next.config.mjs:/app/next.config.mjs
+      - ./frontend/index.html:/app/index.html
+      - ./frontend/vite.config.js:/app/vite.config.js
       - ./frontend/postcss.config.mjs:/app/postcss.config.mjs
       - ./frontend/tailwind.config.js:/app/tailwind.config.js
     depends_on:

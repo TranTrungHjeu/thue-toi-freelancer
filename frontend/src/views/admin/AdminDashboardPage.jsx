@@ -1,11 +1,9 @@
-"use client";
-
 import React, { useEffect, useState, useMemo } from 'react';
-import { 
-  Group, 
-  PageSearch, 
-  ViewGrid, 
-  Wallet, 
+import {
+  Group,
+  PageSearch,
+  ViewGrid,
+  Wallet,
   StatsUpSquare,
   Activity,
   UserPlus,
@@ -22,16 +20,16 @@ import {
   HardDrive,
   Cpu
 } from 'iconoir-react';
-import { 
-  AreaChart, 
-  Area, 
-  XAxis, 
-  YAxis, 
-  CartesianGrid, 
-  Tooltip, 
-  ResponsiveContainer 
+import {
+  AreaChart,
+  Area,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  ResponsiveContainer
 } from 'recharts';
-import { useRouter } from 'next/navigation';
+import { useNavigate } from 'react-router-dom';
 
 import StatCard from '../../components/common/StatCard';
 import { H1, H2, Text, Caption } from '../../components/common/Typography';
@@ -48,7 +46,7 @@ const AdminDashboardPage = () => {
   const [health, setHealth] = useState(null);
   const [loading, setLoading] = useState(true);
   const { addToast } = useToast();
-  const router = useRouter();
+  const navigate = useNavigate();
 
   useEffect(() => {
     const fetchStats = async () => {
@@ -77,7 +75,7 @@ const AdminDashboardPage = () => {
 
     fetchStats();
     fetchHealth();
-    
+
     // Auto-refresh health every 10s
     const timer = setInterval(fetchHealth, 10000);
     return () => clearInterval(timer);
@@ -102,7 +100,7 @@ const AdminDashboardPage = () => {
 
 
   return (
-    <div 
+    <div
       className="flex flex-col gap-8"
     >
       <header className="mb-8 border-b border-slate-200 pb-6">
@@ -119,17 +117,13 @@ const AdminDashboardPage = () => {
           <Text className="text-slate-500 max-w-xl text-base">
             {t('adminPages.dashboard.greeting')}
           </Text>
-          
+
           {health && (
-            <div className={`ml-auto flex items-center gap-2 px-3 py-1.5 rounded-full border ${
-              health.status === 'UP' ? 'bg-green-50 border-green-100 text-green-700' : 
-              health.status === 'WARNING' ? 'bg-amber-50 border-amber-100 text-amber-700' : 
-              'bg-red-50 border-red-100 text-red-700'
+            <div className={`ml-auto flex items-center px-3 py-1.5 rounded-full border ${
+              health.status === 'UP' ? 'bg-emerald-50 border-emerald-100 text-emerald-700' :
+              health.status === 'WARNING' ? 'bg-amber-50 border-amber-100 text-amber-700' :
+              'bg-rose-50 border-rose-100 text-rose-700'
             }`}>
-              <div className={`w-2 h-2 rounded-full animate-pulse ${
-                health.status === 'UP' ? 'bg-green-500' : 
-                health.status === 'WARNING' ? 'bg-amber-500' : 'bg-red-500'
-              }`} />
               <span className="text-[10px] font-black uppercase tracking-widest leading-none">System {health.status}</span>
             </div>
           )}
@@ -184,7 +178,7 @@ const AdminDashboardPage = () => {
               <Text className="text-[10px] uppercase text-slate-400 font-bold">{t('status.bid.accepted')}</Text>
             </div>
           </div>
-          
+
           <div className="h-64 mt-4">
              {chartData.length > 0 ? (
                <ResponsiveContainer width="100%" height="100%">
@@ -196,30 +190,30 @@ const AdminDashboardPage = () => {
                      </linearGradient>
                    </defs>
                    <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
-                   <XAxis 
-                     dataKey="name" 
-                     axisLine={false} 
-                     tickLine={false} 
-                     tick={{ fontSize: 10, fontWeight: 700, fill: '#94a3b8' }} 
+                   <XAxis
+                     dataKey="name"
+                     axisLine={false}
+                     tickLine={false}
+                     tick={{ fontSize: 10, fontWeight: 700, fill: '#94a3b8' }}
                    />
                    <YAxis hide />
-                   <Tooltip 
-                     contentStyle={{ 
-                       background: '#0f172a', 
-                       border: 'none', 
+                   <Tooltip
+                     contentStyle={{
+                       background: '#0f172a',
+                       border: 'none',
                        borderRadius: '8px',
                        color: '#fff',
                        fontSize: '11px',
                        fontWeight: 700
-                     }} 
+                     }}
                    />
-                   <Area 
-                     type="monotone" 
-                     dataKey="count" 
-                     stroke="#22c55e" 
+                   <Area
+                     type="monotone"
+                     dataKey="count"
+                     stroke="#22c55e"
                      strokeWidth={3}
-                     fillOpacity={1} 
-                     fill="url(#colorCount)" 
+                     fillOpacity={1}
+                     fill="url(#colorCount)"
                    />
                  </AreaChart>
                </ResponsiveContainer>
@@ -227,7 +221,7 @@ const AdminDashboardPage = () => {
                <div className="w-full h-full flex items-center justify-center italic text-slate-300 text-xs">{t('values.notAvailable')}</div>
              )}
           </div>
-          
+
           <div className="absolute top-0 right-0 p-8 opacity-[0.05]">
              <StatsUpSquare width={180} height={180} />
           </div>
@@ -239,7 +233,7 @@ const AdminDashboardPage = () => {
             <Caption className="text-slate-400 font-bold uppercase tracking-widest mb-1">{t('adminPages.dashboard.userStructure')}</Caption>
             <H2 className="text-2xl font-bold tracking-tight text-white">{t('adminPages.dashboard.userStructure')}</H2>
           </div>
-          
+
           <div className="flex flex-col gap-6 my-8">
             <div className="flex justify-between items-center bg-white/5 p-4 border border-white/10 hover:bg-white/10 transition-colors cursor-default">
               <div className="flex items-center gap-3">
@@ -250,7 +244,7 @@ const AdminDashboardPage = () => {
               </div>
               <span className="text-xl font-bold text-white tracking-tight">{stats?.totalCustomers || 0}</span>
             </div>
-            
+
             <div className="flex justify-between items-center bg-white/5 p-4 border border-white/10 hover:bg-white/10 transition-colors cursor-default">
               <div className="flex items-center gap-3">
                 <div className="p-2 bg-green-500/20 text-green-400 border border-green-500/30">
@@ -279,7 +273,7 @@ const AdminDashboardPage = () => {
             <Caption className="text-primary-600 font-bold uppercase tracking-[0.2em]">{t('adminPages.dashboard.liveMonitoring')}</Caption>
             <H2 className="text-2xl font-bold tracking-tight">{t('adminPages.dashboard.resourceTitle')}</H2>
           </div>
-          
+
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <div className="bg-white p-6 shadow-premium border border-slate-100 flex flex-col gap-4 group">
                <div className="flex items-center justify-between">
@@ -294,8 +288,8 @@ const AdminDashboardPage = () => {
                     <span>{health.cpuUsage > 70 ? t('adminPages.dashboard.statusHigh') : t('adminPages.dashboard.statusNormal')}</span>
                  </div>
                  <div className="h-1.5 bg-slate-100 w-full overflow-hidden">
-                    <div 
-                      className={`h-full transition-all duration-1000 ${health.cpuUsage > 80 ? 'bg-red-500' : 'bg-slate-900'}`} 
+                    <div
+                      className={`h-full transition-all duration-1000 ${health.cpuUsage > 80 ? 'bg-red-500' : 'bg-slate-900'}`}
                       style={{ width: `${health.cpuUsage}%` }}
                     />
                  </div>
@@ -315,8 +309,8 @@ const AdminDashboardPage = () => {
                     <span>{(health.usedMemory / (1024 * 1024)).toFixed(0)} MB / {(health.totalMemory / (1024 * 1024)).toFixed(0)} MB</span>
                  </div>
                  <div className="h-1.5 bg-slate-100 w-full overflow-hidden">
-                    <div 
-                      className={`h-full transition-all duration-1000 ${health.memoryUsagePercent > 85 ? 'bg-red-500' : 'bg-slate-900'}`} 
+                    <div
+                      className={`h-full transition-all duration-1000 ${health.memoryUsagePercent > 85 ? 'bg-red-500' : 'bg-slate-900'}`}
                       style={{ width: `${health.memoryUsagePercent}%` }}
                     />
                  </div>
@@ -336,8 +330,8 @@ const AdminDashboardPage = () => {
                     <span>{health.diskUsagePercent > 90 ? t('adminPages.dashboard.statusCrit') : t('adminPages.dashboard.statusSafe')}</span>
                  </div>
                  <div className="h-1.5 bg-slate-100 w-full overflow-hidden">
-                    <div 
-                      className={`h-full transition-all duration-1000 ${health.diskUsagePercent > 90 ? 'bg-red-500' : 'bg-slate-900'}`} 
+                    <div
+                      className={`h-full transition-all duration-1000 ${health.diskUsagePercent > 90 ? 'bg-red-500' : 'bg-slate-900'}`}
                       style={{ width: `${health.diskUsagePercent}%` }}
                     />
                  </div>
@@ -355,43 +349,43 @@ const AdminDashboardPage = () => {
 
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
           {[
-            { 
-              title: t('adminPages.finance.title'), 
-              desc: t('adminPages.finance.caption'), 
-              icon: Coins, 
+            {
+              title: t('adminPages.finance.title'),
+              desc: t('adminPages.finance.caption'),
+              icon: Coins,
               path: "/workspace/admin/finance",
               color: "text-amber-600",
               bgColor: "bg-amber-50"
             },
-            { 
-              title: t('adminPages.settings.title'), 
-              desc: t('adminPages.settings.title'), 
-              icon: Settings, 
+            {
+              title: t('adminPages.settings.title'),
+              desc: t('adminPages.settings.title'),
+              icon: Settings,
               path: "/workspace/admin/settings",
               color: "text-slate-600",
               bgColor: "bg-slate-50"
             },
-            { 
-              title: t('adminPages.kyc.title'), 
-              desc: t('adminPages.kyc.caption'), 
-              icon: ShieldIcon, 
+            {
+              title: t('adminPages.kyc.title'),
+              desc: t('adminPages.kyc.caption'),
+              icon: ShieldIcon,
               path: "/workspace/admin/kyc",
               color: "text-green-600",
               bgColor: "bg-green-50"
             },
-            { 
-              title: t('adminPages.reports.title'), 
-              desc: t('adminPages.reports.caption'), 
-              icon: WarningTriangle, 
+            {
+              title: t('adminPages.reports.title'),
+              desc: t('adminPages.reports.caption'),
+              icon: WarningTriangle,
               path: "/workspace/admin/reports",
               color: "text-red-600",
               bgColor: "bg-red-50"
             }
           ].map((item, idx) => (
-            <Card 
+            <Card
               key={idx}
               className="group p-5 bg-white border border-slate-100 shadow-premium hover:border-primary-500 transition-all cursor-pointer"
-              onClick={() => router.push(item.path)}
+              onClick={() => navigate(item.path)}
             >
               <div className="flex flex-col h-full">
                 <div className={`p-3 w-fit ${item.bgColor} ${item.color} mb-4 transition-transform group-hover:scale-110`}>
@@ -415,3 +409,4 @@ const AdminDashboardPage = () => {
 };
 
 export default AdminDashboardPage;
+

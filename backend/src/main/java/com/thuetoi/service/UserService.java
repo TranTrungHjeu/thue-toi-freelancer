@@ -371,6 +371,7 @@ public class UserService {
             user.getEducation(),
             user.getIsActive(),
             user.getVerified(),
+            user.getKycApproved() != null ? user.getKycApproved() : false,
             user.getCreatedAt(),
             user.getUpdatedAt()
         );

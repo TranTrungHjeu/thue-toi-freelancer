@@ -5,7 +5,7 @@ WORKDIR /app
 COPY package*.json ./
 
 # Cài đặt tất cả thư viện (có thể dùng npm ci nếu có package-lock)
-RUN npm install
+RUN npm install --legacy-peer-deps
 
 # Copy toàn bộ mã nguồn Frontend
 COPY . .

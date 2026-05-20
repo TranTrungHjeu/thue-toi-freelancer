@@ -1,5 +1,3 @@
-"use client";
-
 import React from 'react';
 import { motion } from 'motion/react';
 
@@ -44,3 +42,4 @@ const SegmentedControl = ({
 };
 
 export default SegmentedControl;
+

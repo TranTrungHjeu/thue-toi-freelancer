@@ -1,7 +1,5 @@
-"use client";
-
 ﻿import React, { useEffect, useMemo, useRef, useState } from 'react';
-import Link from 'next/link';
+import { Link } from 'react-router-dom';
 
 import { ChatBubble, Attachment, SendSolid } from 'iconoir-react';
 import marketplaceApi from '../../api/marketplaceApi';
@@ -9,13 +7,25 @@ import { formatDateTime } from '../../utils/formatters';
 import { useI18n } from '../../hooks/useI18n';
 import { useAuth } from '../../hooks/useAuth';
 import { createMessageRealtimeClient } from '../../api/realtimeClient';
+import { normalizeAttachments } from '../../utils/attachments';
+
+const toDisplayText = (value) => {
+  if (typeof value === 'string') return value;
+  if (typeof value === 'number') return String(value);
+  return '';
+};
 
 const getPreview = (message) => {
   if (!message) return 'Chưa có tin nhắn.';
+  const safeContent = toDisplayText(message.content);
   if (message.messageType === 'file') {
-    return message.content || '[Tệp đính kèm]';
+    const attachmentNames = normalizeAttachments(message.attachments)
+      .map((attachment) => attachment.name)
+      .filter(Boolean)
+      .join(', ');
+    return safeContent || attachmentNames || '[Tệp đính kèm]';
   }
-  return message.content || 'Tin nhắn trống.';
+  return safeContent || 'Tin nhắn trống.';
 };
 
 const isExternalLink = (value) => /^https?:\/\//i.test(value || '');
@@ -31,6 +41,7 @@ const ConversationInbox = () => {
   const [loadingMessages, setLoadingMessages] = useState(false);
   const [content, setContent] = useState('');
   const [attachments, setAttachments] = useState('');
+  const [fileToUpload, setFileToUpload] = useState(null);
   const [submitting, setSubmitting] = useState(false);
   const dropdownRef = useRef(null);
 
@@ -151,15 +162,23 @@ const ConversationInbox = () => {
 
     setSubmitting(true);
     try {
-      const nextMessageType = attachments.trim() ? 'file' : 'text';
+      let uploaded = [];
+      if (fileToUpload) {
+        const response = await marketplaceApi.uploadFiles('messages', [fileToUpload], { contractId: selectedContractId });
+        uploaded = normalizeAttachments(response.data || []);
+      }
+      const nextMessageType = uploaded.length > 0 ? 'file' : 'text';
       await marketplaceApi.sendMessage({
         contractId: selectedContractId,
         messageType: nextMessageType,
         content: content.trim(),
-        attachments: attachments.trim(),
+        attachments: uploaded,
       });
       setContent('');
       setAttachments('');
+      setFileToUpload(null);
+    } catch (error) {
+      console.error('Lỗi khi gửi tin nhắn:', error);
     } finally {
       setSubmitting(false);
     }
@@ -182,7 +201,7 @@ const ConversationInbox = () => {
             <div className="flex h-full flex-col border-r border-slate-200">
               <div className="flex items-center justify-between border-b border-slate-100 px-3 py-3">
                 <span className="text-xs font-bold uppercase tracking-[0.14em] text-slate-500">Trò chuyện</span>
-                <Link href="/workspace/contracts" onClick={() => setIsOpen(false)} className="text-xs font-semibold text-primary-700 hover:underline">
+                <Link to="/workspace/contracts" onClick={() => setIsOpen(false)} className="text-xs font-semibold text-primary-700 hover:underline">
                   Mở trang đầy đủ
                 </Link>
               </div>
@@ -228,22 +247,25 @@ const ConversationInbox = () => {
                       <div key={message.id} className={`mb-3 flex ${isSender ? 'justify-end' : 'justify-start'}`}>
                         <div className={`max-w-[80%] border px-3 py-2.5 text-sm shadow-sm ${isSender ? 'border-secondary-900 bg-secondary-900 text-white' : 'border-slate-200 bg-white text-slate-800'}`}>
                           <div className="leading-relaxed">{getPreview(message)}</div>
-                          {message.messageType === 'file' && message.attachments && (
-                            isExternalLink(message.attachments) ? (
-                              <a
-                                href={message.attachments}
-                                target="_blank"
-                                rel="noreferrer"
-                                className={`mt-1.5 block text-xs font-semibold underline ${isSender ? 'text-slate-200' : 'text-primary-700'}`}
-                              >
-                                Mở tệp đính kèm
-                              </a>
-                            ) : (
-                              <div className={`mt-1.5 text-xs ${isSender ? 'text-slate-300' : 'text-slate-500'}`}>
-                                Tệp: {message.attachments}
+                          {message.messageType === 'file' && (() => {
+                            const normalized = normalizeAttachments(message.attachments);
+                            if (normalized.length === 0) return null;
+                            return (
+                              <div className="mt-1.5 flex flex-col gap-1">
+                                {normalized.map((attachment, index) => (
+                                  <a
+                                    key={`${attachment.url}-${index}`}
+                                    href={attachment.url}
+                                    target="_blank"
+                                    rel="noreferrer"
+                                    className={`block text-xs font-semibold underline ${isSender ? 'text-slate-200 hover:text-white' : 'text-primary-700 hover:text-primary-800'}`}
+                                  >
+                                    Tệp: {attachment.name || 'Tải xuống'}
+                                  </a>
+                                ))}
                               </div>
-                            )
-                          )}
+                            );
+                          })()}
                           <div className={`mt-1.5 text-[11px] ${isSender ? 'text-slate-300' : 'text-slate-400'}`}>
                             {formatDateTime(message.sentAt, locale)}
                           </div>
@@ -264,6 +286,7 @@ const ConversationInbox = () => {
                       onChange={(event) => {
                         const selectedFile = event.target.files?.[0];
                         if (selectedFile) {
+                          setFileToUpload(selectedFile);
                           setAttachments(selectedFile.name);
                           if (!content.trim()) setContent(selectedFile.name);
                         }
@@ -297,3 +320,4 @@ const ConversationInbox = () => {
 };
 
 export default ConversationInbox;
+

@@ -1,5 +1,3 @@
-"use client";
-
 import React from 'react';
 import Avatar from './Avatar';
 
@@ -49,3 +47,4 @@ const AvatarGroup = ({
 };
 
 export default AvatarGroup;
+

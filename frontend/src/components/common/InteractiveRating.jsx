@@ -1,5 +1,3 @@
-"use client";
-
 import React, { useState } from 'react';
 import { Star, StarSolid } from 'iconoir-react';
 import { Caption } from './Typography';
@@ -58,3 +56,4 @@ const InteractiveRating = ({
 };
 
 export default InteractiveRating;
+

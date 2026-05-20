@@ -1,5 +1,3 @@
-"use client";
-
 import { useState, useEffect } from 'react';
 import { clearAccessToken } from '../api/axiosClient';
 import authApi from '../api/authApi';
@@ -92,3 +90,4 @@ export const AuthProvider = ({ children }) => {
         </AuthContext.Provider>
     );
 };
+

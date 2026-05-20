@@ -1,5 +1,3 @@
-"use client";
-
 import { useContext } from 'react';
 import { I18nContext } from '../contexts/i18n-context';
 
@@ -14,3 +12,4 @@ export const useI18n = () => {
 };
 
 export default useI18n;
+
