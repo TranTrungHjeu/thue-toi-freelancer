@@ -40,7 +40,7 @@ frontend_test:
       - frontend/.npm
   script:
     - cd frontend
-    - npm ci --cache .npm --prefer-offline
+    - npm ci --cache .npm --prefer-offline --legacy-peer-deps
     - npm run lint
     - npm run build
 

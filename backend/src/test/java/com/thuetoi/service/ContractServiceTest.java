@@ -111,7 +111,7 @@ class ContractServiceTest {
         verify(projectRepository).save(project);
         verify(contractRepository).save(any(Contract.class));
         verify(transactionService).createTransaction(999L, BigDecimal.valueOf(250), "sepay_checkout", "completed");
-        verify(walletService).recordEscrowIn(eq(2L), eq(999L), eq(50L), eq(BigDecimal.valueOf(250)), eq("Landing page"));
+        verify(walletService).recordEscrowIn(eq(1L), eq(999L), eq(50L), eq(BigDecimal.valueOf(250)), eq("Landing page"));
         verify(notificationService).createNotificationForUser(
             eq(2L),
             eq("contract"),
@@ -278,11 +278,11 @@ class ContractServiceTest {
         Contract contract = contract(70L, 10L, 1L, 2L, "in_progress");
         Project project = project(10L, user(1L, "customer"), "Delivery", "in_progress");
 
-        when(contractAccessService.requireAccessibleContract(70L, 2L)).thenReturn(contract);
+        when(contractAccessService.requireCustomerContract(70L, 1L)).thenReturn(contract);
         when(projectRepository.findById(10L)).thenReturn(Optional.of(project));
         when(contractRepository.save(any(Contract.class))).thenAnswer(invocation -> invocation.getArgument(0));
 
-        Contract updated = contractService.updateContractStatus(70L, 2L, "completed");
+        Contract updated = contractService.updateContractStatus(70L, 1L, "completed");
 
         assertThat(updated.getStatus()).isEqualTo("completed");
         assertThat(updated.getEndDate()).isNotNull();
@@ -291,7 +291,7 @@ class ContractServiceTest {
         verify(projectRepository).save(project);
         verify(contractRepository).save(contract);
         verify(notificationService).createNotificationForUser(
-            eq(1L),
+            eq(2L),
             eq("contract"),
             eq("Hợp đồng đã hoàn thành"),
             eq("Contract #70 vừa được cập nhật sang trạng thái \"completed\"."),
