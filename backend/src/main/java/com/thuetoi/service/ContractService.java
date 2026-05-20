@@ -327,10 +327,11 @@ public class ContractService {
             walletService.refundEscrowToCustomer(updatedContract, amount);
         }
 
-        // Tạo transaction khi hợp đồng hoàn thành theo marketplace_rules
+        // Tạo transaction và giải ngân khi hợp đồng hoàn thành theo marketplace_rules
         if (normalizedStatus == ContractStatus.COMPLETED) {
             BigDecimal amount = updatedContract.getTotalAmount() != null ? updatedContract.getTotalAmount() : BigDecimal.ZERO;
             transactionService.createTransaction(contractId, amount, "contract_completion", "completed");
+            walletService.disburseContractTotalToFreelancer(updatedContract, amount);
         }
 
         publishContractEvent(contractId, "contract.status_updated", updatedContract);

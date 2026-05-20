@@ -149,6 +149,38 @@ public class WalletService {
     }
 
     @Transactional
+    public void disburseContractTotalToFreelancer(Contract contract, BigDecimal amount) {
+        User freelancer = userRepository.findByIdForUpdate(contract.getFreelancerId())
+                .orElseThrow(() -> new BusinessException("ERR_AUTH_01", "Freelancer không tồn tại", HttpStatus.NOT_FOUND));
+
+        freelancer.setBalance((freelancer.getBalance() != null ? freelancer.getBalance() : BigDecimal.ZERO).add(amount));
+        userRepository.save(freelancer);
+
+        WalletLedgerEntry releaseEntry = new WalletLedgerEntry();
+        releaseEntry.setUserId(freelancer.getId());
+        releaseEntry.setContractId(contract.getId());
+        releaseEntry.setAmount(amount);
+        releaseEntry.setEntryType("CONTRACT_COMPLETION");
+        releaseEntry.setDescription("Nhận tiền thanh toán hoàn tất từ Hợp đồng #" + contract.getId());
+        walletLedgerEntryRepository.save(releaseEntry);
+
+        String subject = "Thanh toán hợp đồng đã được hoàn tất";
+        String content = "Xin chào " + freelancer.getFullName() + ",\n\n" +
+                "Hợp đồng #" + contract.getId() + " đã được xác nhận hoàn thành bởi khách hàng.\n" +
+                "Số tiền: " + amount + " VND đã được giải ngân vào ví của bạn.\n\n" +
+                "Cảm ơn bạn đã đóng góp cho dự án!";
+
+        emailService.sendEmail(freelancer.getEmail(), subject, content);
+        notificationService.createNotificationForUser(
+                freelancer.getId(),
+                "system",
+                "Thanh toán hợp đồng hoàn tất",
+                "Số tiền " + amount + " VND của hợp đồng #" + contract.getId() + " đã được chuyển vào ví khả dụng.",
+                "/workspace/wallet"
+        );
+    }
+
+    @Transactional
     public void refundEscrowToCustomer(Contract contract, BigDecimal amount) {
         User customer = userRepository.findByIdForUpdate(contract.getClientId())
                 .orElseThrow(() -> new BusinessException("ERR_AUTH_01", "Khách hàng không tồn tại", HttpStatus.NOT_FOUND));
