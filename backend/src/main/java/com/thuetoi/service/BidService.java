@@ -18,6 +18,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.util.List;
 import java.util.Locale;
 import java.util.Optional;
+import java.util.Arrays;
 
 import java.math.BigDecimal;
 
@@ -68,6 +69,22 @@ public class BidService {
         if (project.getUser().getId().equals(freelancerId)) {
             throw new BusinessException("ERR_AUTH_04", "Bạn không thể gửi bid cho chính project của mình", HttpStatus.FORBIDDEN);
         }
+
+        // Kiểm tra bid trùng lặp (chỉ cho phép 1 bid đang hoạt động mỗi freelancer cho 1 dự án)
+        List<Bid> activeBids = bidRepository.findByProjectIdAndFreelancerIdAndStatusIn(
+            projectId,
+            freelancerId,
+            Arrays.asList(BidStatus.PENDING.getValue(), BidStatus.ACCEPTED.getValue())
+        );
+        if (!activeBids.isEmpty()) {
+            throw new BusinessException("ERR_BID_02", "Bạn đã có một báo giá đang chờ xử lý hoặc đã được chấp nhận cho dự án này", HttpStatus.BAD_REQUEST);
+        }
+
+        // Kiểm tra giá so với ngân sách dự án
+        if (project.getBudgetMax() != null && price.compareTo(project.getBudgetMax()) > 0) {
+            throw new BusinessException("ERR_BID_03", "Giá đề xuất không được vượt quá ngân sách tối đa của dự án (" + project.getBudgetMax() + " VND)", HttpStatus.BAD_REQUEST);
+        }
+
         validateBidPayload(price);
 
         Bid bid = new Bid();
