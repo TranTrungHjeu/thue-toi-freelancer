@@ -2,7 +2,7 @@ FROM node:20-slim AS builder
 WORKDIR /app
 
 COPY package*.json ./
-RUN NODE_ENV=development npm install --legacy-peer-deps --no-audit --no-fund
+RUN npm install --include=dev --legacy-peer-deps --no-audit --no-fund
 
 COPY . .
 RUN npm run build
