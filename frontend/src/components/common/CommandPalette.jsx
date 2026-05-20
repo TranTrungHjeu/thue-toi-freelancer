@@ -1,5 +1,3 @@
-"use client";
-
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { Search, Flash } from 'iconoir-react';
@@ -108,3 +106,4 @@ const CommandPalette = ({ isOpen, onClose, actions = [] }) => {
 };
 
 export default CommandPalette;
+

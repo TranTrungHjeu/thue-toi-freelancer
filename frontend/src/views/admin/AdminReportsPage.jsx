@@ -1,5 +1,3 @@
-"use client";
-
 import React, { useEffect, useState, useCallback } from 'react';
 import { 
   WarningTriangle, 
@@ -175,3 +173,4 @@ const AdminReportsPage = () => {
 };
 
 export default AdminReportsPage;
+

@@ -1,5 +1,3 @@
-"use client";
-
 import React, { useEffect, useState, useMemo, useCallback } from 'react';
 import { 
   Database, 
@@ -265,3 +263,4 @@ const AdminSkillsPage = () => {
 };
 
 export default AdminSkillsPage;
+

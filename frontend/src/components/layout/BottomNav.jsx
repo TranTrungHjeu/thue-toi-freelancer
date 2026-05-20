@@ -1,6 +1,4 @@
-"use client";
-
-import Link from 'next/link';
+import { Link } from 'react-router-dom';
 
 
 import React from 'react';
@@ -15,7 +13,7 @@ const BottomNav = ({ items = [], currentPath = '', className = '' }) => {
         return (
           <Link
             key={item.href}
-            href={item.href}
+            to={item.href}
             className={`relative flex flex-col items-center justify-center gap-1 transition-colors ${
               isActive ? 'text-primary-600' : 'text-slate-400 hover:text-secondary-900'
             }`}
@@ -24,7 +22,7 @@ const BottomNav = ({ items = [], currentPath = '', className = '' }) => {
               <item.icon className="h-5 w-5" />
               {item.badge && (
                 <span
-                  className="absolute -right-3 -top-2 min-w-4 border border-white bg-red-500 px-1 text-[9px] font-black leading-4 text-white"
+                  className="absolute -right-3 -top-2 min-w-4 rounded-full border border-white bg-primary-600 px-1 text-[9px] font-bold leading-4 text-white"
                   aria-label={item.badgeLabel}
                 >
                   {item.badge}
@@ -43,3 +41,4 @@ const BottomNav = ({ items = [], currentPath = '', className = '' }) => {
 };
 
 export default BottomNav;
+

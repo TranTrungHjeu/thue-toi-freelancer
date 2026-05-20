@@ -25,3 +25,4 @@ const Textarea = ({ label, error, className = '', ...props }) => {
 };
 
 export default Textarea;
+

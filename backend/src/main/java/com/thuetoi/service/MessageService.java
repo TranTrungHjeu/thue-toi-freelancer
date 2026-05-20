@@ -40,8 +40,10 @@ public class MessageService {
     private NotificationService notificationService;
 
     public Message sendMessage(Long currentUserId, MessageRequest request) {
-        Contract contract = contractAccessService.requireAccessibleContract(request.getContractId(), currentUserId);
-        if (!ContractStatus.IN_PROGRESS.matches(contract.getStatus())) {
+        Long contractId = request.getContractId();
+        Contract contract = contractAccessService.requireAccessibleContract(contractId, currentUserId);
+
+        if (contract == null || !ContractStatus.IN_PROGRESS.matches(contract.getStatus())) {
             throw new BusinessException("ERR_SYS_02", "Chỉ có thể gửi tin nhắn trong hợp đồng đang thực hiện", HttpStatus.BAD_REQUEST);
         }
 
@@ -57,29 +59,45 @@ public class MessageService {
         }
 
         Message message = new Message();
-        message.setContractId(request.getContractId());
+        message.setContractId(contractId);
         message.setSenderId(currentUserId);
         message.setMessageType(messageType.getValue());
         message.setContent(normalizedContent);
         message.setAttachments(normalizedAttachments);
+
         Message savedMessage = messageRepository.save(message);
         MessageResponse response = marketplaceResponseMapper.toMessageResponse(savedMessage);
-        contractMessageWebSocketHandler.broadcast(response);
-
-        if (contractRealtimePublisher != null) {
-            contractRealtimePublisher.publish(request.getContractId(), "message.created", savedMessage);
-        }
 
         Long recipientId = contract.getClientId().equals(currentUserId)
             ? contract.getFreelancerId()
             : contract.getClientId();
-        notificationService.createNotificationForUser(
-            recipientId,
-            "contract",
-            "Tin nhắn mới trong hợp đồng",
-            "Bạn có tin nhắn mới trong contract #" + request.getContractId() + ".",
-            "/workspace/contracts"
-        );
+
+        if (normalizedContent != null && normalizedContent.startsWith("[CALL_INVITATION]")) {
+            String callType = normalizedContent.contains("Video") ? "Video" : "Thoại";
+            notificationService.createNotificationForUser(
+                recipientId,
+                "call",
+                "Cuộc gọi đến từ đối tác",
+                callType + "|" + contractId + "|" + currentUserId,
+                "/workspace/contracts?contractId=" + contractId
+            );
+        }
+
+        contractMessageWebSocketHandler.broadcast(response);
+
+        if (contractRealtimePublisher != null) {
+            contractRealtimePublisher.publish(contractId, "message.created", savedMessage);
+        }
+
+        if (normalizedContent == null || !normalizedContent.startsWith("[CALL_INVITATION]")) {
+            notificationService.createNotificationForUser(
+                recipientId,
+                "contract",
+                "Tin nhắn mới trong hợp đồng",
+                "Bạn có tin nhắn mới trong contract #" + contractId + ".",
+                "/workspace/contracts"
+            );
+        }
 
         return savedMessage;
     }

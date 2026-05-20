@@ -74,7 +74,7 @@ public class FileStorageService {
         }
 
         if (file.getSize() > FileValidationUtil.MAX_FILE_SIZE_BYTES) {
-            throw new BusinessException("ERR_FILE_01", "Kích thước tệp vượt quá giới hạn 5MB", HttpStatus.BAD_REQUEST);
+            throw new BusinessException("ERR_FILE_01", "Kích thước tệp vượt quá giới hạn 15MB", HttpStatus.BAD_REQUEST);
         }
 
         if (!FileValidationUtil.isAllowedExtension(originalFileName) || !FileValidationUtil.isAllowedContentType(file.getContentType())) {

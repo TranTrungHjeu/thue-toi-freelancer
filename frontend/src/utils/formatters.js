@@ -124,3 +124,4 @@ export const buildBudgetRange = (project, locale = getActiveLocale()) => {
   }
   return `${formatCurrency(project.budgetMin, locale)} - ${formatCurrency(project.budgetMax, locale)}`;
 };
+

@@ -46,3 +46,4 @@ export const exportToCsv = (data, headers, fileName = 'export') => {
     document.body.removeChild(link);
   }
 };
+

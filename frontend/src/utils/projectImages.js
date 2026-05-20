@@ -40,3 +40,4 @@ export const getProjectCoverImage = (skills = []) => {
 
   return defaultImage;
 };
+

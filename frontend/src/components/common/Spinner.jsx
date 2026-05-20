@@ -54,3 +54,4 @@ const Spinner = ({ size = 'md', label = '', className = '', inline = false, tone
 };
 
 export default Spinner;
+

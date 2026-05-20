@@ -1,6 +1,4 @@
-"use client";
-
-import Link from 'next/link';
+import { Link } from 'react-router-dom';
 
 
 import React from 'react';
@@ -77,7 +75,7 @@ const MobileDrawer = ({
                         return (
                           <Link
                             key={item.href}
-                            href={item.href}
+                            to={item.href}
                             onClick={onClose}
                             className={`flex items-center gap-3 border-l-4 px-3 py-3 text-sm font-semibold ${
                               isActive
@@ -89,7 +87,7 @@ const MobileDrawer = ({
                               <item.icon className="h-5 w-5" />
                               {item.badge && (
                                 <span
-                                  className="absolute -right-2 -top-2 min-w-4 border border-white bg-red-500 px-1 text-[9px] font-black leading-4 text-white"
+                                  className="absolute -right-2 -top-2 min-w-4 rounded-full border border-white bg-primary-600 px-1 text-[9px] font-bold leading-4 text-white"
                                   aria-label={item.badgeLabel}
                                 >
                                   {item.badge}
@@ -131,3 +129,4 @@ const MobileDrawer = ({
 };
 
 export default MobileDrawer;
+

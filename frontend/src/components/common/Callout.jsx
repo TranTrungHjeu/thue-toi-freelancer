@@ -1,5 +1,3 @@
-"use client";
-
 import React from 'react';
 import { InfoCircle, WarningTriangle, CheckCircle, Flash } from 'iconoir-react';
 import { Text } from './Typography';
@@ -64,3 +62,4 @@ const Callout = ({
 };
 
 export default Callout;
+

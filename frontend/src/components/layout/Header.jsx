@@ -1,13 +1,10 @@
-"use client";
-
 import React from 'react';
-import Link from 'next/link';
+import { Link } from 'react-router-dom';
 
 import { Menu } from 'iconoir-react';
 import { H2 } from '../common/Typography';
 import UserDropdown from './UserDropdown';
 import LanguageSwitcher from '../common/LanguageSwitcher';
-import ConversationInbox from './ConversationInbox';
 import NotificationBell from './NotificationBell';
 import { useI18n } from '../../hooks/useI18n';
 
@@ -24,12 +21,14 @@ const Header = ({ user, onOpenMenu }) => {
         >
           <Menu className="h-6 w-6 text-secondary-900" />
         </button>
-        <Link href="/workspace" className="flex items-center gap-3">
-          <div className="bg-secondary-900 p-1.5 text-xl font-bold leading-none text-white">TT</div>
-          <div className="hidden sm:flex flex-col">
-            <H2 className="!mb-0 text-xl tracking-tight uppercase">{t('app.brand')}</H2>
-            <span className="text-[10px] font-bold uppercase tracking-[0.18em] text-slate-400">
-              {t('layout.workspace')}
+        <Link to="/workspace" className="flex items-center gap-3 active:scale-95 transition-transform">
+          <img src="/favicon.svg" alt="logo" className="h-9 w-9 object-contain" />
+          <div className="hidden sm:flex flex-col justify-center">
+            <H2 className="!mb-0 text-lg font-black tracking-tight text-slate-900">
+              ThuêTôi<span className="text-primary-600 font-extrabold">.vn</span>
+            </H2>
+            <span className="text-[9px] font-bold uppercase tracking-[0.25em] text-primary-600 leading-none mt-0.5">
+              {t('layout.workspace') || 'Workspace'}
             </span>
           </div>
         </Link>
@@ -38,7 +37,6 @@ const Header = ({ user, onOpenMenu }) => {
       <div className="flex items-center gap-4">
         <LanguageSwitcher className="hidden md:inline-flex" />
         {user && <NotificationBell />}
-        {user && <ConversationInbox />}
         {user ? (
           <UserDropdown user={user} />
         ) : (
@@ -52,3 +50,4 @@ const Header = ({ user, onOpenMenu }) => {
 };
 
 export default Header;
+

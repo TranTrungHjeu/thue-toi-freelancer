@@ -42,35 +42,57 @@ public class ContractMessageWebSocketHandler extends TextWebSocketHandler {
 
     @Override
     public void afterConnectionEstablished(WebSocketSession session) throws Exception {
-        ConnectionContext context;
-        try {
-            context = parseConnectionContext(session.getUri());
-        } catch (Exception ex) {
-            session.close(CloseStatus.POLICY_VIOLATION);
-            return;
+        String token = (String) session.getAttributes().get("token");
+        Object contractIdObj = session.getAttributes().get("contractId");
+
+        // Fallback: nếu Interceptor không lấy được, thử parse thủ công từ URI
+        if (token == null || contractIdObj == null) {
+            try {
+                ConnectionContext context = parseConnectionContext(session.getUri());
+                token = context.token();
+                contractIdObj = context.contractId();
+            } catch (Exception ex) {
+                System.err.println("[WebSocket] Handshake failed: " + ex.getMessage());
+                session.close(new CloseStatus(CloseStatus.POLICY_VIOLATION.getCode(), "Auth context missing"));
+                return;
+            }
         }
-        if (!jwtTokenProvider.validateAccessToken(context.token())) {
-            session.close(CloseStatus.POLICY_VIOLATION);
+
+        if (token == null || !jwtTokenProvider.validateAccessToken(token)) {
+            System.err.println("[WebSocket] Invalid token");
+            session.close(new CloseStatus(CloseStatus.POLICY_VIOLATION.getCode(), "Invalid token"));
             return;
         }
 
         Long currentUserId;
         try {
-            currentUserId = Long.parseLong(jwtTokenProvider.getSubjectFromAccessToken(context.token()));
-        } catch (NumberFormatException ex) {
-            session.close(CloseStatus.POLICY_VIOLATION);
+            currentUserId = Long.parseLong(jwtTokenProvider.getSubjectFromAccessToken(token));
+        } catch (Exception ex) {
+            System.err.println("[WebSocket] Invalid user in token");
+            session.close(new CloseStatus(CloseStatus.POLICY_VIOLATION.getCode(), "Invalid user"));
+            return;
+        }
+
+        Long contractId;
+        try {
+            contractId = Long.parseLong(contractIdObj.toString());
+        } catch (Exception ex) {
+            System.err.println("[WebSocket] Invalid contract ID format: " + contractIdObj);
+            session.close(new CloseStatus(CloseStatus.POLICY_VIOLATION.getCode(), "Invalid contract ID"));
             return;
         }
 
         try {
-            contractAccessService.requireAccessibleContract(context.contractId(), currentUserId);
+            contractAccessService.requireAccessibleContract(contractId, currentUserId);
         } catch (Exception ex) {
-            session.close(CloseStatus.POLICY_VIOLATION);
+            System.err.println("[WebSocket] Access denied: User " + currentUserId + " for contract " + contractId);
+            session.close(new CloseStatus(CloseStatus.POLICY_VIOLATION.getCode(), "Access denied"));
             return;
         }
 
-        session.getAttributes().put(ATTR_CONTRACT_ID, context.contractId());
-        contractSessions.computeIfAbsent(context.contractId(), ignored -> ConcurrentHashMap.newKeySet()).add(session);
+        session.getAttributes().put(ATTR_CONTRACT_ID, contractId);
+        contractSessions.computeIfAbsent(contractId, ignored -> ConcurrentHashMap.newKeySet()).add(session);
+        System.out.println("[WebSocket] Connected: User " + currentUserId + " to contract " + contractId);
     }
 
     @Override

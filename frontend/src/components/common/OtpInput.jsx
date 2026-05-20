@@ -1,5 +1,3 @@
-"use client";
-
 import React, { useRef } from 'react';
 import { PasteClipboard } from 'iconoir-react';
 import { useI18n } from '../../hooks/useI18n';
@@ -114,3 +112,4 @@ const OtpInput = ({ value = '', onChange, length = 6, label, pasteLabel, error }
 };
 
 export default OtpInput;
+

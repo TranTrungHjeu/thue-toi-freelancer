@@ -1,8 +1,7 @@
-"use client";
-
 import React, { useCallback, useEffect, useMemo, useState, useRef } from 'react';
-import { useRouter } from 'next/navigation';
+import { useNavigate } from 'react-router-dom';
 import gsap from 'gsap';
+import { CheckCircleSolid, Plus } from 'iconoir-react';
 import Card from '../components/common/Card';
 import Button from '../components/common/Button';
 import Badge from '../components/common/Badge';
@@ -21,6 +20,7 @@ import authApi from '../api/authApi';
 import marketplaceApi from '../api/marketplaceApi';
 import { formatDateTime, formatRole } from '../utils/formatters';
 import { splitApiFormError } from '../utils/formError';
+import CVAutoFill from '../components/features/CVAutoFill';
 
 const MAX_SKILLS = 15;
 
@@ -104,6 +104,12 @@ const getProfilePageCopy = (locale) => {
       changeEmailBtn: 'Update Email',
       changeEmailSuccess: 'Email updated successfully. Please log in again.',
       changeEmailError: 'Could not update email.',
+      kycRequestBtn: 'Yêu cầu xác thực danh tính (Thủ công)',
+      kycSendingBtn: 'Sending...',
+      kycPendingTitle: 'KYC pending admin review',
+      kycPendingHint: 'This is not the same as email verification. If you change your login email, this pending request is cancelled.',
+      kycRejectedTitle: 'Verification rejected',
+      kycRejectedReasonLabel: 'Reason',
     };
   }
 
@@ -166,6 +172,12 @@ const getProfilePageCopy = (locale) => {
     changeEmailBtn: 'Cập nhật Email',
     changeEmailSuccess: 'Đổi email thành công! Vui lòng đăng nhập lại.',
     changeEmailError: 'Không thể đổi email.',
+    kycRequestBtn: 'Yêu cầu xác thực danh tính (Thủ công)',
+    kycSendingBtn: 'Đang gửi...',
+    kycPendingTitle: 'Đang chờ admin duyệt KYC',
+    kycPendingHint: 'Khác với xác thực email. Đổi email đăng nhập sẽ hủy yêu cầu đang chờ này.',
+    kycRejectedTitle: 'Xác thực danh tính bị từ chối',
+    kycRejectedReasonLabel: 'Lý do',
   };
 };
 
@@ -177,10 +189,10 @@ const normalizeSkillNames = (skills) =>
 const ProfilePage = () => {
   const { user, refreshProfile, logout } = useAuth();
   const { addToast } = useToast();
-  const { locale } = useI18n();
+  const { locale, t } = useI18n();
   const copy = useMemo(() => getProfilePageCopy(locale), [locale]);
-  const router = useRouter();
-  
+  const navigate = useNavigate();
+
   const [activeTab, setActiveTab] = useState('PUBLIC');
   const fileInputRef = useRef(null);
   const tabContentRef = useRef(null);
@@ -188,22 +200,27 @@ const ProfilePage = () => {
   const [profileForm, setProfileForm] = useState(initialProfileForm);
   const [passwordForm, setPasswordForm] = useState(initialPasswordForm);
   const [emailForm, setEmailForm] = useState(initialEmailForm);
-  
+
   const [skillCatalog, setSkillCatalog] = useState([]);
   const [loadingSkillCatalog, setLoadingSkillCatalog] = useState(false);
-  
+
   const [submitting, setSubmitting] = useState(false);
   const [avatarFile, setAvatarFile] = useState(null);
   const [avatarPreview, setAvatarPreview] = useState(null);
+
   const [kycStatus, setKycStatus] = useState(null);
   const [requestingKyc, setRequestingKyc] = useState(false);
+  const [isKycModalOpen, setIsKycModalOpen] = useState(false);
+  const [kycFile, setKycFile] = useState(null);
+  const [kycPreview, setKycPreview] = useState(null);
+
   const [sendingOtp, setSendingOtp] = useState(false);
   const [sendingEmailOtp, setSendingEmailOtp] = useState(false);
   const [emailOtpSent, setEmailOtpSent] = useState(false);
-  
+
   const [fieldErrors, setFieldErrors] = useState({});
   const [formError, setFormError] = useState('');
-  
+
   const [passwordFieldErrors, setPasswordFieldErrors] = useState({});
   const [passwordFormError, setPasswordFormError] = useState('');
 
@@ -259,11 +276,32 @@ const ProfilePage = () => {
     loadSkillCatalog();
   }, [loadSkillCatalog]);
 
+  const handleAutoVerifyKyc = async () => {
+    if (!kycFile) {
+      addToast('Vui lòng chọn ảnh CCCD', 'warning');
+      return;
+    }
+    setRequestingKyc(true);
+    try {
+      const res = await marketplaceApi.autoVerifyKyc(kycFile);
+      addToast(res.message || 'Xác thực tự động thành công!', 'success');
+      setIsKycModalOpen(false);
+      setKycFile(null);
+      setKycPreview(null);
+      await refreshProfile();
+      fetchKycStatus();
+    } catch (error) {
+      addToast(error?.response?.data?.message || "Xác thực tự động thất bại, vui lòng thử lại hoặc chụp rõ hơn", 'error');
+    } finally {
+      setRequestingKyc(false);
+    }
+  };
+
   const handleRequestKyc = async () => {
     setRequestingKyc(true);
     try {
       await marketplaceApi.requestKyc();
-      addToast('Yêu cầu xác thực đã được gửi.', 'success');
+      addToast('Yêu cầu xác thực thủ công đã được gửi.', 'success');
       fetchKycStatus();
     } catch (error) {
       addToast(error?.response?.data?.message || "Không thể gửi yêu cầu", 'error');
@@ -304,10 +342,33 @@ const ProfilePage = () => {
     setFormError('');
   };
 
+  const handleCvEmailSuggestForChange = useCallback(
+    (email) => {
+      const trimmed = (email || '').trim();
+      if (!trimmed) {
+        return;
+      }
+      if (user?.email && trimmed.toLowerCase() === String(user.email).toLowerCase()) {
+        addToast(t('toasts.profile.cvEmailSameAsCurrent'), 'warning');
+        return;
+      }
+      setEmailForm((prev) => ({ ...prev, newEmail: trimmed, otp: '' }));
+      setEmailOtpSent(false);
+      setEmailFieldErrors({});
+      setEmailFormError('');
+      setActiveTab('SECURITY');
+      requestAnimationFrame(() => {
+        tabContentRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      });
+      addToast(t('toasts.profile.cvEmailPrefilledForChange'), 'success');
+    },
+    [user?.email, addToast, t]
+  );
+
   const handleAvatarFileChange = (event) => {
     const file = event.target.files?.[0];
     if (!file) return;
-    
+
     setAvatarFile(file);
     setAvatarPreview(URL.createObjectURL(file));
     if (fileInputRef.current) {
@@ -322,16 +383,16 @@ const ProfilePage = () => {
     setFormError('');
     try {
       let finalAvatarUrl = user?.avatarUrl;
-      
+
       if (avatarFile) {
         const uploadRes = await authApi.uploadAvatar(avatarFile);
-        finalAvatarUrl = uploadRes.data || uploadRes.data?.data || uploadRes.avatarUrl; 
+        finalAvatarUrl = uploadRes.data || uploadRes.data?.data || uploadRes.avatarUrl;
       }
 
       await authApi.updateMyProfile({
         fullName: profileForm.fullName,
         profileDescription: profileForm.profileDescription,
-        avatarUrl: finalAvatarUrl, 
+        avatarUrl: finalAvatarUrl,
         skills: normalizeSkillNames(profileForm.skills),
       });
       await refreshProfile();
@@ -431,7 +492,7 @@ const ProfilePage = () => {
       setEmailOtpSent(false);
       setTimeout(async () => {
         await logout();
-        router.push('/auth/login');
+        navigate('/auth/login');
       }, 1500);
     } catch (error) {
       const { fieldErrors: nextFieldErrors, formError: nextFormError } = splitApiFormError(error, copy.changeEmailError);
@@ -478,7 +539,7 @@ const ProfilePage = () => {
               </Text>
             </div>
           </div>
-          
+
           <div className="mt-8 flex gap-2 border-b-2 border-slate-100">
             <button
               onClick={() => setActiveTab('PUBLIC')}
@@ -514,25 +575,25 @@ const ProfilePage = () => {
               <H2 className="mt-2 text-2xl">
                 {copy.editorTitle}
               </H2>
-              
+
               <div className="mt-6 flex flex-col md:flex-row gap-8 items-start">
                 <div className="flex flex-col items-center gap-4 w-full md:w-auto flex-shrink-0">
-                  <Avatar 
-                    src={getFullAvatarUrl(avatarPreview || user?.avatarUrl)} 
-                    alt={user?.fullName} 
-                    size="xl" 
+                  <Avatar
+                    src={getFullAvatarUrl(avatarPreview || user?.avatarUrl)}
+                    alt={user?.fullName}
+                    size="xl"
                     className="rounded-none shadow-sm"
                   />
-                  <input 
-                    type="file" 
-                    accept="image/png, image/jpeg, image/webp" 
-                    className="hidden" 
+                  <input
+                    type="file"
+                    accept="image/png, image/jpeg, image/webp"
+                    className="hidden"
                     ref={fileInputRef}
                     onChange={handleAvatarFileChange}
                   />
-                  <Button 
-                    variant="outline" 
-                    className="w-full text-xs" 
+                  <Button
+                    variant="outline"
+                    className="w-full text-xs"
                     onClick={() => fileInputRef.current?.click()}
                     disabled={submitting}
                   >
@@ -544,30 +605,47 @@ const ProfilePage = () => {
                   <div className="flex-1">
                     <div className="flex items-center gap-2">
                       <div className="font-bold text-slate-400 text-xs uppercase tracking-widest">{formatRole(user.role, locale)}</div>
-                      {user.verified && (
-                        <Badge color="info" className="scale-75 origin-left">Verified Account</Badge>
-                      )}
                     </div>
-                    <H1 className="mt-1 text-4xl">{user.fullName}</H1>
+                      <div className="flex items-center gap-3">
+                        <H1 className="mt-1 text-4xl">{user.fullName}</H1>
+                        {(kycStatus?.status === 'APPROVED' || user.kycApproved) && (
+                          <CheckCircleSolid
+                            className="mt-1 h-8 w-8 text-emerald-500 shadow-sm"
+                            title={locale === 'vi' ? 'Tài khoản đã xác minh danh tính' : 'Verified Identity'}
+                          />
+                        )}
+                      </div>
                     <div className="mt-2 text-slate-500 font-medium">{user.email}</div>
-                    
+
                     <div className="mt-6 flex flex-wrap gap-4 items-center">
-                      {!user.verified && (!kycStatus || kycStatus.status === 'REJECTED') && (
-                        <Button size="sm" variant="outline" onClick={handleRequestKyc} disabled={requestingKyc}>
-                          {requestingKyc ? "Đang gửi..." : "Yêu cầu xác thực tài khoản"}
-                        </Button>
+                      {(!kycStatus || kycStatus.status === 'REJECTED') && (
+                        <>
+                          <Button size="sm" variant="primary" onClick={() => setIsKycModalOpen(true)} disabled={requestingKyc}>
+                            Xác minh nhanh qua AI (eKYC)
+                          </Button>
+                          <Button size="sm" variant="outline" onClick={handleRequestKyc} disabled={requestingKyc}>
+                            {requestingKyc ? copy.kycSendingBtn : copy.kycRequestBtn}
+                          </Button>
+                        </>
                       )}
                       {kycStatus?.status === 'PENDING' && (
-                        <div className="flex items-center gap-2 text-primary-600 font-bold text-xs uppercase tracking-wider bg-primary-50 px-3 py-1.5">
-                           Đang chờ xác thực...
+                        <div className="flex max-w-xl flex-col gap-1 rounded border border-primary-200 bg-primary-50 px-3 py-2">
+                          <div className="text-primary-700 text-xs font-bold uppercase tracking-wider">
+                            {copy.kycPendingTitle}
+                          </div>
+                          <div className="text-[11px] leading-snug text-slate-600">
+                            {copy.kycPendingHint}
+                          </div>
                         </div>
                       )}
                       {kycStatus?.status === 'REJECTED' && (
                         <div className="flex flex-col gap-1">
                           <div className="flex items-center gap-2 text-red-500 font-bold text-xs uppercase tracking-wider">
-                             Xác thực bị từ chối
+                            {copy.kycRejectedTitle}
                           </div>
-                          <div className="text-[10px] text-red-400 italic">Lý do: {kycStatus.note}</div>
+                          <div className="text-[10px] text-red-400 italic">
+                            {copy.kycRejectedReasonLabel}: {kycStatus.note}
+                          </div>
                         </div>
                       )}
                     </div>
@@ -620,6 +698,8 @@ const ProfilePage = () => {
                 </div>
               </div>
             </Card>
+
+            <CVAutoFill onSuggestEmailForChange={handleCvEmailSuggestForChange} />
           </section>
         )}
 
@@ -693,7 +773,7 @@ const ProfilePage = () => {
                   error={passwordFieldErrors.oldPassword}
                   required
                 />
-                
+
                 <div className="flex items-end gap-2">
                   <div className="flex-1">
                     <Input
@@ -705,11 +785,11 @@ const ProfilePage = () => {
                       required
                     />
                   </div>
-                  <Button 
-                    type="button" 
+                  <Button
+                    type="button"
                     variant="outline"
                     className="mb-0 h-[48px]"
-                    onClick={handleRequestOtp} 
+                    onClick={handleRequestOtp}
                     disabled={sendingOtp || submitting}
                   >
                     {sendingOtp ? copy.sendingOtp : copy.requestOtpBtn}
@@ -817,6 +897,69 @@ const ProfilePage = () => {
         </div>
         )}
       </div>
+
+      {/* eKYC AI Modal */}
+      {isKycModalOpen && (
+        <div className="fixed inset-0 z-[1000] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm">
+          <div className="relative w-full max-w-lg bg-white border border-slate-200 rounded-2xl p-6 shadow-2xl overflow-hidden">
+            <H2 className="text-xl font-bold">Xác thực danh tính tự động</H2>
+            <Text className="mt-2 text-sm text-slate-500">
+              Vui lòng tải lên ảnh mặt trước CCCD của bạn để hệ thống AI (FPT AI) nhận diện thông tin và cấp tích xanh ngay lập tức nếu trùng khớp họ tên.
+            </Text>
+
+            <div className="mt-6 border-2 border-dashed border-slate-200 rounded-xl p-8 flex flex-col items-center justify-center bg-slate-50 min-h-[220px]">
+              {kycPreview ? (
+                <div className="relative w-full aspect-[1.6/1]">
+                  <img src={kycPreview} alt="CCCD Preview" className="w-full h-full object-contain rounded-lg shadow-md" />
+                  <button
+                    onClick={() => {setKycFile(null); setKycPreview(null);}}
+                    className="absolute -top-2 -right-2 bg-rose-500 text-white w-6 h-6 rounded-full flex items-center justify-center shadow-lg hover:bg-rose-600 transition-colors"
+                    type="button"
+                  >✕</button>
+                </div>
+              ) : (
+                <>
+                  <input
+                    type="file"
+                    id="kyc-upload"
+                    accept="image/*"
+                    className="hidden"
+                    onChange={(e) => {
+                      const file = e.target.files?.[0];
+                      if (file) {
+                        setKycFile(file);
+                        setKycPreview(URL.createObjectURL(file));
+                      }
+                    }}
+                  />
+                  <label htmlFor="kyc-upload" className="cursor-pointer flex flex-col items-center gap-2 hover:opacity-80 transition-opacity">
+                    <div className="w-12 h-12 rounded-full bg-primary-100 flex items-center justify-center text-primary-600">
+                      <Plus className="w-6 h-6" />
+                    </div>
+                    <span className="text-sm font-semibold text-slate-600">Tải ảnh mặt trước CCCD</span>
+                  </label>
+                </>
+              )}
+            </div>
+
+            <div className="mt-8 flex gap-3">
+              <Button
+                variant="outline"
+                className="flex-1"
+                onClick={() => {setIsKycModalOpen(false); setKycFile(null); setKycPreview(null);}}
+                disabled={requestingKyc}
+              >Hủy bỏ</Button>
+              <Button
+                variant="primary"
+                className="flex-1 bg-emerald-600 hover:bg-emerald-700 text-white border-emerald-600"
+                onClick={handleAutoVerifyKyc}
+                disabled={requestingKyc || !kycFile}
+                isLoading={requestingKyc}
+              >Bắt đầu quét AI</Button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

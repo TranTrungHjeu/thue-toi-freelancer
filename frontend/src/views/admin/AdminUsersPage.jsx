@@ -1,7 +1,5 @@
-"use client";
-
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
-import { useSearchParams, useRouter, usePathname } from 'next/navigation';
+import { useSearchParams, useNavigate, useLocation } from 'react-router-dom';
 
 import {
   Check,
@@ -112,8 +110,8 @@ const RoleBadge = ({ role, t }) => (
 );
 
 const KycBadge = ({ verified, t }) => (
-  <span className={`inline-flex items-center gap-1.5 border px-2.5 py-1 text-xs font-semibold ${verified ? 'border-indigo-200 bg-indigo-50 text-indigo-700' : 'border-slate-200 bg-slate-50 text-slate-500'}`}>
-    <ShieldCheck className="h-3.5 w-3.5" />
+  <span className={`inline-flex items-center gap-1.5 border px-2.5 py-1 text-xs font-semibold ${verified ? 'border-emerald-200 bg-emerald-50 text-emerald-700' : 'border-slate-200 bg-slate-50 text-slate-500'}`}>
+    {verified ? <Check className="h-3.5 w-3.5" /> : <ShieldCheck className="h-3.5 w-3.5" />}
     {verified ? t('adminPages.users.verifiedBadge') : t('adminPages.users.unverifiedBadge')}
   </span>
 );
@@ -143,9 +141,9 @@ const AdminUsersPage = () => {
   const { t } = useI18n();
   const { user: currentUser } = useAuth();
   const { addToast } = useToast();
-  const searchParams = useSearchParams();
-  const router = useRouter();
-  const pathname = usePathname();
+  const [searchParams] = useSearchParams();
+  const navigate = useNavigate();
+  const location = useLocation();
   const searchParamsString = searchParams ? searchParams.toString() : '';
   const filters = useMemo(() => normalizeFilters(new URLSearchParams(searchParamsString)), [searchParamsString]);
 
@@ -182,8 +180,8 @@ const AdminUsersPage = () => {
         nextParams.set(key, String(value));
       }
     });
-    router.replace(`${pathname}?${nextParams.toString()}`, { scroll: false });
-  }, [filters, router, pathname]);
+    navigate(`${location.pathname}?${nextParams.toString()}`, { replace: true });
+  }, [filters, navigate, location.pathname]);
 
   const fetchUsers = useCallback(async ({ showLoading = true } = {}) => {
     if (showLoading) {
@@ -1020,3 +1018,4 @@ const InfoBlock = ({ icon, label, value }) => (
 );
 
 export default AdminUsersPage;
+

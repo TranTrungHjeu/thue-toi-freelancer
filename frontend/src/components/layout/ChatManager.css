@@ -1,0 +1,11 @@
+.chat-launcher-round {
+  /* Để ngoài vuông, bo tròn ở trong */
+}
+
+.chat-launcher-round-icon {
+  border-radius: 9999px !important;
+  -webkit-border-radius: 9999px !important;
+  clip-path: circle(50% at 50% 50%);
+  -webkit-clip-path: circle(50% at 50% 50%);
+  overflow: hidden;
+}

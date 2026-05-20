@@ -1,5 +1,3 @@
-"use client";
-
 import React from 'react';
 import { Caption } from '../common/Typography';
 
@@ -92,3 +90,4 @@ const ActivityCharts = ({
 };
 
 export default ActivityCharts;
+

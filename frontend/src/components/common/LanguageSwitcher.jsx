@@ -30,3 +30,4 @@ const LanguageSwitcher = ({ className = '' }) => {
 };
 
 export default LanguageSwitcher;
+

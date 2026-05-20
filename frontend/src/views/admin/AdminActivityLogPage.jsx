@@ -1,5 +1,3 @@
-"use client";
-
 import React, { useEffect, useState, useCallback, useMemo } from 'react';
 import { 
   PageSearch, 
@@ -183,3 +181,4 @@ const AdminActivityLogPage = () => {
 };
 
 export default AdminActivityLogPage;
+

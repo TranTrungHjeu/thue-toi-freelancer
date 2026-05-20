@@ -7,6 +7,9 @@ public record AdminKycResponse(
     AdminUserSummaryResponse user,
     String status,
     String note,
+    String idNumber,
+    String fullName,
+    String birthday,
     LocalDateTime createdAt,
     LocalDateTime updatedAt
 ) {

@@ -1,5 +1,3 @@
-"use client";
-
 import React from 'react';
 import { Caption } from '../common/Typography';
 
@@ -58,3 +56,4 @@ const ProgressCircle = ({
 };
 
 export default ProgressCircle;
+

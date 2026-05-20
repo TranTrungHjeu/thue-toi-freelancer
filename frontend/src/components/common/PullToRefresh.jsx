@@ -1,5 +1,3 @@
-"use client";
-
 import React from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { Refresh } from 'iconoir-react';
@@ -38,3 +36,4 @@ const PullToRefresh = ({ isRefreshing }) => {
 };
 
 export default PullToRefresh;
+

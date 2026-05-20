@@ -1,5 +1,3 @@
-"use client";
-
 import React, { useState } from 'react';
 import {
   Megaphone,
@@ -233,3 +231,4 @@ const AdminBroadcastPage = () => {
 };
 
 export default AdminBroadcastPage;
+

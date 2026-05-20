@@ -1,5 +1,15 @@
 package com.thuetoi.service;
 
+import java.math.BigDecimal;
+import java.time.LocalDateTime;
+import java.util.List;
+import java.util.Locale;
+
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
 import com.thuetoi.entity.Bid;
 import com.thuetoi.entity.Contract;
 import com.thuetoi.entity.Milestone;
@@ -16,16 +26,6 @@ import com.thuetoi.repository.ContractRepository;
 import com.thuetoi.repository.MilestoneRepository;
 import com.thuetoi.repository.ProjectRepository;
 import com.thuetoi.repository.UserRepository;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.http.HttpStatus;
-import org.springframework.stereotype.Service;
-
-import java.math.BigDecimal;
-import org.springframework.transaction.annotation.Transactional;
-
-import java.time.LocalDateTime;
-import java.util.List;
-import java.util.Locale;
 
 @Service
 public class ContractService {
@@ -69,6 +69,87 @@ public class ContractService {
     /**
      * Tạo hợp đồng sau khi SePay xác nhận thanh toán (gọi từ webhook, idempotent).
      */
+    @Transactional
+    public Contract createContractFromWallet(Long bidId, Long clientId) {
+        Bid selectedBid = bidRepository.findById(bidId)
+            .orElseThrow(() -> new BusinessException("ERR_BID_01", "Không tìm thấy báo giá", HttpStatus.NOT_FOUND));
+
+        Project project = selectedBid.getProject();
+        if (!project.getUser().getId().equals(clientId)) {
+            throw new BusinessException("ERR_AUTH_04", "Bạn không phải chủ sở hữu dự án này", HttpStatus.FORBIDDEN);
+        }
+
+        if (!ProjectStatus.OPEN.matches(project.getStatus()) && !ProjectStatus.PENDING_PAYMENT.matches(project.getStatus())) {
+            throw new BusinessException("ERR_SYS_02", "Dự án không ở trạng thái có thể ký hợp đồng", HttpStatus.BAD_REQUEST);
+        }
+
+        var existing = contractRepository.findByProjectId(project.getId());
+        if (existing.isPresent()) {
+            return existing.get();
+        }
+
+        User freelancer = selectedBid.getFreelancer();
+        ensureFreelancer(freelancer);
+
+        // Trừ tiền từ ví và đưa vào Escrow
+        walletService.recordEscrowIn(
+            clientId,
+            null, // ContractId chưa có, sẽ cập nhật sau hoặc dùng log khác
+            null, // Không qua SePay Order
+            selectedBid.getPrice(),
+            project.getTitle()
+        );
+
+        // Chấp nhận bid và từ chối các bid khác
+        Long selectedBidId = selectedBid.getId();
+        List<Bid> projectBids = bidRepository.findByProjectId(project.getId());
+        for (Bid currentBid : projectBids) {
+            if (currentBid.getId().equals(selectedBidId)) {
+                currentBid.setStatus(BidStatus.ACCEPTED.getValue());
+                continue;
+            }
+            if (!BidStatus.WITHDRAWN.matches(currentBid.getStatus())) {
+                currentBid.setStatus(BidStatus.REJECTED.getValue());
+                notificationService.createNotificationForUser(
+                    currentBid.getFreelancer().getId(),
+                    "bid",
+                    "Bid của bạn không được chọn",
+                    "Khách hàng đã chọn một bid khác cho project \"" + project.getTitle() + "\".",
+                    "/workspace/projects"
+                );
+            }
+        }
+        bidRepository.saveAll(projectBids);
+
+        project.setStatus(ProjectStatus.IN_PROGRESS.getValue());
+        projectRepository.save(project);
+
+        Contract contract = new Contract();
+        contract.setProjectId(project.getId());
+        contract.setFreelancerId(freelancer.getId());
+        contract.setClientId(clientId);
+        contract.setTotalAmount(selectedBid.getPrice());
+        contract.setProgress(0);
+        contract.setStatus(ContractStatus.IN_PROGRESS.getValue());
+        contract.setStartDate(LocalDateTime.now());
+
+        Contract createdContract = contractRepository.save(contract);
+
+        // Tạo transaction log
+        transactionService.createTransaction(createdContract.getId(), selectedBid.getPrice(), "wallet_checkout", "completed");
+
+        publishContractEvent(createdContract.getId(), "contract.created", createdContract);
+        notificationService.createNotificationForUser(
+            freelancer.getId(),
+            "contract",
+            "Bạn có hợp đồng mới",
+            "Khách hàng đã chấp nhận báo giá của bạn qua ví hệ thống.",
+            "/workspace/contracts"
+        );
+
+        return createdContract;
+    }
+
     @Transactional
     public Contract fulfillContractAfterPayment(PaymentOrder paymentOrder) {
         Bid selectedBid = paymentOrder.getBid();
@@ -130,8 +211,13 @@ public class ContractService {
 
         Contract createdContract = contractRepository.save(contract);
         transactionService.createTransaction(createdContract.getId(), selectedBid.getPrice(), "sepay_checkout", "completed");
+
+        // Tự động ghi nhận nạp tiền đối ứng vào ví của khách trước (tiền đã nạp thật qua ngân hàng SePay)
+        walletService.deposit(project.getUser().getId(), selectedBid.getPrice());
+
+        // Thực hiện trừ tiền ví chuyển vào Escrow ký quỹ hợp đồng
         walletService.recordEscrowIn(
-            freelancer.getId(),
+            project.getUser().getId(),
             createdContract.getId(),
             paymentOrder.getId(),
             selectedBid.getPrice(),
@@ -234,6 +320,12 @@ public class ContractService {
             "Contract #" + contractId + " vừa được cập nhật sang trạng thái \"" + normalizedStatus.getValue() + "\".",
             "/workspace/contracts"
         );
+
+        // Tự động hoàn trả tiền ký quỹ nếu hợp đồng bị hủy (Auto-Refund)
+        if (normalizedStatus == ContractStatus.CANCELLED) {
+            BigDecimal amount = updatedContract.getTotalAmount() != null ? updatedContract.getTotalAmount() : BigDecimal.ZERO;
+            walletService.refundEscrowToCustomer(updatedContract, amount);
+        }
 
         // Tạo transaction khi hợp đồng hoàn thành theo marketplace_rules
         if (normalizedStatus == ContractStatus.COMPLETED) {

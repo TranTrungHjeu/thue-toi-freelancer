@@ -1,16 +1,14 @@
-"use client";
-
 import React, { useState, useRef, useEffect } from 'react';
 import { Bell, Check } from 'iconoir-react';
-import Link from 'next/link';
-import { useRouter } from 'next/navigation';
+import { Link } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 
 import { AnimatePresence, motion } from 'motion/react';
 import { useNotifications } from '../../hooks/useNotifications';
 import { useI18n } from '../../hooks/useI18n';
 
 const NotificationBell = () => {
-  const router = useRouter();
+  const navigate = useNavigate();
   const { t } = useI18n();
   const {
     notifications,
@@ -74,8 +72,8 @@ const NotificationBell = () => {
   const handleItemClick = (noti) => {
     if (!noti.isRead) handleMarkRead(noti.id);
     setIsOpen(false);
-    if (noti.link) router.push(noti.link);
-    else router.push('/workspace/notifications');
+    if (noti.link) navigate(noti.link);
+    else navigate('/workspace/notifications');
   };
 
   const panelVariants = {
@@ -112,7 +110,7 @@ const NotificationBell = () => {
       >
         <Bell className="h-5 w-5 text-slate-900" />
         {badge && (
-          <span className="absolute -top-0.5 -right-0.5 flex h-5 min-w-[20px] items-center justify-center rounded-full bg-red-500 px-1 text-[10px] font-bold leading-none text-white shadow-sm ring-2 ring-white">
+          <span className="absolute -top-0.5 -right-0.5 flex h-5 min-w-[20px] items-center justify-center rounded-full bg-primary-600 px-1 text-[10px] font-bold leading-none text-white shadow-sm ring-2 ring-white">
             {badge}
           </span>
         )}
@@ -174,7 +172,7 @@ const NotificationBell = () => {
 
             <div className="border-t border-slate-100 p-3 bg-white sticky bottom-0 z-10">
               <Link
-                href="/workspace/notifications"
+                to="/workspace/notifications"
                 onClick={() => setIsOpen(false)}
                 className="block w-full rounded-xl bg-slate-50 py-2.5 text-center text-sm font-medium text-primary-600 hover:bg-slate-100 active:bg-slate-200 transition-all"
               >
@@ -189,3 +187,4 @@ const NotificationBell = () => {
 };
 
 export default NotificationBell;
+

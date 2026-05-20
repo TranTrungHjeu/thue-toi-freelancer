@@ -31,3 +31,4 @@ const Input = ({ label, error, className = '', type, ...props }) => {
 };
 
 export default Input;
+

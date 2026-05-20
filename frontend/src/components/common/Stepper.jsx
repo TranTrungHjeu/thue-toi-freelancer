@@ -1,5 +1,3 @@
-"use client";
-
 import React from 'react';
 import { motion } from "motion/react";
 import { Check } from "iconoir-react";
@@ -62,3 +60,4 @@ const Stepper = ({ steps, currentStep, className = "" }) => {
 };
 
 export default Stepper;
+

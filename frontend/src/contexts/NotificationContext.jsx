@@ -1,5 +1,3 @@
-"use client";
-
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import marketplaceApi from '../api/marketplaceApi';
 import { NotificationContext } from './notification-context';
@@ -49,7 +47,8 @@ const createTabId = () => {
   if (typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function') {
     return crypto.randomUUID();
   }
-  return `${Date.now()}-${Math.random()}`;
+  // Fallback: short random id. Avoid using Date.now() in case of SSR differences.
+  return `tab_${Math.random().toString(36).slice(2, 9)}`;
 };
 
 const normalizePageData = (data = {}) => ({
@@ -94,6 +93,7 @@ export const NotificationProvider = ({ children }) => {
   const { t } = useI18n();
   const tabIdRef = useRef(createTabId());
   const [notifications, setNotifications] = useState([]);
+  const [incomingCall, setIncomingCall] = useState(null);
   const [page, setPage] = useState(0);
   const [pageSize] = useState(DEFAULT_PAGE_SIZE);
   const [filters, setFilters] = useState(DEFAULT_FILTERS);
@@ -247,7 +247,27 @@ export const NotificationProvider = ({ children }) => {
       return;
     }
 
-    if (channel !== 'notification' || !payload?.id) {
+    if (channel !== 'notification') {
+      return;
+    }
+
+    // Special handling for real-time call signaling
+    if (payload.type === 'call' || payload.type === 'CALL') {
+      console.log('[NotificationContext] Incoming call notification received:', payload);
+      const [callType, contractId] = (payload.content || '').split('|');
+
+      // Auto-show a toast as backup
+      addToast(`Cuộc gọi đến: ${payload.title || 'Đối tác'}`, 'info');
+
+      setIncomingCall({
+        callerName: payload.title || 'Đối tác hợp đồng',
+        callType: callType || 'Video',
+        contractId,
+        roomName: `thuetoi-contract-${contractId}`
+      });
+    }
+
+    if (!payload.id) {
       return;
     }
 
@@ -264,9 +284,9 @@ export const NotificationProvider = ({ children }) => {
         unreadCount: (prev?.unreadCount || 0) + (payload.isRead ? 0 : 1),
         totalNotifications: (prev?.totalNotifications || 0) + 1,
         totalElements: shouldShowInCurrentPage ? (prev?.totalElements || 0) + 1 : prev?.totalElements || 0,
-      }));
+    }));
     }
-  }, [filters, setNotifications, setPageInfo]);
+  }, [addToast, filters, setIncomingCall, setNotifications, setPageInfo]);
 
   const notificationTopics = useMemo(() => (user?.id ? [NOTIFICATION_TOPIC, GLOBAL_NOTIFICATION_TOPIC] : []), [user?.id]);
 
@@ -402,6 +422,8 @@ export const NotificationProvider = ({ children }) => {
     deletingIds,
     markingAllRead,
     isRealtimeConnected,
+    incomingCall,
+    setIncomingCall,
     reloadNotifications,
     markAsRead,
     markAllAsRead,
@@ -416,6 +438,7 @@ export const NotificationProvider = ({ children }) => {
     deletingIds,
     filters,
     isRealtimeConnected,
+    incomingCall,
     loading,
     markAllAsRead,
     markAsRead,
@@ -437,3 +460,4 @@ export const NotificationProvider = ({ children }) => {
     </NotificationContext.Provider>
   );
 };
+

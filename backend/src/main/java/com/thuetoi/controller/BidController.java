@@ -5,11 +5,14 @@ import com.thuetoi.dto.request.BidStatusRequest;
 import com.thuetoi.dto.response.ApiResponse;
 import com.thuetoi.dto.response.PaymentOrderResponse;
 import com.thuetoi.dto.response.marketplace.BidResponse;
+import com.thuetoi.dto.response.marketplace.ContractResponse;
 import com.thuetoi.entity.Bid;
+import com.thuetoi.entity.Contract;
 import com.thuetoi.exception.BusinessException;
 import com.thuetoi.mapper.MarketplaceResponseMapper;
 import com.thuetoi.security.CurrentUserProvider;
 import com.thuetoi.service.BidService;
+import com.thuetoi.service.ContractService;
 import com.thuetoi.service.PaymentService;
 import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -25,8 +28,12 @@ import java.util.List;
 @RestController
 @RequestMapping("/api/v1/bids")
 public class BidController {
+
     @Autowired
     private BidService bidService;
+
+    @Autowired
+    private ContractService contractService;
 
     @Autowired
     private CurrentUserProvider currentUserProvider;
@@ -38,13 +45,13 @@ public class BidController {
     private PaymentService paymentService;
 
     /**
-     * Lấy tất cả bid mà user hiện tại được phép xem
+     * Chấp nhận bid bằng ví hệ thống (trừ tiền ví và tạo hợp đồng ngay lập tức).
      */
-    @GetMapping
-    public ApiResponse<List<BidResponse>> getAllBids(Principal principal) {
+    @PostMapping("/{bidId}/accept-via-wallet")
+    public ApiResponse<ContractResponse> acceptViaWallet(@PathVariable Long bidId, Principal principal) {
         Long currentUserId = currentUserProvider.requireCurrentUserId(principal);
-        List<Bid> bids = bidService.getAllBids(currentUserId);
-        return ApiResponse.success("Lấy danh sách báo giá có thể truy cập", marketplaceResponseMapper.toBidResponses(bids));
+        Contract contract = contractService.createContractFromWallet(bidId, currentUserId);
+        return ApiResponse.success("Chấp nhận báo giá thành công", marketplaceResponseMapper.toContractResponse(contract));
     }
 
     /**
@@ -105,7 +112,7 @@ public class BidController {
     }
 
     /**
-     * @deprecated Dùng {@code POST /{bidId}/checkout}
+     * @deprecated Dùng {@code POST /{bidId}/accept-via-wallet} hoặc {@code POST /{bidId}/checkout}
      */
     @PostMapping("/{bidId}/accept")
     public ApiResponse<PaymentOrderResponse> acceptBid(@PathVariable Long bidId, Principal principal) {

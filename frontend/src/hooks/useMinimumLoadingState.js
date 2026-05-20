@@ -1,5 +1,3 @@
-"use client";
-
 import { useEffect, useState } from "react";
 
 const useMinimumLoadingState = (isLoading, minimumDuration = 700) => {
@@ -29,3 +27,4 @@ const useMinimumLoadingState = (isLoading, minimumDuration = 700) => {
 };
 
 export default useMinimumLoadingState;
+

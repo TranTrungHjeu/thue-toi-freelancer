@@ -1,11 +1,9 @@
-"use client";
-
 import React, { useEffect, useState, useMemo } from 'react';
-import { 
-  Wallet, 
-  StatsUpSquare, 
-  Activity, 
-  Flash, 
+import {
+  Wallet,
+  StatsUpSquare,
+  Activity,
+  Flash,
   ShieldCheck,
   NavArrowRight,
   Calculator,
@@ -13,7 +11,7 @@ import {
   ArrowUp,
   RefreshDouble
 } from 'iconoir-react';
-import { useRouter } from 'next/navigation';
+import { useNavigate } from 'react-router-dom';
 
 import StatCard from '../../components/common/StatCard';
 import { H1, H2, Text, Caption } from '../../components/common/Typography';
@@ -29,7 +27,7 @@ const AdminFinancePage = () => {
   const [stats, setStats] = useState(null);
   const [loading, setLoading] = useState(true);
   const { addToast } = useToast();
-  const router = useRouter();
+  const navigate = useNavigate();
 
   useEffect(() => {
     const fetchStats = async () => {
@@ -93,7 +91,7 @@ const AdminFinancePage = () => {
               <ArrowUp className="w-3.5 h-3.5" /> +8.5%
             </div>
           </div>
-          
+
           <div className="mt-auto">
              <Text className="text-[10px] text-slate-500 font-bold uppercase tracking-widest flex items-center gap-2">
                 <ShieldCheck className="w-3.5 h-3.5" /> 10{t('adminPages.finance.percentageOfGmv')}
@@ -115,7 +113,7 @@ const AdminFinancePage = () => {
               <Activity className="w-3.5 h-3.5" /> {t('status.contract.in_progress')}
             </div>
           </div>
-          
+
           <div className="mt-auto">
              <Text className="text-[10px] text-slate-400 font-bold uppercase tracking-widest flex items-center gap-2">
                  <RefreshDouble className="w-3.5 h-3.5" /> {t('adminPages.finance.realtime')}
@@ -137,7 +135,7 @@ const AdminFinancePage = () => {
               <StatsUpSquare className="w-3.5 h-3.5" /> {t('adminPages.dashboard.growthTitle')}
             </div>
           </div>
-          
+
           <div className="mt-auto">
              <Text className="text-[10px] text-slate-400 font-bold uppercase tracking-widest">
                 {t('adminPages.finance.platformGmv')}
@@ -156,10 +154,10 @@ const AdminFinancePage = () => {
           <H2 className="text-xl font-bold tracking-tight mb-6 flex items-center gap-3">
              <Calculator className="w-5 h-5 text-primary-600" /> {t('adminPages.finance.quickActionsTitle')}
           </H2>
-          
+
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <button 
-              onClick={() => router.push('/workspace/admin/withdrawals')}
+            <button
+              onClick={() => navigate('/workspace/admin/withdrawals')}
               className="flex items-center justify-between p-5 bg-slate-50 border border-slate-100 hover:border-primary-500 hover:bg-white transition-all group"
             >
               <div className="flex flex-col text-left">
@@ -168,7 +166,7 @@ const AdminFinancePage = () => {
               </div>
               <NavArrowRight className="w-5 h-5 text-slate-300 group-hover:text-primary-500 group-hover:translate-x-1 transition-all" />
             </button>
-            
+
             <button className="flex items-center justify-between p-5 bg-slate-50 border border-slate-100 opacity-50 cursor-not-allowed">
               <div className="flex flex-col text-left">
                 <span className="font-bold text-slate-900">{t('adminPages.finance.taxReportLabel')}</span>
@@ -187,11 +185,11 @@ const AdminFinancePage = () => {
              </H2>
              <span className="text-xs font-bold text-slate-400 uppercase tracking-widest">{t('adminPages.finance.last7Days')}</span>
           </div>
-          
+
           <div className="flex-1 flex items-end gap-3 h-32 px-2">
             {growthValues.length > 0 ? growthValues.map((val, i) => (
               <div key={i} className="flex-1 flex flex-col items-center gap-2 h-full justify-end group relative">
-                <div 
+                <div
                   style={{ height: `${(val / maxGrowth) * 100}%`, minHeight: '2px' }}
                   className={`w-full ${i === growthValues.length - 1 ? 'bg-primary-600' : 'bg-slate-100 group-hover:bg-primary-200'} transition-all`}
                 />
@@ -207,3 +205,4 @@ const AdminFinancePage = () => {
 };
 
 export default AdminFinancePage;
+

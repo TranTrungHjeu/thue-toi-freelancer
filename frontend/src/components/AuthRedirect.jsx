@@ -1,17 +1,16 @@
-"use client";
-
 import { useEffect } from 'react';
-import { useRouter, useSearchParams } from 'next/navigation';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 
 export default function AuthRedirect({ mode }) {
-  const router = useRouter();
-  const searchParams = useSearchParams();
+  const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
 
   useEffect(() => {
     const params = new URLSearchParams(searchParams.toString());
     params.set('auth', mode);
-    router.replace(`/?${params.toString()}`);
-  }, [mode, router, searchParams]);
+    navigate(`/?${params.toString()}`, { replace: true });
+  }, [mode, navigate, searchParams]);
 
   return null;
 }
+

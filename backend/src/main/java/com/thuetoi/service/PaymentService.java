@@ -64,6 +64,60 @@ public class PaymentService {
     @Autowired
     private SePayProperties sePayProperties;
 
+    @Autowired
+    private WalletService walletService;
+
+    @Autowired
+    private PaymentRealtimePublisher paymentRealtimePublisher;
+
+    /**
+     * Tạo đơn VA SePay cho việc nạp tiền vào ví khả dụng.
+     */
+    @Transactional
+    public PaymentOrder createWalletDepositOrder(long customerId, java.math.BigDecimal amount) {
+        if (!sePayApiClient.isConfigured()) {
+            throw new BusinessException("ERR_PAYMENT_03", "Thiếu cấu hình SePay (API token, bank account xid).", HttpStatus.SERVICE_UNAVAILABLE);
+        }
+        User customer = getRequiredUser(customerId);
+
+        long amountVnd = amount.setScale(0, RoundingMode.HALF_UP).longValueExact();
+        if (amountVnd < 10000) {
+            throw new BusinessException("ERR_PAYMENT_02", "Số tiền nạp tối thiểu là 10.000 VND", HttpStatus.BAD_REQUEST);
+        }
+
+        String orderCode = buildDepositOrderCode(customerId);
+        JsonNode sepay = sePayApiClient.createOrder(orderCode, amountVnd);
+
+        String resolvedCode = (sepay.get("order_code") != null && !sepay.get("order_code").isNull())
+            ? sepay.get("order_code").asText()
+            : null;
+
+        PaymentOrder po = new PaymentOrder();
+        po.setOrderCode(resolvedCode != null ? resolvedCode : orderCode);
+        po.setProvider("sepay");
+        po.setBid(null);
+        po.setProjectId(null);
+        po.setCustomer(customer);
+        po.setAmount(amount);
+        po.setStatus(ST_PENDING);
+        po.setSepayOrderXid(getText(sepay, "id"));
+        po.setVaNumber(getText(sepay, "va_number"));
+        po.setVaHolderName(getText(sepay, "va_holder_name"));
+        po.setBankName(getText(sepay, "bank_name"));
+        po.setAccountNumber(getText(sepay, "account_number"));
+        if (sepay.get("qr_code") != null && !sepay.get("qr_code").isNull()) {
+            po.setQrCode(sepay.get("qr_code").asText());
+        }
+        if (sepay.get("qr_code_url") != null && !sepay.get("qr_code_url").isNull()) {
+            po.setQrCodeUrl(sepay.get("qr_code_url").asText());
+        }
+        if (sepay.get("expired_at") != null && !sepay.get("expired_at").isNull()) {
+            po.setExpiredAt(parseSePayTime(getText(sepay, "expired_at")));
+        }
+
+        return paymentOrderRepository.save(po);
+    }
+
     /**
      * Customer tạo đơn VA (checkout) cho bid đang chờ, chuyển project sang pending_payment.
      */
@@ -171,17 +225,44 @@ public class PaymentService {
         return paymentOrderRepository.findById(po.getId()).orElse(po);
     }
 
+    /**
+     * Thanh toán ngay bằng ví cho bid. Chuyển tiền sang ký quỹ và tạo hợp đồng.
+     */
+    @Transactional
+    public void payBidWithWallet(long bidId, long customerId) {
+        // Delegate directly to the secure wallet checkout flow in ContractService
+        contractService.createContractFromWallet(bidId, customerId);
+    }
+
     @Transactional
     public void afterPaymentReceived(PaymentOrder order) {
-        if (!ST_PAID.equals(order.getStatus())) {
-            order.setStatus(ST_PAID);
-            if (order.getPaidAt() == null) {
-                order.setPaidAt(LocalDateTime.now());
-            }
-            paymentOrderRepository.save(order);
+        // Tải lại đơn hàng với Pessimistic Lock để chặn tuyệt đối Race Condition / Webhook Retry
+        PaymentOrder detailed = paymentOrderRepository.findByIdForUpdate(order.getId())
+            .orElseThrow(() -> new BusinessException("ERR_PAYMENT_01", "Không tìm thấy đơn thanh toán", HttpStatus.NOT_FOUND));
+
+        if (ST_PAID.equals(detailed.getStatus())) {
+            return; // Nếu đã xử lý thanh toán (PAID) trước đó rồi thì dừng lại ngay để tránh nạp tiền trùng lặp
         }
-        PaymentOrder detailed = paymentOrderRepository.findDetailedByOrderCode(order.getOrderCode())
-            .orElse(order);
+
+        detailed.setStatus(ST_PAID);
+        if (detailed.getPaidAt() == null) {
+            detailed.setPaidAt(LocalDateTime.now());
+        }
+        paymentOrderRepository.save(detailed);
+
+        // Notify via WebSocket
+        paymentRealtimePublisher.publishStatusUpdate(detailed.getOrderCode(), ST_PAID, detailed.getProjectId());
+
+        // Load chi tiết (customer, project, bid) để phục vụ logic nghiệp vụ tiếp theo
+        detailed = paymentOrderRepository.findDetailedByOrderCode(detailed.getOrderCode())
+            .orElse(detailed);
+
+        // Phân biệt đơn nạp tiền (deposit) và đơn thanh toán hợp đồng (contract checkout)
+        if (detailed.getProjectId() == null) {
+            walletService.deposit(detailed.getCustomer().getId(), detailed.getAmount());
+            return;
+        }
+
         if (contractRepository.findByProjectId(detailed.getProjectId()).isPresent()) {
             return;
         }
@@ -273,15 +354,20 @@ public class PaymentService {
             p.setStatus(ST_PAID);
             p.setPaidAt(LocalDateTime.now());
             paymentOrderRepository.save(p);
+
+            paymentRealtimePublisher.publishStatusUpdate(p.getOrderCode(), ST_PAID, p.getProjectId());
+
             afterPaymentReceived(
                 paymentOrderRepository.findByOrderCode(p.getOrderCode()).orElse(p)
             );
         } else if ("Cancelled".equalsIgnoreCase(s) && ST_PENDING.equals(p.getStatus())) {
             p.setStatus(ST_CANCELLED);
             paymentOrderRepository.save(p);
+            paymentRealtimePublisher.publishStatusUpdate(p.getOrderCode(), ST_CANCELLED, p.getProjectId());
         } else if ("Expired".equalsIgnoreCase(s) && ST_PENDING.equals(p.getStatus())) {
             p.setStatus(ST_EXPIRED);
             paymentOrderRepository.save(p);
+            paymentRealtimePublisher.publishStatusUpdate(p.getOrderCode(), ST_EXPIRED, p.getProjectId());
         }
     }
 
@@ -303,6 +389,10 @@ public class PaymentService {
 
     private String buildOrderCode(Bid bid) {
         return "TTB" + bid.getId() + "P" + bid.getProject().getId() + "X" + UUID.randomUUID().toString().replace("-", "").substring(0, 8).toUpperCase(Locale.ROOT);
+    }
+
+    private String buildDepositOrderCode(long userId) {
+        return "TTD" + userId + "W" + UUID.randomUUID().toString().replace("-", "").substring(0, 8).toUpperCase(Locale.ROOT);
     }
 
     private static String getText(JsonNode n, String field) {

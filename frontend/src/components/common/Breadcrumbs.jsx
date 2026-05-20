@@ -1,5 +1,3 @@
-"use client";
-
 import React from 'react';
 import { NavArrowRight, Home } from 'iconoir-react';
 
@@ -43,3 +41,4 @@ const Breadcrumbs = ({
 };
 
 export default Breadcrumbs;
+

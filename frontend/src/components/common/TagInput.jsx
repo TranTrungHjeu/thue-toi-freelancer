@@ -1,5 +1,3 @@
-"use client";
-
 import React, { useEffect, useState, useRef, useMemo } from 'react';
 import { Caption } from './Typography';
 import Tag from './Tag';
@@ -165,3 +163,4 @@ const TagInput = ({
 };
 
 export default TagInput;
+

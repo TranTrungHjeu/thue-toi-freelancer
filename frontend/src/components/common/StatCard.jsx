@@ -1,5 +1,3 @@
-"use client";
-
 import React from 'react';
 import Card from './Card';
 import { H2, Text } from './Typography';
@@ -60,3 +58,4 @@ const StatCard = ({
 };
 
 export default StatCard;
+

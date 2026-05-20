@@ -32,4 +32,11 @@ public class PaymentController {
             paymentService.cancelByCustomer(orderCode, uid)
         ));
     }
+
+    @PostMapping("/wallet/pay-bid/{bidId}")
+    public ApiResponse<String> payBidWithWallet(@PathVariable Long bidId, Principal principal) {
+        long customerId = currentUserProvider.requireCurrentUserId(principal);
+        paymentService.payBidWithWallet(bidId, customerId);
+        return ApiResponse.success("Thanh toán thành công và hợp đồng đã được tạo", null);
+    }
 }
