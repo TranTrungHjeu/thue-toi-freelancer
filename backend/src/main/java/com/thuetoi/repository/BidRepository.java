@@ -13,24 +13,5 @@ import java.util.Optional;
  */
 @Repository
 public interface BidRepository extends JpaRepository<Bid, Long> {
-    @EntityGraph(attributePaths = {"project", "freelancer.skills"})
-    List<Bid> findByProjectId(Long projectId);
-
-    @EntityGraph(attributePaths = {"project", "freelancer.skills"})
-    List<Bid> findByFreelancerId(Long freelancerId);
-
-    long countByFreelancerId(Long freelancerId);
-
-    @EntityGraph(attributePaths = {"project", "freelancer.skills"})
-    List<Bid> findByProjectIdOrderByCreatedAtDesc(Long projectId);
-
-    @EntityGraph(attributePaths = {"project", "freelancer.skills"})
-    List<Bid> findByFreelancerIdOrderByCreatedAtDesc(Long freelancerId);
-
-    @EntityGraph(attributePaths = {"project", "freelancer.skills"})
-    List<Bid> findByProjectUserIdOrderByCreatedAtDesc(Long userId);
-
-    @Override
-    @EntityGraph(attributePaths = {"project", "project.user", "freelancer", "freelancer.skills"})
-    Optional<Bid> findById(Long id);
+    
 }
