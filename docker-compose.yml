@@ -49,6 +49,8 @@ services:
       SEPAY_VA_PREFIX: ${SEPAY_VA_PREFIX:-}
       SEPAY_WEBHOOK_SECRET: ${SEPAY_WEBHOOK_SECRET}
       FPT_AI_API_KEY: ${FPT_AI_API_KEY}
+      TELEGRAM_BOT_USERNAME: ${TELEGRAM_BOT_USERNAME}
+      TELEGRAM_BOT_TOKEN: ${TELEGRAM_BOT_TOKEN}
     depends_on:
       mysql-db:
         condition: service_healthy

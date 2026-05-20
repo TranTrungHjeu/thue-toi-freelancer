@@ -44,6 +44,9 @@ public class ProjectService {
     @Autowired
     private AttachmentMetadataService attachmentMetadataService;
 
+    @Autowired
+    private TelegramBotService telegramBotService;
+
     /**
      * Tạo dự án mới
      */
@@ -98,7 +101,37 @@ public class ProjectService {
         project.setStatus(ProjectStatus.OPEN.getValue());
         project.setSkills(resolveSkills(skills));
         Project savedProject = projectRepository.save(project);
+
+        // Notify all freelancers with Telegram connected about the new project
+        notifyFreelancersNewProject(savedProject);
+
         return getProjectForResponse(savedProject.getId());
+    }
+
+    private void notifyFreelancersNewProject(Project project) {
+        List<User> freelancers = userRepository.findFreelancersWithTelegram();
+        String message = String.format(
+            "🚀 *Có dự án mới vừa đăng tải!*\n\n" +
+            "*Dự án:* `%s`\n" +
+            "*Ngân sách:* %s - %s VND\n" +
+            "*Mô tả:* %s\n\n" +
+            "[Xem dự án và ứng tuyển](https://thuetoi.id.vn/projects)",
+            project.getTitle(),
+            project.getBudgetMin(),
+            project.getBudgetMax(),
+            truncateDescription(project.getDescription(), 100)
+        );
+
+        for (User freelancer : freelancers) {
+            telegramBotService.sendNotification(freelancer.getTelegramChatId(), message);
+        }
+    }
+
+    private String truncateDescription(String description, int maxLength) {
+        if (description == null || description.length() <= maxLength) {
+            return description;
+        }
+        return description.substring(0, maxLength) + "...";
     }
 
     /**

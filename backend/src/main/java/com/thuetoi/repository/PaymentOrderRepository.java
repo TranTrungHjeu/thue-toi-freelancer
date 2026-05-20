@@ -17,8 +17,8 @@ public interface PaymentOrderRepository extends JpaRepository<PaymentOrder, Long
     @Query("SELECT p FROM PaymentOrder p WHERE p.id = :id")
     Optional<PaymentOrder> findByIdForUpdate(@Param("id") Long id);
 
-    @Query("SELECT p FROM PaymentOrder p JOIN FETCH p.bid b JOIN FETCH b.project bp JOIN FETCH bp.user "
-        + "JOIN FETCH b.freelancer JOIN FETCH p.customer WHERE p.orderCode = :code")
+    @Query("SELECT p FROM PaymentOrder p LEFT JOIN FETCH p.bid b LEFT JOIN FETCH b.project bp LEFT JOIN FETCH bp.user "
+        + "LEFT JOIN FETCH b.freelancer JOIN FETCH p.customer WHERE p.orderCode = :code")
     Optional<PaymentOrder> findDetailedByOrderCode(@Param("code") String orderCode);
 
     Optional<PaymentOrder> findByOrderCode(String orderCode);

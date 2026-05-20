@@ -50,6 +50,9 @@ public class UserService {
     @Autowired
     private JwtTokenProvider jwtTokenProvider;
 
+    @Autowired
+    private TelegramBotService telegramBotService;
+
     /**
      * Đăng ký tài khoản mới.
      * Tài khoản được tạo ở trạng thái chưa xác thực (verified = false)
@@ -81,7 +84,28 @@ public class UserService {
         otpService.sendVerificationOtp(savedUser.getEmail());
 
         log.info("Tài khoản mới đã được tạo cho email: {}", normalizedEmail);
+
+        // Gửi thông báo Telegram cho tất cả Admin có liên kết Telegram
+        notifyAdminsOnNewRegistration(savedUser);
+
         return toAuthUserResponse(savedUser);
+    }
+
+    private void notifyAdminsOnNewRegistration(User newUser) {
+        try {
+            List<User> admins = userRepository.findByRole("admin");
+            for (User admin : admins) {
+                if (admin.getTelegramChatId() != null && !admin.getTelegramChatId().isEmpty()) {
+                    String message = "🆕 *Có người dùng mới đăng ký!*\n" +
+                                     "- Tên: " + newUser.getFullName() + "\n" +
+                                     "- Email: `" + newUser.getEmail() + "`\n" +
+                                     "- Vai trò: " + newUser.getRole();
+                    telegramBotService.sendNotification(admin.getTelegramChatId(), message);
+                }
+            }
+        } catch (Exception e) {
+            log.warn("Không thể gửi thông báo Telegram cho admin về user mới đăng ký: {}", e.getMessage());
+        }
     }
 
     /**
