@@ -292,9 +292,17 @@ public class ContractService {
 
     @Transactional
     public Contract updateContractStatus(Long contractId, Long currentUserId, String status) {
-        Contract contract = contractAccessService.requireAccessibleContract(contractId, currentUserId);
-        ContractStatus currentStatus = normalizeStoredContractStatus(contract.getStatus());
         ContractStatus normalizedStatus = normalizeContractStatus(status, false);
+
+        Contract contract;
+        if (normalizedStatus == ContractStatus.COMPLETED) {
+            // Chỉ Customer mới có quyền xác nhận hoàn thành dự án để giải ngân
+            contract = contractAccessService.requireCustomerContract(contractId, currentUserId);
+        } else {
+            contract = contractAccessService.requireAccessibleContract(contractId, currentUserId);
+        }
+
+        ContractStatus currentStatus = normalizeStoredContractStatus(contract.getStatus());
 
         if (currentStatus == normalizedStatus) {
             return contract;
