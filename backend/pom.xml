@@ -134,6 +134,13 @@
             <artifactId>spring-security-test</artifactId>
             <scope>test</scope>
         </dependency>
+
+        <!-- Telegram Bot Support -->
+        <dependency>
+            <groupId>org.telegram</groupId>
+            <artifactId>telegrambots-springboot-starter</artifactId>
+            <version>6.8.0</version>
+        </dependency>
     </dependencies>
 
     <build>

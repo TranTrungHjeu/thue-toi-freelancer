@@ -42,6 +42,9 @@ public class BidService {
     @Autowired
     private AttachmentMetadataService attachmentMetadataService;
 
+    @Autowired
+    private TelegramBotService telegramBotService;
+
     /**
      * Lấy toàn bộ bid mà user hiện tại được phép xem.
      */
@@ -102,6 +105,13 @@ public class BidService {
             "Bạn có bid mới",
             "Freelancer \"" + resolveUserDisplayName(freelancer, "Freelancer") + "\" vừa gửi bid cho project \"" + project.getTitle() + "\".",
             "/workspace/projects"
+        );
+
+        // Telegram Notification for Project Owner
+        User projectOwner = project.getUser();
+        telegramBotService.sendNotification(
+            projectOwner.getTelegramChatId(),
+            "📩 *Có người ứng tuyển vào dự án của bạn*\n\nDự án: `" + project.getTitle() + "`\nFreelancer: " + resolveUserDisplayName(freelancer, "Freelancer") + "\nGiá đề xuất: " + price + " VND\n\n[Xem báo giá](https://thuetoi.vn/workspace/projects)"
         );
         return getRequiredBid(createdBid.getId());
     }
