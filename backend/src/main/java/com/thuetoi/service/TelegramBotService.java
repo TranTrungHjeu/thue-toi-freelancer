@@ -37,6 +37,10 @@ public class TelegramBotService extends TelegramLongPollingBot {
 
     @Override
     public String getBotToken() {
+        if (botToken == null || botToken.isEmpty()) {
+            log.error("Telegram Bot Token is missing! Please set TELEGRAM_BOT_TOKEN environment variable.");
+            return "MISSING_TOKEN";
+        }
         return botToken;
     }
 
