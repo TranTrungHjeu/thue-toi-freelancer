@@ -2,6 +2,7 @@ import axiosClient from "./axiosClient";
 
 export const marketplaceApi = {
   getAllProjects: () => axiosClient.get("/v1/projects"),
+  getProject: (projectId) => axiosClient.get(`/v1/projects/${projectId}`),
   searchProjects: (params = {}) =>
     axiosClient.get("/v1/projects/search", {
       params,

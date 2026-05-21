@@ -9,6 +9,37 @@ import './ChatManager.css';
 
 const CHAT_WIDTH = 320; // in pixels
 const CHAT_SPACING = 16; // in pixels
+const CONTRACT_TITLE_MAX_LENGTH = 28;
+
+const truncateText = (value, maxLength = CONTRACT_TITLE_MAX_LENGTH) => {
+  const text = String(value || '').trim();
+  if (text.length <= maxLength) return text;
+  return `${text.slice(0, maxLength).trimEnd()}...`;
+};
+
+const getContractTitle = (contract) => (
+  contract?.projectTitle
+  || contract?.project?.title
+  || contract?.title
+  || contract?.projectName
+  || contract?.name
+  || `Hợp đồng #${contract?.id || ''}`
+);
+
+const loadProjectTitleMap = async (contracts) => {
+  const projectIds = [...new Set(contracts.map((contract) => contract.projectId).filter(Boolean))];
+  const entries = await Promise.all(
+    projectIds.map(async (projectId) => {
+      try {
+        const response = await marketplaceApi.getProject(projectId);
+        return [projectId, response.data?.title || ''];
+      } catch {
+        return [projectId, ''];
+      }
+    }),
+  );
+  return new Map(entries);
+};
 
 const getPreview = (message) => {
   if (!message) return 'Chưa có tin nhắn.';
@@ -63,9 +94,16 @@ const ChatManager = () => {
     try {
       const contractsResponse = await marketplaceApi.getMyContracts();
       const contracts = (contractsResponse.data || []);
+      const projectTitleMap = await loadProjectTitleMap(contracts);
       const messagePromises = contracts.map(async (contract) => {
         const res = await marketplaceApi.getMessagesByContract(contract.id, { limit: 1 });
-        return { contract, latest: res.data?.[0] };
+        return {
+          contract: {
+            ...contract,
+            projectTitle: projectTitleMap.get(contract.projectId),
+          },
+          latest: res.data?.[0],
+        };
       });
       const results = await Promise.all(messagePromises);
 
@@ -75,7 +113,8 @@ const ChatManager = () => {
         .map(({ contract, latest }) => ({
           id: contract.id,
           type: 'contract',
-          title: `Hợp đồng #${contract.id}`,
+          title: truncateText(getContractTitle(contract)),
+          fullTitle: getContractTitle(contract),
           latestMessage: latest,
         }));
       setConversations(allConversations);
@@ -124,11 +163,12 @@ const ChatManager = () => {
 
   const visibleWindows = useMemo(() => activeChats.filter(c => !minimizedChats.some(mc => mc.id === c.id)), [activeChats, minimizedChats]);
   const minimizedWindows = useMemo(() => activeChats.filter(c => minimizedChats.some(mc => mc.id === c.id)), [activeChats, minimizedChats]);
+  const hasOpenChat = activeChats.length > 0;
 
   return (
     <>
       {/* Chat Dock */}
-      <div className="fixed bottom-0 right-4 z-[100] flex items-end justify-end gap-4 pointer-events-none">
+      <div className="fixed bottom-20 right-4 z-[100] flex items-end justify-end gap-4 pointer-events-none lg:bottom-0">
         {/* Render active, non-minimized windows */}
         {visibleWindows.map((chat) => (
           <div key={chat.id} className="pointer-events-auto">
@@ -154,7 +194,7 @@ const ChatManager = () => {
       </div>
 
       {/* Launcher Button */}
-      <div className="fixed bottom-6 right-6 z-[90]">
+      <div className={`fixed bottom-24 right-6 z-[110] lg:bottom-6 ${hasOpenChat ? 'hidden' : ''}`}>
         {isLauncherOpen && (
           <div className="absolute bottom-full right-0 mb-3 w-80 max-h-[60vh] overflow-y-auto rounded-lg bg-white shadow-2xl border border-slate-200 p-2 flex flex-col">
             <div className="p-2 border-b border-slate-100">
@@ -178,17 +218,17 @@ const ChatManager = () => {
                   </div>
                 </button>
                 {/* Contract chat entries */}
-                {conversations.map(convo => (
+                {conversations.map((convo, index) => (
                   <button
                     key={convo.id}
                     onClick={() => { openChat(convo.id, 'contract'); setLauncherOpen(false); }}
                     className="w-full text-left p-2 rounded-md hover:bg-slate-50 transition-colors flex items-center gap-3"
                   >
                     <div className="w-8 h-8 bg-secondary-100 flex items-center justify-center">
-                      <span className="text-xs font-bold text-secondary-700">{convo.title.slice(-3)}</span>
+                      <span className="text-xs font-bold text-secondary-700">{index + 1}</span>
                     </div>
                     <div className="flex-1 min-w-0">
-                      <div className="font-semibold text-xs text-slate-800 truncate">{convo.title}</div>
+                      <div className="font-semibold text-xs text-slate-800 truncate" title={convo.fullTitle}>{convo.title}</div>
                       <div className="text-xs text-slate-500 truncate">{getPreview(convo.latestMessage)}</div>
                     </div>
                   </button>
