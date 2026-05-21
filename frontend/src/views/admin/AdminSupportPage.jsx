@@ -4,7 +4,7 @@ import {
   Send,
   User as UserIcon,
   Search,
-  HeadsetHelp
+  Headset
 } from 'iconoir-react';
 import { H1, Text, Caption } from '../../components/common/Typography';
 import Card from '../../components/common/Card';
@@ -105,7 +105,7 @@ const AdminSupportPage = () => {
     <div className="flex flex-col gap-6 h-[calc(100vh-160px)]">
       <header className="flex items-center gap-3">
         <div className="flex items-center justify-center p-2 bg-primary-600 rounded-lg text-white">
-          <HeadsetHelp className="w-5 h-5" />
+          <Headset className="w-5 h-5" />
         </div>
         <div>
           <H1 className="text-2xl font-bold tracking-tight text-slate-900">Support Center</H1>
@@ -221,7 +221,7 @@ const AdminSupportPage = () => {
           ) : (
             <div className="flex-1 flex flex-col items-center justify-center p-12 text-center">
               <div className="w-20 h-20 bg-slate-50 rounded-full flex items-center justify-center mb-4 border border-slate-100">
-                <HeadsetHelp className="w-10 h-10 text-slate-300" />
+                <Headset className="w-10 h-10 text-slate-300" />
               </div>
               <H1 className="text-xl font-bold text-slate-900 mb-2">Select a User</H1>
               <Text className="text-slate-400 text-sm max-w-xs">Choose a user from the list on the left to start a support conversation.</Text>

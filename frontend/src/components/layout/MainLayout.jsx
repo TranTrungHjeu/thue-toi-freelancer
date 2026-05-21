@@ -1,7 +1,7 @@
 import React, { useState, useMemo } from 'react';
 import { useLocation, useSearchParams, useNavigate } from 'react-router-dom';
 
-import { Bell, Home, Page, PageSearch, ProfileCircle, ViewGrid, Group, Settings, Reports, Coins, ShieldCheck, Megaphone, WarningTriangle, Database, Wallet } from 'iconoir-react';
+import { Bell, Home, Page, PageSearch, ProfileCircle, ViewGrid, Group, Settings, Reports, Coins, ShieldCheck, Megaphone, WarningTriangle, Database, Wallet, Headset } from 'iconoir-react';
 import Header from './Header';
 import Sidebar from './Sidebar';
 import MobileDrawer from './MobileDrawer';
@@ -61,7 +61,7 @@ const MainLayout = ({ children }) => {
     const commonWorkspaceItems = [
       notificationItem,
       { label: t('layout.navigation.profile'), href: '/workspace/profile', icon: ProfileCircle },
-      { label: t('layout.navigation.supportChat') || 'Chat with Admin', onClick: openSupportChat, icon: HeadsetHelp },
+      { label: t('layout.navigation.supportChat') || 'Chat with Admin', onClick: openSupportChat, icon: Headset },
     ];
 
     if (role === 'admin') {
