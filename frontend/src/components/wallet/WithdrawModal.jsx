@@ -123,7 +123,7 @@ const WithdrawModal = ({ isOpen, onClose, balance = 0, onSuccess }) => {
       setManualForm((prev) => ({ ...prev, qrImageUrl: url }));
       addToast('Đã tải lên ảnh QR', 'success');
     } catch (err) {
-      addToast(err?.response?.data?.message || 'Tải ảnh QR thất bại', 'error');
+      addToast(err?.message || err?.response?.data?.message || 'Tải ảnh QR thất bại', 'error');
       setQrFile(null);
     } finally {
       setUploadingQr(false);
@@ -179,7 +179,7 @@ const WithdrawModal = ({ isOpen, onClose, balance = 0, onSuccess }) => {
       onSuccess?.(res?.data);
       onClose?.();
     } catch (err) {
-      addToast(err?.response?.data?.message || 'Gửi yêu cầu rút tiền thất bại', 'error');
+      addToast(err?.message || err?.response?.data?.message || 'Gửi yêu cầu rút tiền thất bại', 'error');
     } finally {
       setSubmitting(false);
     }

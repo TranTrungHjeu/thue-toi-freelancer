@@ -3,6 +3,7 @@ import { AuthProvider } from '../contexts/AuthContext'
 import { I18nProvider } from '../contexts/I18nContext'
 import { NotificationProvider } from '../contexts/NotificationContext'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
+import AdminRealtimeListener from './admin/AdminRealtimeListener'
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -20,6 +21,9 @@ export default function ClientProviders({ children }) {
         <ToastProvider>
           <AuthProvider>
             <NotificationProvider>
+              {/* Headless realtime listener for admin-wide events.
+                  Mounted globally so admins receive toasts on every page. */}
+              <AdminRealtimeListener />
               {children}
             </NotificationProvider>
           </AuthProvider>
