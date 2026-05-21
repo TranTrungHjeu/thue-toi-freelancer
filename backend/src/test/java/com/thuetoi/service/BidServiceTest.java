@@ -43,6 +43,9 @@ class BidServiceTest {
     @Mock
     private NotificationService notificationService;
 
+    @Mock
+    private TelegramBotService telegramBotService;
+
     @InjectMocks
     private BidService bidService;
 

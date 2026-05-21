@@ -4,6 +4,7 @@ import com.thuetoi.dto.response.AuthUserResponse;
 import com.thuetoi.entity.RefreshToken;
 import com.thuetoi.entity.User;
 import com.thuetoi.exception.BusinessException;
+import com.thuetoi.repository.KycRequestRepository;
 import com.thuetoi.repository.RefreshTokenRepository;
 import com.thuetoi.repository.UserRepository;
 import com.thuetoi.security.JwtTokenProvider;
@@ -46,6 +47,15 @@ class UserServiceTest {
 
     @Mock
     private JwtTokenProvider jwtTokenProvider;
+
+    @Mock
+    private KycRequestRepository kycRequestRepository;
+
+    @Mock
+    private TelegramBotService telegramBotService;
+
+    @Mock
+    private SkillService skillService;
 
     @InjectMocks
     private UserService userService;

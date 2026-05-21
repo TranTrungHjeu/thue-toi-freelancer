@@ -13,7 +13,6 @@ import java.time.LocalDateTime;
 
 @Entity
 @Table(name = "milestones")
-@Data
 public class Milestone {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -33,4 +32,52 @@ public class Milestone {
 
     @Column(name = "status", nullable = false)
     private String status;
+
+    public Long getId() {
+        return id;
+    }
+
+    public void setId(Long id) {
+        this.id = id;
+    }
+
+    public Long getContractId() {
+        return contractId;
+    }
+
+    public void setContractId(Long contractId) {
+        this.contractId = contractId;
+    }
+
+    public String getTitle() {
+        return title;
+    }
+
+    public void setTitle(String title) {
+        this.title = title;
+    }
+
+    public BigDecimal getAmount() {
+        return amount;
+    }
+
+    public void setAmount(BigDecimal amount) {
+        this.amount = amount;
+    }
+
+    public LocalDateTime getDueDate() {
+        return dueDate;
+    }
+
+    public void setDueDate(LocalDateTime dueDate) {
+        this.dueDate = dueDate;
+    }
+
+    public String getStatus() {
+        return status;
+    }
+
+    public void setStatus(String status) {
+        this.status = status;
+    }
 }

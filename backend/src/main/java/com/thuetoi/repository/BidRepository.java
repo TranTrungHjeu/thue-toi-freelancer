@@ -7,6 +7,7 @@ import org.springframework.stereotype.Repository;
 
 import java.util.List;
 import java.util.Optional;
+import java.util.Collection;
 
 /**
  * Repository Bid: Quản lý truy vấn dữ liệu báo giá
@@ -29,6 +30,9 @@ public interface BidRepository extends JpaRepository<Bid, Long> {
 
     @EntityGraph(attributePaths = {"project", "freelancer.skills"})
     List<Bid> findByProjectUserIdOrderByCreatedAtDesc(Long userId);
+
+    @EntityGraph(attributePaths = {"project", "freelancer.skills"})
+    List<Bid> findByProjectIdAndFreelancerIdAndStatusIn(Long projectId, Long freelancerId, Collection<String> statuses);
 
     @Override
     @EntityGraph(attributePaths = {"project", "project.user", "freelancer", "freelancer.skills"})

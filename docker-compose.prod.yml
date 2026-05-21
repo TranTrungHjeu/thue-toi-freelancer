@@ -46,6 +46,8 @@ services:
       CLOUDINARY_URL: ${CLOUDINARY_URL}
       GEMINI_API_KEY: ${GEMINI_API_KEY}
       GEMINI_MODEL: ${GEMINI_MODEL:-}
+      TELEGRAM_BOT_USERNAME: ${TELEGRAM_BOT_USERNAME}
+      TELEGRAM_BOT_TOKEN: ${TELEGRAM_BOT_TOKEN}
     volumes:
       - backend_uploads:/app/uploads
 

@@ -66,6 +66,25 @@ public class User extends BaseEntity {
     @Column(precision = 19, scale = 2)
     private BigDecimal balance = BigDecimal.ZERO;
 
+    @Column(name = "telegram_chat_id")
+    private String telegramChatId;
+
+    public String getTelegramChatId() {
+        return telegramChatId;
+    }
+
+    public void setTelegramChatId(String telegramChatId) {
+        this.telegramChatId = telegramChatId;
+    }
+
+    public String getUsername() {
+        return email;
+    }
+
+    public String getPassword() {
+        return passwordHash;
+    }
+
     public String getEmail() {
         return email;
     }
