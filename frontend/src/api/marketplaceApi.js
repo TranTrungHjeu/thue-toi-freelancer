@@ -1,30 +1,38 @@
 import axiosClient from "./axiosClient";
 
+const serializeQueryParams = (nextParams) => {
+  const searchParams = new URLSearchParams();
+  Object.entries(nextParams).forEach(([key, value]) => {
+    if (Array.isArray(value)) {
+      value
+        .filter((item) => item !== undefined && item !== null && item !== "")
+        .forEach((item) => searchParams.append(key, item));
+      return;
+    }
+
+    if (value !== undefined && value !== null && value !== "") {
+      searchParams.append(key, value);
+    }
+  });
+  return searchParams.toString();
+};
+
 export const marketplaceApi = {
-  getAllProjects: () => axiosClient.get("/v1/projects"),
+  getAllProjects: (params = {}) =>
+    axiosClient.get("/v1/projects", {
+      params,
+      paramsSerializer: serializeQueryParams,
+    }),
   searchProjects: (params = {}) =>
     axiosClient.get("/v1/projects/search", {
       params,
-      paramsSerializer: (nextParams) => {
-        const searchParams = new URLSearchParams();
-        Object.entries(nextParams).forEach(([key, value]) => {
-          if (Array.isArray(value)) {
-            value
-              .filter(
-                (item) => item !== undefined && item !== null && item !== "",
-              )
-              .forEach((item) => searchParams.append(key, item));
-            return;
-          }
-
-          if (value !== undefined && value !== null && value !== "") {
-            searchParams.append(key, value);
-          }
-        });
-        return searchParams.toString();
-      },
+      paramsSerializer: serializeQueryParams,
     }),
-  getMyProjects: () => axiosClient.get("/v1/projects/my"),
+  getMyProjects: (params = {}) =>
+    axiosClient.get("/v1/projects/my", {
+      params,
+      paramsSerializer: serializeQueryParams,
+    }),
   getProjectsByUser: (userId) => axiosClient.get(`/v1/projects/user/${userId}`),
   createProject: (payload) => axiosClient.post("/v1/projects", payload),
   updateProject: (projectId, payload) =>
@@ -107,8 +115,31 @@ export const marketplaceApi = {
 
   // --- Wallet (SePay-funded escrow + balance) ---
   getWalletMe: () => axiosClient.get("/v1/wallet/me"),
-  getWalletLedger: () => axiosClient.get("/v1/wallet/me/ledger"),
+  getWalletLedger: (params) =>
+    axiosClient.get("/v1/wallet/me/ledger", { params }),
   depositWallet: (amount) => axiosClient.post("/v1/wallet/deposit", { amount }),
+
+  // --- Withdrawals (user-side) ---
+  getMyWithdrawals: (params) =>
+    axiosClient.get("/v1/wallet/withdrawals", { params }),
+  createWithdrawal: (payload) => axiosClient.post("/v1/wallet/withdrawals", payload),
+  cancelWithdrawal: (id) => axiosClient.post(`/v1/wallet/withdrawals/${id}/cancel`),
+
+  // --- Bank accounts (user-side) ---
+  getMyBankAccounts: () => axiosClient.get("/v1/users/me/bank-accounts"),
+  createBankAccount: (payload) => axiosClient.post("/v1/users/me/bank-accounts", payload),
+  updateBankAccount: (id, payload) =>
+    axiosClient.put(`/v1/users/me/bank-accounts/${id}`, payload),
+  deleteBankAccount: (id) => axiosClient.delete(`/v1/users/me/bank-accounts/${id}`),
+  setDefaultBankAccount: (id) =>
+    axiosClient.post(`/v1/users/me/bank-accounts/${id}/default`),
+  uploadBankAccountQr: (file) => {
+    const formData = new FormData();
+    formData.append("file", file);
+    return axiosClient.post("/v1/files/bank-accounts", formData, {
+      headers: { "Content-Type": "multipart/form-data" },
+    });
+  },
 };
 
 export default marketplaceApi;

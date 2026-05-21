@@ -6,6 +6,9 @@ import java.util.List;
 import java.util.Map;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -18,6 +21,7 @@ import com.thuetoi.exception.BusinessException;
 import com.thuetoi.repository.SystemSettingRepository;
 import com.thuetoi.repository.UserRepository;
 import com.thuetoi.repository.WalletLedgerEntryRepository;
+import com.thuetoi.repository.WithdrawalRequestRepository;
 
 @Service
 @Transactional
@@ -28,6 +32,9 @@ public class WalletService {
 
     @Autowired
     private WalletLedgerEntryRepository walletLedgerEntryRepository;
+
+    @Autowired
+    private WithdrawalRequestRepository withdrawalRequestRepository;
 
     @Autowired
     private SystemSettingRepository systemSettingRepository;
@@ -50,20 +57,43 @@ public class WalletService {
         BigDecimal pending = BigDecimal.ZERO;
         BigDecimal totalBalance = balance.add(escrow).add(pending);
 
+        // Aggregate "đang chờ rút" - tính ở DB thay vì load toàn bộ list rồi sum FE.
+        BigDecimal pendingWithdrawalAmount = withdrawalRequestRepository.sumPendingAmountByUserId(userId);
+        if (pendingWithdrawalAmount == null) {
+            pendingWithdrawalAmount = BigDecimal.ZERO;
+        }
+        long pendingWithdrawalCount = withdrawalRequestRepository.countPendingByUserId(userId);
+
         Map<String, Object> wallet = new HashMap<>();
         wallet.put("balance", balance);
         wallet.put("escrow", escrow);
         wallet.put("pending", pending);
         wallet.put("total", totalBalance);
+        wallet.put("pendingWithdrawalAmount", pendingWithdrawalAmount);
+        wallet.put("pendingWithdrawalCount", pendingWithdrawalCount);
         wallet.put("source", "Database: userId=" + userId + ", email=" + user.getEmail() + ", balance=" + balance);
-
-        System.out.println("[WALLET DEBUG] getWalletMe - userId=" + userId + ", balance=" + balance + ", user.getBalance()=" + user.getBalance());
 
         return wallet;
     }
 
+    /** Max page size cứng theo khuyến nghị skill api-pagination. */
+    public static final int MAX_PAGE_SIZE = 100;
+    public static final int DEFAULT_PAGE_SIZE = 20;
+
     public List<WalletLedgerEntry> getWalletLedger(Long userId) {
         return walletLedgerEntryRepository.findByUserIdOrderByCreatedAtDesc(userId);
+    }
+
+    /**
+     * Paginated ledger (offset pagination, page 1-indexed).
+     * Tận dụng index {@code idx_wle_user_created} (V23).
+     */
+    @Transactional(readOnly = true)
+    public Page<WalletLedgerEntry> getWalletLedgerPaged(Long userId, int page, int limit) {
+        int safePage = Math.max(1, page);
+        int safeLimit = Math.min(Math.max(1, limit), MAX_PAGE_SIZE);
+        Pageable pageable = PageRequest.of(safePage - 1, safeLimit);
+        return walletLedgerEntryRepository.findByUserIdOrderByCreatedAtDesc(userId, pageable);
     }
 
     @Transactional
@@ -258,6 +288,80 @@ public class WalletService {
                     }
                 })
                 .orElse(new BigDecimal("10"));
+    }
+
+    /**
+     * Khóa số dư cho yêu cầu rút tiền: trừ ngay khỏi available balance để user không thể
+     * tiêu lặp số tiền này trong khi admin xử lý request. Ledger entry âm với entryType
+     * {@code withdrawal_hold} ghi nhận lượng tiền đang giữ.
+     */
+    @Transactional
+    public void holdForWithdrawal(Long userId, Long withdrawalRequestId, BigDecimal amount, String orderCode) {
+        User user = userRepository.findByIdForUpdate(userId)
+                .orElseThrow(() -> new BusinessException("ERR_AUTH_01", "Người dùng không tồn tại", HttpStatus.NOT_FOUND));
+
+        BigDecimal currentBalance = user.getBalance() != null ? user.getBalance() : BigDecimal.ZERO;
+        if (currentBalance.compareTo(amount) < 0) {
+            throw new BusinessException(
+                "ERR_WALLET_02",
+                "Số dư khả dụng không đủ để tạo yêu cầu rút tiền",
+                HttpStatus.BAD_REQUEST
+            );
+        }
+
+        user.setBalance(currentBalance.subtract(amount));
+        userRepository.save(user);
+
+        WalletLedgerEntry entry = new WalletLedgerEntry();
+        entry.setUserId(userId);
+        entry.setAmount(amount.negate());
+        entry.setEntryType("withdrawal_hold");
+        entry.setDescription("Tạm giữ số tiền cho yêu cầu rút #" + withdrawalRequestId
+            + (orderCode != null ? " (" + orderCode + ")" : ""));
+        walletLedgerEntryRepository.save(entry);
+    }
+
+    /**
+     * Hoàn lại số dư cho user khi yêu cầu rút bị từ chối hoặc bị hủy.
+     */
+    @Transactional
+    public void refundWithdrawalHold(Long userId, Long withdrawalRequestId, BigDecimal amount, String reason) {
+        User user = userRepository.findByIdForUpdate(userId)
+                .orElseThrow(() -> new BusinessException("ERR_AUTH_01", "Người dùng không tồn tại", HttpStatus.NOT_FOUND));
+
+        user.setBalance((user.getBalance() != null ? user.getBalance() : BigDecimal.ZERO).add(amount));
+        userRepository.save(user);
+
+        WalletLedgerEntry entry = new WalletLedgerEntry();
+        entry.setUserId(userId);
+        entry.setAmount(amount);
+        entry.setEntryType("withdrawal_refund");
+        entry.setDescription("Hoàn tiền yêu cầu rút #" + withdrawalRequestId
+            + (reason != null && !reason.isBlank() ? " - " + reason : ""));
+        walletLedgerEntryRepository.save(entry);
+    }
+
+    /**
+     * Ghi nhận hoàn tất rút tiền: số dư đã được giữ từ trước (holdForWithdrawal),
+     * giờ chỉ cần thêm ledger entry "withdrawal" để khoá lịch sử và gắn sepayTransactionId.
+     * KHÔNG thay đổi balance ở đây để tránh trừ kép.
+     */
+    @Transactional
+    public void recordWithdrawalCompleted(Long userId, Long withdrawalRequestId, BigDecimal amount, String orderCode, String sepayTransactionId) {
+        WalletLedgerEntry entry = new WalletLedgerEntry();
+        entry.setUserId(userId);
+        entry.setAmount(BigDecimal.ZERO);
+        entry.setEntryType("withdrawal_completed");
+        StringBuilder desc = new StringBuilder("Hoàn tất rút #" + withdrawalRequestId
+            + " - " + amount + " VND");
+        if (orderCode != null && !orderCode.isBlank()) {
+            desc.append(" (").append(orderCode).append(")");
+        }
+        if (sepayTransactionId != null && !sepayTransactionId.isBlank()) {
+            desc.append(" [SePay tx ").append(sepayTransactionId).append("]");
+        }
+        entry.setDescription(desc.toString());
+        walletLedgerEntryRepository.save(entry);
     }
 
     @Transactional

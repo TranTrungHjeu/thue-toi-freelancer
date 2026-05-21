@@ -8,6 +8,10 @@ import com.thuetoi.exception.BusinessException;
 import com.thuetoi.repository.ProjectRepository;
 import com.thuetoi.repository.UserRepository;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -148,6 +152,54 @@ public class ProjectService {
      */
     public List<Project> getProjectsByUser(Long userId) {
         return projectRepository.findByUserIdOrderByCreatedAtDesc(userId);
+    }
+
+    /**
+     * Lấy danh sách dự án của user, phân trang (offset).
+     */
+    public Page<Project> getProjectsByUser(Long userId, int page, int limit) {
+        return projectRepository.findByUserIdOrderByCreatedAtDesc(userId, buildPageable(page, limit));
+    }
+
+    /**
+     * Lấy danh sách dự án marketplace có lọc/tìm kiếm, phân trang.
+     */
+    public Page<Project> searchProjects(List<String> skillNames, String status, String keyword, int page, int limit) {
+        Pageable pageable = buildPageable(page, limit);
+        String normalizedStatus = normalizeOptionalStatus(status);
+        String effectiveStatus = normalizedStatus != null ? normalizedStatus : ProjectStatus.OPEN.getValue();
+        String normalizedKeyword = normalizeKeyword(keyword);
+
+        List<String> normalizedSkills = skillNames == null ? List.of()
+            : skillNames.stream()
+                .map(s -> s == null ? "" : s.trim().toLowerCase())
+                .filter(s -> !s.isEmpty())
+                .distinct()
+                .toList();
+
+        if (normalizedSkills.isEmpty()) {
+            return projectRepository.pageByStatusAndKeyword(effectiveStatus, normalizedKeyword, pageable);
+        }
+        return projectRepository.pageBySkillsAndOptionalStatusAndKeyword(
+            normalizedSkills,
+            effectiveStatus,
+            normalizedKeyword,
+            pageable
+        );
+    }
+
+    private Pageable buildPageable(int page, int limit) {
+        int safePage = Math.max(1, page);
+        int safeLimit = Math.max(1, Math.min(100, limit));
+        return PageRequest.of(safePage - 1, safeLimit, Sort.by(Sort.Direction.DESC, "createdAt"));
+    }
+
+    private String normalizeKeyword(String keyword) {
+        if (keyword == null) {
+            return null;
+        }
+        String trimmed = keyword.trim().toLowerCase(Locale.ROOT);
+        return trimmed.isEmpty() ? null : trimmed;
     }
 
     /**

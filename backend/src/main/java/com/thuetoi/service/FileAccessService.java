@@ -16,7 +16,7 @@ import java.util.Set;
 
 @Service
 public class FileAccessService {
-    private static final Set<String> SUPPORTED_CONTEXTS = Set.of("projects", "bids", "messages");
+    private static final Set<String> SUPPORTED_CONTEXTS = Set.of("projects", "bids", "messages", "bank-accounts");
 
     private final UserRepository userRepository;
     private final ProjectRepository projectRepository;
@@ -41,6 +41,7 @@ public class FileAccessService {
             case "projects" -> requireProjectUploadAccess(currentUser, projectId);
             case "bids" -> requireBidUploadAccess(currentUser, projectId);
             case "messages" -> requireMessageUploadAccess(currentUserId, contractId);
+            case "bank-accounts" -> { /* mọi user đã đăng nhập đều được upload QR ngân hàng của chính mình */ }
             default -> throw new BusinessException("ERR_FILE_03", "Ngữ cảnh upload không hợp lệ", HttpStatus.BAD_REQUEST);
         }
 
