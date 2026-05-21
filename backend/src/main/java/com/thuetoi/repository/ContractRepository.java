@@ -13,7 +13,7 @@ public interface ContractRepository extends JpaRepository<Contract, Long> {
     Optional<Contract> findByProjectId(Long projectId);
     long countByClientIdOrFreelancerId(Long clientId, Long freelancerId);
 
-    @Query("SELECT COALESCE(SUM(c.totalAmount), 0) FROM Contract c WHERE c.status <> 'cancelled'")
+    @Query("SELECT COALESCE(SUM(c.totalAmount), 0) FROM Contract c WHERE c.status = 'completed'")
     BigDecimal calculateTotalGmv();
 
     long countByStatus(String status);
