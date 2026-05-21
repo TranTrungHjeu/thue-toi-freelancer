@@ -16,6 +16,7 @@ import com.thuetoi.security.RestAuthenticationEntryPoint;
 import com.thuetoi.security.SecurityConfig;
 import com.thuetoi.service.AdminService;
 import com.thuetoi.service.AuditLogService;
+import com.thuetoi.service.MessageService;
 import com.thuetoi.service.NotificationDeliveryLogService;
 import com.thuetoi.service.NotificationService;
 import com.thuetoi.service.SkillService;
@@ -63,6 +64,9 @@ class AdminControllerSecurityTest {
 
     @MockBean
     private SkillService skillService;
+
+    @MockBean
+    private MessageService messageService;
 
     @MockBean
     private NotificationService notificationService;
@@ -127,19 +131,18 @@ class AdminControllerSecurityTest {
 
     @Test
     void adminEndpointAllowsAdminRole() throws Exception {
-        when(adminService.getSystemStats()).thenReturn(
-            AdminStatsResponse.builder()
-                .totalUsers(10)
-                .totalFreelancers(4)
-                .totalCustomers(5)
-                .totalProjects(6)
-                .activeProjects(3)
-                .completedContracts(2)
-                .totalGmv(BigDecimal.valueOf(1500000))
-                .matchingRate(33.3)
-                .userGrowthTrend(Map.of("2026-04-22", 2L))
-                .build()
-        );
+        AdminStatsResponse stats = new AdminStatsResponse();
+        stats.setTotalUsers(10);
+        stats.setTotalFreelancers(4);
+        stats.setTotalCustomers(5);
+        stats.setTotalProjects(6);
+        stats.setActiveProjects(3);
+        stats.setCompletedContracts(2);
+        stats.setTotalGmv(BigDecimal.valueOf(1500000));
+        stats.setMatchingRate(33.3);
+        stats.setUserGrowthTrend(Map.of("2026-04-22", 2L));
+
+        when(adminService.getSystemStats()).thenReturn(stats);
 
         mockMvc.perform(
                 get("/api/v1/admin/stats")
@@ -152,30 +155,33 @@ class AdminControllerSecurityTest {
 
     @Test
     void adminUserPageEndpointReturnsPagedContract() throws Exception {
+        UserAdminResponse user = new UserAdminResponse();
+        user.setId(12L);
+        user.setEmail("anna@example.com");
+        user.setFullName("Anna Freelancer");
+        user.setRole("freelancer");
+        user.setIsActive(true);
+        user.setVerified(true);
+
+        AdminUserSummaryStatsResponse summary = new AdminUserSummaryStatsResponse();
+        summary.setTotalUsers(9);
+        summary.setActiveUsers(7);
+        summary.setLockedUsers(2);
+        summary.setVerifiedUsers(5);
+        summary.setFreelancerUsers(4);
+        summary.setCustomerUsers(3);
+        summary.setAdminUsers(2);
+
+        AdminUserPageResponse pageResp = new AdminUserPageResponse();
+        pageResp.setContent(List.of(user));
+        pageResp.setPage(0);
+        pageResp.setSize(20);
+        pageResp.setTotalElements(1);
+        pageResp.setTotalPages(1);
+        pageResp.setSummary(summary);
+
         when(adminService.getUserPage(0, 20, "anna", "freelancer", "active", true, "fullName", "asc"))
-            .thenReturn(AdminUserPageResponse.builder()
-                .content(List.of(UserAdminResponse.builder()
-                    .id(12L)
-                    .email("anna@example.com")
-                    .fullName("Anna Freelancer")
-                    .role("freelancer")
-                    .isActive(true)
-                    .verified(true)
-                    .build()))
-                .page(0)
-                .size(20)
-                .totalElements(1)
-                .totalPages(1)
-                .summary(AdminUserSummaryStatsResponse.builder()
-                    .totalUsers(9)
-                    .activeUsers(7)
-                    .lockedUsers(2)
-                    .verifiedUsers(5)
-                    .freelancerUsers(4)
-                    .customerUsers(3)
-                    .adminUsers(2)
-                    .build())
-                .build());
+            .thenReturn(pageResp);
 
         mockMvc.perform(
                 get("/api/v1/admin/users/page")
