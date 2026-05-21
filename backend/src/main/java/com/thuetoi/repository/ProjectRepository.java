@@ -57,7 +57,7 @@ public interface ProjectRepository extends JpaRepository<Project, Long> {
         select p from Project p
         where p.status = :status
           and p.deadline < :now
-          and p.contracts is empty
+          and not exists (select 1 from Contract c where c.projectId = p.id)
         """)
     List<Project> findExpiredProjectsWithNoContracts(
         @Param("status") String status,
