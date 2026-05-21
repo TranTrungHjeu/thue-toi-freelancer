@@ -8,7 +8,6 @@ import lombok.Data;
 /**
  * Metadata tệp đã được upload và gắn vào một nghiệp vụ marketplace.
  */
-@Data
 public class FileAttachmentRequest {
     @NotBlank(message = "Đường dẫn tệp không được để trống")
     private String url;
@@ -22,4 +21,13 @@ public class FileAttachmentRequest {
     @NotNull(message = "Kích thước tệp không được để trống")
     @PositiveOrZero(message = "Kích thước tệp không hợp lệ")
     private Long size;
+
+    public String getUrl() { return url; }
+    public void setUrl(String url) { this.url = url; }
+    public String getName() { return name; }
+    public void setName(String name) { this.name = name; }
+    public String getContentType() { return contentType; }
+    public void setContentType(String contentType) { this.contentType = contentType; }
+    public Long getSize() { return size; }
+    public void setSize(Long size) { this.size = size; }
 }

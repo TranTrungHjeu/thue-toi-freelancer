@@ -24,6 +24,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import java.util.List;
+import java.time.LocalDateTime;
 
 @ExtendWith(MockitoExtension.class)
 class MessageServiceTest {
@@ -58,7 +59,7 @@ class MessageServiceTest {
         Contract contract = contract(5L, "in_progress");
         when(contractAccessService.requireAccessibleContract(5L, 9L)).thenReturn(contract);
         when(messageRepository.save(any(Message.class))).thenAnswer(invocation -> invocation.getArgument(0));
-        when(marketplaceResponseMapper.toMessageResponse(any(Message.class))).thenReturn(new MessageResponse(1L, 5L, 9L, "text", "Xin chao client", null, null));
+        when(marketplaceResponseMapper.toMessageResponse(any(Message.class))).thenReturn(new MessageResponse(1L, 5L, 9L, 1L, "text", "Xin chao client", null, null));
 
         Message message = messageService.sendMessage(9L, request);
 
@@ -125,7 +126,7 @@ class MessageServiceTest {
         when(contractAccessService.requireAccessibleContract(5L, 9L)).thenReturn(contract);
         when(attachmentMetadataService.serialize(request.getAttachments())).thenReturn("[{\"url\":\"https://res.cloudinary.com/demo/file.pdf\"}]");
         when(messageRepository.save(any(Message.class))).thenAnswer(invocation -> invocation.getArgument(0));
-        when(marketplaceResponseMapper.toMessageResponse(any(Message.class))).thenReturn(new MessageResponse(2L, 5L, 9L, "file", null, null, null));
+        when(marketplaceResponseMapper.toMessageResponse(any(Message.class))).thenReturn(new MessageResponse(2L, 5L, 9L, 1L, "file", null, null, null));
 
         Message message = messageService.sendMessage(9L, request);
 
