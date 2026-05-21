@@ -1,11 +1,14 @@
 FROM node:20-slim AS builder
 WORKDIR /app
 
-COPY package.json package-lock.json ./
-RUN npm ci --legacy-peer-deps
+RUN npm install -g pnpm
+
+COPY package.json pnpm-lock.yaml ./
+# Use --no-frozen-lockfile because the lockfile is currently out of sync
+RUN pnpm install --no-frozen-lockfile
 
 COPY . .
-RUN npx vite build
+RUN pnpm run build
 
 FROM node:20-slim AS runner
 WORKDIR /app
