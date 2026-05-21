@@ -38,6 +38,28 @@ import {
   getProjectStatusMeta,
 } from '../utils/formatters';
 
+const getProjectTitle = (contract) => (
+  contract?.projectTitle
+  || contract?.project?.title
+  || contract?.title
+  || `Hợp đồng #${String(contract?.id || '').slice(0, 6)}`
+);
+
+const loadProjectTitleMap = async (contracts) => {
+  const projectIds = [...new Set(contracts.map((contract) => contract.projectId).filter(Boolean))];
+  const entries = await Promise.all(
+    projectIds.map(async (projectId) => {
+      try {
+        const response = await marketplaceApi.getProject(projectId);
+        return [projectId, response.data?.title || ''];
+      } catch {
+        return [projectId, ''];
+      }
+    }),
+  );
+  return new Map(entries);
+};
+
 const WorkspaceDashboardPage = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
@@ -65,7 +87,12 @@ const WorkspaceDashboardPage = () => {
       setLoading(true);
       try {
         const contractsResponse = await marketplaceApi.getMyContracts();
-        const contracts = contractsResponse.data || [];
+        const rawContracts = contractsResponse.data || [];
+        const projectTitleMap = await loadProjectTitleMap(rawContracts);
+        const contracts = rawContracts.map((contract) => ({
+          ...contract,
+          projectTitle: projectTitleMap.get(contract.projectId),
+        }));
 
         if (user.role === 'customer') {
           const projectsResponse = await marketplaceApi.getMyProjects();
@@ -264,7 +291,7 @@ const WorkspaceDashboardPage = () => {
                     <div className="absolute top-0 left-0 w-1 h-full bg-emerald-500 rounded-l-xl opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
                     <div className="flex items-center justify-between">
                       <span className="text-xs font-bold text-slate-800 truncate max-w-[150px]">
-                        {contract.title || `Hợp đồng #${String(contract.id || '').slice(0, 6)}`}
+                        {getProjectTitle(contract)}
                       </span>
                       <span className="text-xs font-semibold text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded">
                         {formatCurrency(contract.price, locale)}

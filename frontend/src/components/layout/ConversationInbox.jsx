@@ -9,6 +9,38 @@ import { useAuth } from '../../hooks/useAuth';
 import { createMessageRealtimeClient } from '../../api/realtimeClient';
 import { normalizeAttachments } from '../../utils/attachments';
 
+const CONTRACT_TITLE_MAX_LENGTH = 30;
+
+const truncateText = (value, maxLength = CONTRACT_TITLE_MAX_LENGTH) => {
+  const text = String(value || '').trim();
+  if (text.length <= maxLength) return text;
+  return `${text.slice(0, maxLength).trimEnd()}...`;
+};
+
+const getContractTitle = (contract) => (
+  contract?.projectTitle
+  || contract?.project?.title
+  || contract?.title
+  || contract?.projectName
+  || contract?.name
+  || `Hợp đồng #${contract?.id || ''}`
+);
+
+const loadProjectTitleMap = async (contracts) => {
+  const projectIds = [...new Set(contracts.map((contract) => contract.projectId).filter(Boolean))];
+  const entries = await Promise.all(
+    projectIds.map(async (projectId) => {
+      try {
+        const response = await marketplaceApi.getProject(projectId);
+        return [projectId, response.data?.title || ''];
+      } catch {
+        return [projectId, ''];
+      }
+    }),
+  );
+  return new Map(entries);
+};
+
 const toDisplayText = (value) => {
   if (typeof value === 'string') return value;
   if (typeof value === 'number') return String(value);
@@ -70,12 +102,19 @@ const ConversationInbox = () => {
       try {
         const contractsResponse = await marketplaceApi.getMyContracts();
         const contracts = (contractsResponse.data || []).slice(0, 12);
+        const projectTitleMap = await loadProjectTitleMap(contracts);
         const messageResponses = await Promise.all(
           contracts.map(async (contract) => {
             const response = await marketplaceApi.getMessagesByContract(contract.id);
             const contractMessages = response.data || [];
             const latest = contractMessages[contractMessages.length - 1] || null;
-            return { contract, latest };
+            return {
+              contract: {
+                ...contract,
+                projectTitle: projectTitleMap.get(contract.projectId),
+              },
+              latest,
+            };
           }),
         );
 
@@ -210,7 +249,9 @@ const ConversationInbox = () => {
                 {loading && <div className="px-3 py-3 text-sm text-slate-500">Đang tải...</div>}
                 {!loading && items.length === 0 && <div className="px-3 py-3 text-sm text-slate-500">Chưa có cuộc trò chuyện.</div>}
                 {!loading &&
-                  items.map(({ contract, latest }) => (
+                  items.map(({ contract, latest }, index) => {
+                    const contractTitle = getContractTitle(contract);
+                    return (
                     <button
                       key={contract.id}
                       type="button"
@@ -220,19 +261,25 @@ const ConversationInbox = () => {
                       }`}
                     >
                       <div className="flex items-center justify-between gap-2">
-                        <span className="truncate text-sm font-bold text-secondary-900">Hợp đồng #{contract.id}</span>
+                        <div className="flex min-w-0 items-center gap-2">
+                          <span className="shrink-0 text-xs font-bold text-slate-500">{index + 1}</span>
+                          <span className="truncate text-sm font-bold text-secondary-900" title={contractTitle}>
+                            {truncateText(contractTitle)}
+                          </span>
+                        </div>
                         <span className="shrink-0 text-[11px] text-slate-500">{formatDateTime(latest.sentAt, locale)}</span>
                       </div>
                       <p className="mt-1 truncate text-sm text-slate-600">{getPreview(latest)}</p>
                     </button>
-                  ))}
+                  );
+                })}
               </div>
             </div>
 
             <div className="flex h-full min-h-0 flex-col bg-slate-50/30">
               <div className="border-b border-slate-100 px-4 py-3">
                 <span className="text-sm font-bold text-secondary-900">
-                  {selectedItem ? `Hội thoại hợp đồng #${selectedItem.contract.id}` : 'Chọn một hội thoại'}
+                  {selectedItem ? `Hội thoại ${truncateText(getContractTitle(selectedItem.contract), 36)}` : 'Chọn một hội thoại'}
                 </span>
               </div>
 

@@ -52,6 +52,28 @@ const initialMilestoneForm = { title: '', amount: '', dueDate: '' };
 const initialMessageForm = { messageType: 'text', content: '', attachments: [] };
 const initialReviewForm = { rating: 5, comment: '' };
 
+const getProjectTitle = (contract) => (
+  contract?.projectTitle
+  || contract?.project?.title
+  || contract?.title
+  || `Dự án #${contract?.projectId || ''}`
+);
+
+const loadProjectTitleMap = async (contracts) => {
+  const projectIds = [...new Set(contracts.map((contract) => contract.projectId).filter(Boolean))];
+  const entries = await Promise.all(
+    projectIds.map(async (projectId) => {
+      try {
+        const response = await marketplaceApi.getProject(projectId);
+        return [projectId, response.data?.title || ''];
+      } catch {
+        return [projectId, ''];
+      }
+    }),
+  );
+  return new Map(entries);
+};
+
 const getContractsSupplementaryCopy = (locale) => {
   if (locale === 'en') {
     return {
@@ -291,7 +313,12 @@ const ContractsPage = () => {
 
   const loadContracts = useCallback(async () => {
     const response = await marketplaceApi.getMyContracts();
-    const nextContracts = response.data || [];
+    const rawContracts = response.data || [];
+    const projectTitleMap = await loadProjectTitleMap(rawContracts);
+    const nextContracts = rawContracts.map((contract) => ({
+      ...contract,
+      projectTitle: projectTitleMap.get(contract.projectId),
+    }));
     const currentSelectedId = selectedContractIdRef.current;
     setContracts(nextContracts);
 
@@ -717,7 +744,7 @@ const ContractsPage = () => {
 
                     {/* Stepper Card Project Title */}
                     <h3 className="mt-3 text-sm font-bold text-slate-800 line-clamp-2 leading-snug group-hover:text-primary-600 transition-colors">
-                      Dự án #{contract.projectId}
+                      {getProjectTitle(contract)}
                     </h3>
 
                     {/* Value Badge & Dates */}
@@ -816,7 +843,7 @@ const ContractsPage = () => {
                   </Badge>
                 </div>
                 <H2 className="mt-1.5 text-lg font-bold text-slate-950 tracking-tight leading-snug truncate">
-                  Dự án #{selectedContract.projectId}
+                  {getProjectTitle(selectedContract)}
                 </H2>
               </div>
               <div className="flex items-center gap-2 shrink-0">
@@ -1576,3 +1603,4 @@ const ContractsPage = () => {
 };
 
 export default ContractsPage;
+
