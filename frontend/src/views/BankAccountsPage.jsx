@@ -109,7 +109,7 @@ const BankAccountsPage = () => {
       setForm((prev) => ({ ...prev, qrImageUrl: url }));
       addToast('Đã tải lên ảnh QR', 'success');
     } catch (err) {
-      addToast(err?.response?.data?.message || 'Tải QR thất bại', 'error');
+      addToast(err?.message || err?.response?.data?.message || 'Tải QR thất bại', 'error');
       setQrFile(null);
       setQrPreview(null);
     } finally {
@@ -152,7 +152,7 @@ const BankAccountsPage = () => {
       }
       setIsOpen(false);
     } catch (err) {
-      addToast(err?.response?.data?.message || 'Lưu thất bại', 'error');
+      addToast(err?.message || err?.response?.data?.message || 'Lưu thất bại', 'error');
     } finally {
       setSubmitting(false);
     }
@@ -164,7 +164,7 @@ const BankAccountsPage = () => {
       await deleteMutation.mutateAsync(id);
       addToast('Đã xóa tài khoản', 'success');
     } catch (err) {
-      addToast(err?.response?.data?.message || 'Không thể xóa', 'error');
+      addToast(err?.message || err?.response?.data?.message || 'Không thể xóa', 'error');
     }
   };
 
@@ -173,7 +173,7 @@ const BankAccountsPage = () => {
       await setDefaultMutation.mutateAsync(id);
       addToast('Đã đặt làm tài khoản mặc định', 'success');
     } catch (err) {
-      addToast(err?.response?.data?.message || 'Không thể đặt mặc định', 'error');
+      addToast(err?.message || err?.response?.data?.message || 'Không thể đặt mặc định', 'error');
     }
   };
 

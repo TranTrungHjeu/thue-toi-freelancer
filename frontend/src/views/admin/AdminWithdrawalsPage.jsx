@@ -24,7 +24,7 @@ import Modal from '../../components/common/Modal';
 import adminApi from '../../api/adminApi';
 import { useToast } from '../../hooks/useToast';
 import { useI18n } from '../../hooks/useI18n';
-import { useWebSocket } from '../../hooks/useWebSocket';
+import { ADMIN_WITHDRAWAL_EVENT } from '../../components/admin/AdminRealtimeListener';
 import { formatCurrency, formatDateTime } from '../../utils/formatters';
 import { downloadImage } from '../../utils/downloadImage';
 import Spinner from '../../components/common/Spinner';
@@ -71,20 +71,16 @@ const AdminWithdrawalsPage = () => {
     fetchWithdrawals();
   }, [fetchWithdrawals]);
 
-  // Realtime: nhận "ping" mỗi khi có yêu cầu rút tiền mới / được hủy / hoàn tất.
-  // Backend chỉ phát metadata (không có dữ liệu nhạy cảm); FE refetch qua REST đã auth.
-  const adminWithdrawalTopics = useMemo(() => ['/topic/withdrawals/admin'], []);
-  const handleAdminWithdrawalRealtime = useCallback(
-    ({ payload }) => {
-      if (!payload?.type) return;
+  // Realtime: socket subscription được mount toàn cục bởi <AdminRealtimeListener />
+  // (xem ClientProviders) để admin nhận toast trên MỌI trang. Ở trang này chỉ cần
+  // lắng nghe CustomEvent do listener đó phát ra để refetch danh sách.
+  useEffect(() => {
+    const handler = () => {
       fetchWithdrawals();
-      if (payload.type === 'created') {
-        addToast('Có yêu cầu rút tiền mới', 'info');
-      }
-    },
-    [fetchWithdrawals, addToast]
-  );
-  useWebSocket(handleAdminWithdrawalRealtime, adminWithdrawalTopics);
+    };
+    window.addEventListener(ADMIN_WITHDRAWAL_EVENT, handler);
+    return () => window.removeEventListener(ADMIN_WITHDRAWAL_EVENT, handler);
+  }, [fetchWithdrawals]);
 
   const handleOpenAction = (request, status) => {
     setSelectedRequest(request);
@@ -108,8 +104,11 @@ const AdminWithdrawalsPage = () => {
       setIsModalOpen(false);
       fetchWithdrawals();
     } catch (err) {
-      const code = err.response?.data?.code;
-      const msg = err.response?.data?.message;
+      // axiosClient interceptor đã flatten error qua createApiError → đọc trực tiếp
+      // err.code / err.message. Vẫn fallback về err.response để chắc chắn nếu
+      // có nơi nào gọi không qua interceptor.
+      const code = err?.code || err?.response?.data?.code;
+      const msg = err?.message || err?.response?.data?.message;
       if (code === 'ERR_WITHDRAWAL_07') {
         addToast(msg || 'Bạn chưa thực hiện chuyển khoản', 'warning');
       } else {

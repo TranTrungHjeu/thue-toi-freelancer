@@ -143,6 +143,21 @@ public class WithdrawalService {
             "/workspace/wallet"
         );
 
+        // Notify tất cả admin để họ xử lý đơn rút mới — dùng broadcast theo role
+        // (cùng pattern với report mới ở ReportController). Filter in-app preference
+        // được áp dụng ở NotificationService.
+        String requesterLabel = user.getFullName() != null && !user.getFullName().isBlank()
+            ? user.getFullName()
+            : (user.getEmail() != null ? user.getEmail() : "User #" + userId);
+        notificationService.broadcastNotification(
+            "admin",
+            "system",
+            "Có yêu cầu rút tiền mới",
+            requesterLabel + " vừa gửi yêu cầu rút " + amount.toPlainString() + " VND. Mã đơn: " + saved.getOrderCode(),
+            "/workspace/admin/withdrawals",
+            null
+        );
+
         withdrawalRealtimePublisher.publish(userId, saved.getId(), WithdrawalRealtimePublisher.TYPE_CREATED);
         return toResponse(saved);
     }

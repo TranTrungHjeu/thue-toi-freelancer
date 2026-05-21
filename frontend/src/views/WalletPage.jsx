@@ -239,7 +239,7 @@ const WalletPage = () => {
       refetchWallet();
       refetchLedger();
     } catch (err) {
-      addToast(err?.response?.data?.message || 'Không thể hủy yêu cầu', 'error');
+      addToast(err?.message || err?.response?.data?.message || 'Không thể hủy yêu cầu', 'error');
     }
   };
 
