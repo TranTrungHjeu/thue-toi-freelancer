@@ -19,11 +19,14 @@ public class Message {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column(name = "contract_id", nullable = false)
+    @Column(name = "contract_id")
     private Long contractId;
 
     @Column(name = "sender_id", nullable = false)
     private Long senderId;
+
+    @Column(name = "recipient_id")
+    private Long recipientId;
 
     @Column(name = "message_type", nullable = false)
     private String messageType = "text";
@@ -44,6 +47,8 @@ public class Message {
     public void setContractId(Long contractId) { this.contractId = contractId; }
     public Long getSenderId() { return senderId; }
     public void setSenderId(Long senderId) { this.senderId = senderId; }
+    public Long getRecipientId() { return recipientId; }
+    public void setRecipientId(Long recipientId) { this.recipientId = recipientId; }
     public String getMessageType() { return messageType; }
     public void setMessageType(String messageType) { this.messageType = messageType; }
     public String getContent() { return content; }

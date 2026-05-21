@@ -25,4 +25,15 @@ public class Review extends BaseEntity {
 
     @Column(name = "reply")
     private String reply;
+
+    public Long getContractId() { return contractId; }
+    public void setContractId(Long contractId) { this.contractId = contractId; }
+    public Long getReviewerId() { return reviewerId; }
+    public void setReviewerId(Long reviewerId) { this.reviewerId = reviewerId; }
+    public Integer getRating() { return rating; }
+    public void setRating(Integer rating) { this.rating = rating; }
+    public String getComment() { return comment; }
+    public void setComment(String comment) { this.comment = comment; }
+    public String getReply() { return reply; }
+    public void setReply(String reply) { this.reply = reply; }
 }

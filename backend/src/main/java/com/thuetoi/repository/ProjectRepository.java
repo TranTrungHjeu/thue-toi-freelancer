@@ -7,6 +7,8 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
+import com.thuetoi.enums.ProjectStatus;
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 
@@ -49,5 +51,16 @@ public interface ProjectRepository extends JpaRepository<Project, Long> {
     List<Project> searchDistinctBySkillNamesAndOptionalStatus(
         @Param("skillNames") List<String> skillNames,
         @Param("status") String status
+    );
+
+    @Query("""
+        select p from Project p
+        where p.status = :status
+          and p.deadline < :now
+          and p.contracts is empty
+        """)
+    List<Project> findExpiredProjectsWithNoContracts(
+        @Param("status") String status,
+        @Param("now") LocalDateTime now
     );
 }

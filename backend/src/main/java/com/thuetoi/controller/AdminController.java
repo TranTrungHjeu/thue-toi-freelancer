@@ -82,6 +82,9 @@ public class AdminController {
     private SystemHealthService systemHealthService;
 
     @Autowired
+    private com.thuetoi.service.MessageService messageService;
+
+    @Autowired
     private CurrentUserProvider currentUserProvider;
 
     @Autowired
@@ -314,6 +317,34 @@ public class AdminController {
     @GetMapping("/notifications/delivery-logs")
     public ApiResponse<List<NotificationDeliveryLogResponse>> getNotificationDeliveryLogs() {
         return ApiResponse.success("Nhật ký gửi thông báo", notificationDeliveryLogService.getRecentLogs());
+    }
+
+    // --- Cron Jobs Management ---
+
+    /**
+     * Kích hoạt chạy một Cron Job ngay lập tức
+     */
+    @PostMapping("/cron/trigger/{jobKey}")
+    public ApiResponse<Void> triggerCronJob(@PathVariable String jobKey, Principal principal, HttpServletRequest request) {
+        User currentAdmin = requireCurrentAdmin(principal);
+        adminService.triggerCronJob(jobKey);
+        auditLogService.log(currentAdmin.getEmail(), "TRIGGER_CRON_JOB", "SYSTEM", null, "Job: " + jobKey, request.getRemoteAddr());
+        return ApiResponse.success("Kích hoạt chạy Job " + jobKey + " thành công", null);
+    }
+
+    // --- Support Chat ---
+    @GetMapping("/support-chat/{userId}")
+    public ApiResponse<List<com.thuetoi.dto.response.marketplace.MessageResponse>> getSupportMessages(@PathVariable Long userId, Principal principal) {
+        User currentAdmin = requireCurrentAdmin(principal);
+        return ApiResponse.success("Lịch sử tin nhắn hỗ trợ",
+            marketplaceResponseMapper.toMessageResponses(messageService.getSupportMessages(currentAdmin.getId(), userId)));
+    }
+
+    @PostMapping("/support-chat/send")
+    public ApiResponse<com.thuetoi.dto.response.marketplace.MessageResponse> sendSupportMessage(@Valid @RequestBody com.thuetoi.dto.request.MessageRequest request, Principal principal) {
+        User currentAdmin = requireCurrentAdmin(principal);
+        return ApiResponse.success("Gửi tin nhắn hỗ trợ thành công",
+            marketplaceResponseMapper.toMessageResponse(messageService.sendMessage(currentAdmin.getId(), request)));
     }
 
     private User requireCurrentAdmin(Principal principal) {

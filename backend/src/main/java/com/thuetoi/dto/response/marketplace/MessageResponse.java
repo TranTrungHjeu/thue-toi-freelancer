@@ -8,6 +8,7 @@ public record MessageResponse(
     Long id,
     Long contractId,
     Long senderId,
+    Long recipientId,
     String messageType,
     String content,
     List<FileAttachmentRequest> attachments,

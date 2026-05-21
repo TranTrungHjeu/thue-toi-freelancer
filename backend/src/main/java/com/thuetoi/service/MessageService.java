@@ -9,6 +9,7 @@ import com.thuetoi.enums.MessageType;
 import com.thuetoi.exception.BusinessException;
 import com.thuetoi.mapper.MarketplaceResponseMapper;
 import com.thuetoi.repository.MessageRepository;
+import com.thuetoi.repository.UserRepository;
 import com.thuetoi.websocket.ContractMessageWebSocketHandler;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
@@ -39,8 +40,21 @@ public class MessageService {
     @Autowired
     private NotificationService notificationService;
 
+    @Autowired
+    private UserRepository userRepository;
+
     public Message sendMessage(Long currentUserId, MessageRequest request) {
         Long contractId = request.getContractId();
+        Long recipientId = request.getRecipientId();
+
+        if (contractId != null) {
+            return sendContractMessage(currentUserId, contractId, request);
+        } else {
+            return sendSupportMessage(currentUserId, recipientId, request);
+        }
+    }
+
+    private Message sendContractMessage(Long currentUserId, Long contractId, MessageRequest request) {
         Contract contract = contractAccessService.requireAccessibleContract(contractId, currentUserId);
 
         if (contract == null || !ContractStatus.IN_PROGRESS.matches(contract.getStatus())) {
@@ -71,6 +85,8 @@ public class MessageService {
         Long recipientId = contract.getClientId().equals(currentUserId)
             ? contract.getFreelancerId()
             : contract.getClientId();
+        savedMessage.setRecipientId(recipientId);
+        messageRepository.save(savedMessage);
 
         if (normalizedContent != null && normalizedContent.startsWith("[CALL_INVITATION]")) {
             String callType = normalizedContent.contains("Video") ? "Video" : "Thoại";
@@ -105,6 +121,61 @@ public class MessageService {
     public List<Message> getMessagesByContract(Long contractId, Long currentUserId) {
         contractAccessService.requireAccessibleContract(contractId, currentUserId);
         return messageRepository.findByContractIdOrderBySentAtAsc(contractId);
+    }
+
+    private Message sendSupportMessage(Long currentUserId, Long recipientId, MessageRequest request) {
+        if (recipientId == null) {
+            // Tìm admin đầu tiên làm người nhận mặc định cho user
+            recipientId = userRepository.findByRole("admin").stream()
+                .findFirst()
+                .map(com.thuetoi.entity.User::getId)
+                .orElseThrow(() -> new BusinessException("ERR_SYS_02", "Không tìm thấy Admin để hỗ trợ", HttpStatus.NOT_FOUND));
+        }
+
+        MessageType messageType = normalizeMessageType(request.getMessageType());
+        String normalizedContent = normalizeText(request.getContent());
+        String normalizedAttachments = serializeAttachments(request.getAttachments());
+
+        if (messageType == MessageType.TEXT && normalizedContent == null) {
+            throw new BusinessException("ERR_SYS_02", "Tin nhắn văn bản không được để trống nội dung", HttpStatus.BAD_REQUEST);
+        }
+
+        Message message = new Message();
+        message.setSenderId(currentUserId);
+        message.setRecipientId(recipientId);
+        message.setMessageType(messageType.getValue());
+        message.setContent(normalizedContent);
+        message.setAttachments(normalizedAttachments);
+
+        Message savedMessage = messageRepository.save(message);
+        MessageResponse response = marketplaceResponseMapper.toMessageResponse(savedMessage);
+
+        // Phát tín hiệu realtime (cần cập nhật WebSocketHandler sau)
+        contractMessageWebSocketHandler.broadcast(response);
+
+        notificationService.createNotificationForUser(
+            recipientId,
+            "system",
+            "Tin nhắn hỗ trợ mới",
+            "Bạn có tin nhắn hỗ trợ mới.",
+            "/admin/support"
+        );
+
+        return savedMessage;
+    }
+
+    public List<Message> getSupportMessages(Long currentUserId, Long targetUserId) {
+        // Nếu currentUserId là admin, lấy chat với targetUserId.
+        // Nếu targetUserId null, lấy tất cả chat hỗ trợ của admin? (Cần API khác cho admin liệt kê danh sách chat)
+        if (targetUserId == null) {
+             // User lấy chat của chính mình với admin
+             Long adminId = userRepository.findByRole("admin").stream()
+                .findFirst()
+                .map(com.thuetoi.entity.User::getId)
+                .orElseThrow(() -> new BusinessException("ERR_SYS_02", "Không tìm thấy Admin", HttpStatus.NOT_FOUND));
+             return messageRepository.findSupportMessagesBetween(currentUserId, adminId);
+        }
+        return messageRepository.findSupportMessagesBetween(currentUserId, targetUserId);
     }
 
     private MessageType normalizeMessageType(String messageType) {

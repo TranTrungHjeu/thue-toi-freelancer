@@ -9,6 +9,13 @@ import java.util.List;
 
 @Data
 public class BulkUserStatusRequest {
+    public List<Long> getUserIds() { return userIds; }
+    public void setUserIds(List<Long> userIds) { this.userIds = userIds; }
+    public Boolean getActive() { return active; }
+    public void setActive(Boolean active) { this.active = active; }
+    public String getReason() { return reason; }
+    public void setReason(String reason) { this.reason = reason; }
+
 
     @NotEmpty(message = "Danh sách người dùng không được để trống")
     private List<Long> userIds;

@@ -15,6 +15,22 @@ const Sidebar = ({ navigation = [], currentPath = '' }) => {
             <div className="mt-2 flex flex-col gap-1">
               {group.items.map((item) => {
                 const isActive = currentPath === item.href;
+
+                if (item.onClick) {
+                  return (
+                    <button
+                      key={item.label}
+                      onClick={item.onClick}
+                      className="w-full flex items-center gap-3 border-l-4 border-transparent px-3 py-3 text-sm font-semibold text-slate-600 transition-all hover:border-slate-200 hover:bg-slate-50 hover:text-secondary-900"
+                    >
+                      <span className="relative flex h-5 w-5 items-center justify-center">
+                        <item.icon className="h-5 w-5" />
+                      </span>
+                      <span className="flex-1 text-left">{item.label}</span>
+                    </button>
+                  );
+                }
+
                 return (
                   <Link
                     key={item.href}

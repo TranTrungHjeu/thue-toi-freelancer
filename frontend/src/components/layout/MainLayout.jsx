@@ -22,7 +22,7 @@ const MainLayout = ({ children }) => {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
   const { t } = useI18n();
-  const { unreadCount, incomingCall, setIncomingCall } = useNotifications();
+  const { unreadCount, incomingCall, setIncomingCall, openSupportChat } = useNotifications();
 
   const handleAcceptCall = () => {
     if (incomingCall) {
@@ -61,6 +61,7 @@ const MainLayout = ({ children }) => {
     const commonWorkspaceItems = [
       notificationItem,
       { label: t('layout.navigation.profile'), href: '/workspace/profile', icon: ProfileCircle },
+      { label: t('layout.navigation.supportChat') || 'Chat with Admin', onClick: openSupportChat, icon: HeadsetHelp },
     ];
 
     if (role === 'admin') {

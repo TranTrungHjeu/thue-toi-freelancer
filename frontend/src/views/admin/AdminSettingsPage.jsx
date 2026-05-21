@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
-import { 
-  Settings, 
-  RefreshDouble, 
+import {
+  Settings,
+  RefreshDouble,
   InfoCircle,
   Database,
   Flash,
@@ -12,6 +12,8 @@ import {
   Internet,
   Coins,
   Megaphone,
+  Calendar,
+  Play,
 } from 'iconoir-react';
 import { H1, H2, Text, Caption } from '../../components/common/Typography';
 import Card from '../../components/common/Card';
@@ -27,6 +29,7 @@ const AdminSettingsPage = () => {
   const [settings, setSettings] = useState([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(null);
+  const [triggering, setTriggering] = useState(null);
   const { addToast } = useToast();
 
   const fetchSettings = async () => {
@@ -60,6 +63,20 @@ const AdminSettingsPage = () => {
       addToast(t('errors.code.ERR_SYS_01'), 'error');
     } finally {
       setSaving(null);
+    }
+  };
+
+  const handleTriggerJob = async (jobKey) => {
+    setTriggering(jobKey);
+    try {
+      const response = await adminApi.triggerCronJob(jobKey);
+      if (response.success) {
+        addToast(t('toasts.admin.triggerJobSuccess') || `Kích hoạt job ${jobKey} thành công`, 'success');
+      }
+    } catch {
+      addToast(t('errors.code.ERR_SYS_01'), 'error');
+    } finally {
+      setTriggering(null);
     }
   };
 
@@ -173,6 +190,35 @@ const AdminSettingsPage = () => {
               </div>
             </div>
           </section>
+
+          {/* Cron Section */}
+          <section className="flex flex-col gap-4 mt-4">
+            <div className="flex items-center gap-2">
+              <Calendar className="w-5 h-5 text-primary-600" />
+              <H2 className="text-xl font-bold tracking-tight !mb-0">{t('adminPages.settings.cronSection') || 'Automated Maintenance (Cron)'}</H2>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <CronCard
+                label={t('adminPages.settings.cronProjectsLabel') || 'Expired Projects Job'}
+                description={t('adminPages.settings.cronProjectsDesc') || 'Scan for expired projects with no bids'}
+                value={getSettingValue('cron_expired_projects_no_contract')}
+                onSave={(val) => handleUpdate('cron_expired_projects_no_contract', val)}
+                onTrigger={() => handleTriggerJob('cron_expired_projects_no_contract')}
+                isSaving={saving === 'cron_expired_projects_no_contract'}
+                isTriggering={triggering === 'cron_expired_projects_no_contract'}
+              />
+              <CronCard
+                label={t('adminPages.settings.cronContractsLabel') || 'Expired Contracts Job'}
+                description={t('adminPages.settings.cronContractsDesc') || 'Scan for expired contracts for auto-refund'}
+                value={getSettingValue('cron_expired_contracts')}
+                onSave={(val) => handleUpdate('cron_expired_contracts', val)}
+                onTrigger={() => handleTriggerJob('cron_expired_contracts')}
+                isSaving={saving === 'cron_expired_contracts'}
+                isTriggering={triggering === 'cron_expired_contracts'}
+              />
+            </div>
+          </section>
         </div>
 
         {/* Info Sidebar */}
@@ -210,6 +256,53 @@ const AdminSettingsPage = () => {
         </div>
       </div>
     </div>
+  );
+};
+
+// Sub-component for Cron Jobs
+const CronCard = ({ label, description, value, onSave, onTrigger, isSaving, isTriggering }) => {
+  const [localValue, setLocalValue] = useState(value);
+  const hasChanged = localValue !== value;
+
+  return (
+    <Card className="bg-white shadow-premium border-none p-5 flex flex-col gap-4">
+      <div className="flex justify-between items-start">
+        <div className="flex flex-col">
+          <span className="text-sm font-bold text-slate-900">{label}</span>
+          <Caption className="text-[10px] text-slate-400 leading-tight uppercase font-medium">{description}</Caption>
+        </div>
+        <Button
+          size="xs"
+          variant="outline"
+          className="h-7 px-2 text-[10px]"
+          onClick={onTrigger}
+          disabled={isTriggering}
+        >
+          {isTriggering ? <Spinner size="xs" inline /> : <><Play className="w-3 h-3 mr-1" /> RUN NOW</>}
+        </Button>
+      </div>
+
+      <div className="flex gap-2 items-center">
+        <div className="relative flex-1">
+          <input
+            type="text"
+            className="w-full h-10 px-3 bg-slate-50 border border-slate-200 text-sm font-mono text-slate-700 outline-none focus:border-primary-500 transition-colors"
+            value={localValue}
+            onChange={(e) => setLocalValue(e.target.value)}
+          />
+        </div>
+
+        <Button
+          size="sm"
+          variant={hasChanged ? 'primary' : 'ghost'}
+          className={`h-10 px-3 ${!hasChanged ? 'opacity-30' : ''}`}
+          disabled={!hasChanged || isSaving}
+          onClick={() => onSave(localValue)}
+        >
+          {isSaving ? <Spinner size="sm" tone="current" inline /> : <RefreshDouble className="w-4 h-4" />}
+        </Button>
+      </div>
+    </Card>
   );
 };
 

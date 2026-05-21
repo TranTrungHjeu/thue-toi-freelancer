@@ -10,8 +10,9 @@ import java.util.List;
  */
 @Data
 public class MessageRequest {
-    @NotNull(message = "Hợp đồng không được để trống")
     private Long contractId;
+
+    private Long recipientId;
 
     private String messageType;
     private String content;
@@ -19,6 +20,8 @@ public class MessageRequest {
 
     public Long getContractId() { return contractId; }
     public void setContractId(Long contractId) { this.contractId = contractId; }
+    public Long getRecipientId() { return recipientId; }
+    public void setRecipientId(Long recipientId) { this.recipientId = recipientId; }
     public String getMessageType() { return messageType; }
     public void setMessageType(String messageType) { this.messageType = messageType; }
     public String getContent() { return content; }

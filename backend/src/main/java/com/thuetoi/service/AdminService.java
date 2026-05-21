@@ -6,6 +6,7 @@ import java.util.Set;
 import java.util.stream.Collectors;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.ApplicationContext;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
@@ -34,6 +35,8 @@ import com.thuetoi.repository.ReportRepository;
 import com.thuetoi.repository.SystemSettingRepository;
 import com.thuetoi.repository.UserRepository;
 import com.thuetoi.repository.WithdrawalRequestRepository;
+import com.thuetoi.service.scheduler.DynamicSchedulerService;
+import com.thuetoi.service.scheduler.ScheduledJob;
 
 /**
  * AdminService: Moderation logic for admin role
@@ -69,6 +72,12 @@ public class AdminService {
     @Autowired
     private SystemSettingRepository systemSettingRepository;
 
+    @Autowired
+    private DynamicSchedulerService dynamicSchedulerService;
+
+    @Autowired
+    private ApplicationContext applicationContext;
+
     @Transactional(readOnly = true)
     public AdminStatsResponse getSystemStats() {
         long totalUsers = userRepository.count();
@@ -90,17 +99,17 @@ public class AdminService {
             trend.put(row[0].toString(), ((Number) row[1]).longValue());
         }
 
-        return AdminStatsResponse.builder()
-            .totalUsers(totalUsers)
-            .totalFreelancers(totalFreelancers)
-            .totalCustomers(totalCustomers)
-            .totalProjects(totalProjects)
-            .activeProjects(activeProjects)
-            .completedContracts(completedContracts)
-            .totalGmv(totalGmv)
-            .matchingRate(matchingRate)
-            .userGrowthTrend(trend)
-            .build();
+        AdminStatsResponse response = new AdminStatsResponse();
+        response.setTotalUsers(totalUsers);
+        response.setTotalFreelancers(totalFreelancers);
+        response.setTotalCustomers(totalCustomers);
+        response.setTotalProjects(totalProjects);
+        response.setActiveProjects(activeProjects);
+        response.setCompletedContracts(completedContracts);
+        response.setTotalGmv(totalGmv);
+        response.setMatchingRate(matchingRate);
+        response.setUserGrowthTrend(trend);
+        return response;
     }
 
     @Transactional
@@ -150,16 +159,16 @@ public class AdminService {
             pageable
         );
 
-        return AdminUserPageResponse.builder()
-            .content(usersPage.getContent().stream()
-                .map(user -> toUserAdminResponse(user, false))
-                .collect(Collectors.toList()))
-            .page(usersPage.getNumber())
-            .size(usersPage.getSize())
-            .totalElements(usersPage.getTotalElements())
-            .totalPages(usersPage.getTotalPages())
-            .summary(buildUserSummary())
-            .build();
+        AdminUserPageResponse response = new AdminUserPageResponse();
+        response.setContent(usersPage.getContent().stream()
+            .map(user -> toUserAdminResponse(user, false))
+            .collect(Collectors.toList()));
+        response.setPage(usersPage.getNumber());
+        response.setSize(usersPage.getSize());
+        response.setTotalElements(usersPage.getTotalElements());
+        response.setTotalPages(usersPage.getTotalPages());
+        response.setSummary(buildUserSummary());
+        return response;
     }
 
     @Transactional(readOnly = true)
@@ -409,10 +418,34 @@ public class AdminService {
     @Transactional
     public SystemSetting updateSetting(String key, String value) {
         SystemSetting setting = systemSettingRepository.findById(key)
-            .orElse(SystemSetting.builder().key(key).build());
+            .orElseGet(() -> {
+                SystemSetting newSetting = new SystemSetting();
+                newSetting.setKey(key);
+                return newSetting;
+            });
 
         setting.setValue(value);
-        return systemSettingRepository.save(setting);
+        SystemSetting saved = systemSettingRepository.save(setting);
+
+        // If it's a cron setting, reload the job
+        if (key.startsWith("cron_")) {
+            applicationContext.getBeansOfType(ScheduledJob.class).values().stream()
+                .filter(job -> job.getJobKey().equals(key))
+                .findFirst()
+                .ifPresent(dynamicSchedulerService::scheduleJob);
+        }
+
+        return saved;
+    }
+
+    public void triggerCronJob(String jobKey) {
+        applicationContext.getBeansOfType(ScheduledJob.class).values().stream()
+            .filter(job -> job.getJobKey().equals(jobKey))
+            .findFirst()
+            .ifPresentOrElse(
+                Runnable::run,
+                () -> { throw new BusinessException("ERR_SYS_02", "Không tìm thấy Cron Job: " + jobKey, HttpStatus.NOT_FOUND); }
+            );
     }
 
     private UserAdminResponse toUserAdminResponse(User user, boolean includeStats) {
@@ -420,28 +453,27 @@ public class AdminService {
             .map(skill -> skill.getName())
             .collect(Collectors.toSet());
 
-        UserAdminResponse.UserAdminResponseBuilder builder = UserAdminResponse.builder()
-            .id(user.getId())
-            .email(user.getEmail())
-            .fullName(user.getFullName())
-            .role(user.getRole())
-            .avatarUrl(user.getAvatarUrl())
-            .profileDescription(user.getProfileDescription())
-            .isActive(user.getIsActive())
-            .verified(user.getVerified())
-            .createdAt(user.getCreatedAt())
-            .updatedAt(user.getUpdatedAt())
-            .skills(screenSkills)
-            .balance(user.getBalance());
+        UserAdminResponse response = new UserAdminResponse();
+        response.setId(user.getId());
+        response.setEmail(user.getEmail());
+        response.setFullName(user.getFullName());
+        response.setRole(user.getRole());
+        response.setAvatarUrl(user.getAvatarUrl());
+        response.setProfileDescription(user.getProfileDescription());
+        response.setIsActive(user.getIsActive());
+        response.setVerified(user.getVerified());
+        response.setCreatedAt(user.getCreatedAt());
+        response.setUpdatedAt(user.getUpdatedAt());
+        response.setSkills(screenSkills);
+        response.setBalance(user.getBalance());
 
         if (includeStats) {
-            builder
-                .projectCount(projectRepository.countByUserId(user.getId()))
-                .bidCount(bidCountForUser(user))
-                .contractCount(contractRepository.countByClientIdOrFreelancerId(user.getId(), user.getId()));
+            response.setProjectCount(projectRepository.countByUserId(user.getId()));
+            response.setBidCount(bidCountForUser(user));
+            response.setContractCount(contractRepository.countByClientIdOrFreelancerId(user.getId(), user.getId()));
         }
 
-        return builder.build();
+        return response;
     }
 
     private long bidCountForUser(User user) {
@@ -456,15 +488,15 @@ public class AdminService {
     }
 
     private AdminUserSummaryStatsResponse buildUserSummary() {
-        return AdminUserSummaryStatsResponse.builder()
-            .totalUsers(userRepository.count())
-            .activeUsers(userRepository.countByIsActiveTrue())
-            .lockedUsers(userRepository.countByIsActiveFalse())
-            .verifiedUsers(userRepository.countByVerifiedTrue())
-            .customerUsers(userRepository.countByRole("customer"))
-            .freelancerUsers(userRepository.countByRole("freelancer"))
-            .adminUsers(userRepository.countByRole("admin"))
-            .build();
+        AdminUserSummaryStatsResponse stats = new AdminUserSummaryStatsResponse();
+        stats.setTotalUsers(userRepository.count());
+        stats.setActiveUsers(userRepository.countByIsActiveTrue());
+        stats.setLockedUsers(userRepository.countByIsActiveFalse());
+        stats.setVerifiedUsers(userRepository.countByVerifiedTrue());
+        stats.setCustomerUsers(userRepository.countByRole("customer"));
+        stats.setFreelancerUsers(userRepository.countByRole("freelancer"));
+        stats.setAdminUsers(userRepository.countByRole("admin"));
+        return stats;
     }
 
     private Sort buildAdminUserSort(String sort, String direction) {

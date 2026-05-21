@@ -125,6 +125,7 @@ public class MarketplaceResponseMapper {
             message.getId(),
             message.getContractId(),
             message.getSenderId(),
+            message.getRecipientId(),
             message.getMessageType(),
             message.getContent(),
             attachmentMetadataService.deserialize(message.getAttachments()),

@@ -12,8 +12,7 @@ services:
     command:
       - --character-set-server=utf8mb4
       - --collation-server=utf8mb4_unicode_ci
-    ports:
-      - "3306:3306"
+    # REMOVED: ports: - "3306:3306" (Security: Do not expose DB to public internet)
     volumes:
       - mysql_data:/var/lib/mysql
     healthcheck:

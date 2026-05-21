@@ -6,6 +6,11 @@ import lombok.Data;
 
 @Data
 public class SkillAdminRequest {
+    public String getName() { return name; }
+    public void setName(String name) { this.name = name; }
+    public String getDescription() { return description; }
+    public void setDescription(String description) { this.description = description; }
+
 
     @NotBlank(message = "Tên kỹ năng không được để trống")
     @Size(max = 100, message = "Tên kỹ năng quá dài")

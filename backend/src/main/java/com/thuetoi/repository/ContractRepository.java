@@ -5,6 +5,7 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 
 import java.math.BigDecimal;
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 
@@ -17,4 +18,7 @@ public interface ContractRepository extends JpaRepository<Contract, Long> {
     BigDecimal calculateTotalGmv();
 
     long countByStatus(String status);
+
+    @Query("SELECT c FROM Contract c WHERE c.status = :status AND c.endDate < :now")
+    List<Contract> findExpiredContracts(@org.springframework.data.repository.query.Param("status") String status, @org.springframework.data.repository.query.Param("now") LocalDateTime now);
 }

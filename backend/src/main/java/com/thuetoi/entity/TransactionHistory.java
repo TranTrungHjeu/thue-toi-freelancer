@@ -26,4 +26,13 @@ public class TransactionHistory extends BaseEntity {
 
     @Column(name = "status", nullable = false)
     private String status;
+
+    public Long getContractId() { return contractId; }
+    public void setContractId(Long contractId) { this.contractId = contractId; }
+    public BigDecimal getAmount() { return amount; }
+    public void setAmount(BigDecimal amount) { this.amount = amount; }
+    public String getMethod() { return method; }
+    public void setMethod(String method) { this.method = method; }
+    public String getStatus() { return status; }
+    public void setStatus(String status) { this.status = status; }
 }

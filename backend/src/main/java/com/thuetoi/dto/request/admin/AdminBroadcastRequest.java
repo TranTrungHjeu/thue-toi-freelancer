@@ -6,6 +6,17 @@ import lombok.Data;
 
 @Data
 public class AdminBroadcastRequest {
+    public String getTargetRole() { return targetRole; }
+    public void setTargetRole(String targetRole) { this.targetRole = targetRole; }
+    public String getType() { return type; }
+    public void setType(String type) { this.type = type; }
+    public String getTitle() { return title; }
+    public void setTitle(String title) { this.title = title; }
+    public String getContent() { return content; }
+    public void setContent(String content) { this.content = content; }
+    public String getLink() { return link; }
+    public void setLink(String link) { this.link = link; }
+
 
     @Size(max = 50, message = "Vai trò đích không hợp lệ")
     private String targetRole;

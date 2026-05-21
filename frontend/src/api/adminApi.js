@@ -1,22 +1,22 @@
-import axiosClient from './axiosClient';
+import axiosClient from "./axiosClient";
 
 const adminApi = {
   /**
    * Lấy thống kê hệ thống (GMV, User count, v.v.)
    */
   getSystemStats: () => {
-    return axiosClient.get('/v1/admin/stats');
+    return axiosClient.get("/v1/admin/stats");
   },
 
   /**
    * Lấy danh sách toàn bộ người dùng
    */
   getAllUsers: () => {
-    return axiosClient.get('/v1/admin/users');
+    return axiosClient.get("/v1/admin/users");
   },
 
   getUserPage: (params = {}) => {
-    return axiosClient.get('/v1/admin/users/page', { params });
+    return axiosClient.get("/v1/admin/users/page", { params });
   },
 
   getUserDetail: (userId) => {
@@ -30,17 +30,21 @@ const adminApi = {
    */
   toggleUserStatus: (userId, reason) => {
     return axiosClient.put(`/v1/admin/users/${userId}/toggle-status`, null, {
-      params: { reason }
+      params: { reason },
     });
   },
 
   bulkToggleUserStatus: (userIds, active, reason) => {
-    return axiosClient.post('/v1/admin/users/bulk-status', { userIds, active, reason });
+    return axiosClient.post("/v1/admin/users/bulk-status", {
+      userIds,
+      active,
+      reason,
+    });
   },
-  
+
   updateUserRole: (userId, role) => {
     return axiosClient.put(`/v1/admin/users/${userId}/role`, null, {
-      params: { role }
+      params: { role },
     });
   },
 
@@ -48,7 +52,7 @@ const adminApi = {
    * Lấy danh sách dự án để kiểm duyệt
    */
   getAllProjects: () => {
-    return axiosClient.get('/v1/admin/projects');
+    return axiosClient.get("/v1/admin/projects");
   },
 
   /**
@@ -58,17 +62,20 @@ const adminApi = {
    */
   updateProjectStatus: (projectId, status) => {
     return axiosClient.put(`/v1/admin/projects/${projectId}/status`, null, {
-      params: { status }
+      params: { status },
     });
   },
 
   bulkUpdateProjectStatus: (projectIds, status) => {
-    return axiosClient.post('/v1/admin/projects/bulk-status', { projectIds, status });
+    return axiosClient.post("/v1/admin/projects/bulk-status", {
+      projectIds,
+      status,
+    });
   },
 
   // --- Skills ---
   createSkill: (skill) => {
-    return axiosClient.post('/v1/admin/skills', skill);
+    return axiosClient.post("/v1/admin/skills", skill);
   },
   updateSkill: (id, skill) => {
     return axiosClient.put(`/v1/admin/skills/${id}`, skill);
@@ -79,63 +86,80 @@ const adminApi = {
 
   // --- Broadcast ---
   broadcast: (payload) => {
-    return axiosClient.post('/v1/admin/broadcast', payload);
+    return axiosClient.post("/v1/admin/broadcast", payload);
   },
 
   // --- KYC ---
   getKycRequests: () => {
-    return axiosClient.get('/v1/admin/kyc');
+    return axiosClient.get("/v1/admin/kyc");
   },
   approveKyc: (id) => {
     return axiosClient.put(`/v1/admin/kyc/${id}/approve`);
   },
   rejectKyc: (id, reason) => {
     return axiosClient.put(`/v1/admin/kyc/${id}/reject`, null, {
-      params: { reason }
+      params: { reason },
     });
   },
 
   // --- Reports ---
   getReports: () => {
-    return axiosClient.get('/v1/admin/reports');
+    return axiosClient.get("/v1/admin/reports");
   },
   updateReportStatus: (id, status) => {
     return axiosClient.put(`/v1/admin/reports/${id}/status`, null, {
-      params: { status }
+      params: { status },
     });
   },
 
   // --- Finance & Withdrawals ---
   getWithdrawals: () => {
-    return axiosClient.get('/v1/admin/withdrawals');
+    return axiosClient.get("/v1/admin/withdrawals");
   },
-  
+
   processWithdrawal: (id, status, note) => {
     return axiosClient.post(`/v1/admin/withdrawals/${id}/process`, null, {
-      params: { status, note }
+      params: { status, note },
     });
   },
 
   // --- System Settings ---
   getSettings: () => {
-    return axiosClient.get('/v1/admin/settings');
+    return axiosClient.get("/v1/admin/settings");
   },
 
   updateSetting: (key, value) => {
-    return axiosClient.post('/v1/admin/settings', { key, value });
+    return axiosClient.post("/v1/admin/settings", { key, value });
   },
 
   /**
    * Lấy nhật ký hệ thống
    */
   getAuditLogs: () => {
-    return axiosClient.get('/v1/admin/logs');
+    return axiosClient.get("/v1/admin/logs");
   },
 
   getHealthDetailed: () => {
-    return axiosClient.get('/v1/admin/health-detailed');
-  }
+    return axiosClient.get("/v1/admin/health-detailed");
+  },
+
+  /**
+   * Kích hoạt chạy Cron Job ngay lập tức
+   */
+  triggerCronJob: (jobKey) => {
+    return axiosClient.post(`/v1/admin/cron/trigger/${jobKey}`);
+  },
+
+  /**
+   * Chat hỗ trợ
+   */
+  getSupportMessages: (userId) => {
+    return axiosClient.get(`/v1/admin/support-chat/${userId}`);
+  },
+
+  sendSupportMessage: (payload) => {
+    return axiosClient.post("/v1/admin/support-chat/send", payload);
+  },
 };
 
 export default adminApi;
-

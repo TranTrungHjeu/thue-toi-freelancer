@@ -1,6 +1,13 @@
 -- V2__Add_audit_columns_to_skills.sql
 -- Fix schema drift: Skill extends BaseEntity so skills requires created_at/updated_at.
 
+-- Ensure the table exists in case it was accidentally dropped or missing from initial schema execution
+CREATE TABLE IF NOT EXISTS skills (
+    id BIGINT PRIMARY KEY AUTO_INCREMENT COMMENT 'Khóa chính, mã kỹ năng',
+    name VARCHAR(100) UNIQUE NOT NULL COMMENT 'Tên kỹ năng, duy nhất',
+    description TEXT COMMENT 'Mô tả kỹ năng'
+);
+
 ALTER TABLE skills
 ADD COLUMN created_at DATETIME NULL COMMENT 'Ngày tạo',
 ADD COLUMN updated_at DATETIME NULL COMMENT 'Ngày cập nhật';
