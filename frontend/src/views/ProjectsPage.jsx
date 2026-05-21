@@ -37,6 +37,7 @@ import BidSelectionModal from '../components/common/BidSelectionModal';
 import PaymentReceiptModal from '../components/common/PaymentReceiptModal';
 import BidComparison from '../components/common/BidComparison';
 import VideoCallModal from '../components/common/VideoCallModal';
+import Pagination from '../components/common/Pagination';
 import { usePaymentWebSocket } from '../hooks/usePaymentWebSocket';
 import {
   WarningTriangle,
@@ -54,6 +55,8 @@ import {
   Activity,
   Plus
 } from 'iconoir-react';
+
+const PROJECTS_PER_PAGE = 5;
 
 const initialProjectForm = {
   title: '',
@@ -151,25 +154,6 @@ const getCoverImageBySkills = (skills) => {
     return '/images/covers/writing.webp';
   }
   return '/images/covers/default.webp';
-};
-
-const matchesProjectKeyword = (project, keyword) => {
-  const normalizedKeyword = `${keyword || ''}`.trim().toLowerCase();
-  if (!normalizedKeyword) {
-    return true;
-  }
-
-  const searchableContent = [
-    project?.title,
-    project?.description,
-    project?.user?.fullName,
-    ...(Array.isArray(project?.skills) ? project.skills : []),
-  ]
-    .filter(Boolean)
-    .join(' ')
-    .toLowerCase();
-
-  return searchableContent.includes(normalizedKeyword);
 };
 
 const formatDateForInput = (value) => {
@@ -279,8 +263,22 @@ const ProjectsPage = () => {
   const [bidActionId, setBidActionId] = useState(null);
   const [activePayment, setActivePayment] = useState(null);
   const [marketplaceSearchTerm, setMarketplaceSearchTerm] = useState('');
+  const [debouncedSearchTerm, setDebouncedSearchTerm] = useState('');
   const [marketplaceStatus, setMarketplaceStatus] = useState('open');
   const [marketplaceSkills, setMarketplaceSkills] = useState([]);
+
+  useEffect(() => {
+    const handle = setTimeout(() => {
+      setDebouncedSearchTerm(marketplaceSearchTerm);
+    }, 300);
+    return () => clearTimeout(handle);
+  }, [marketplaceSearchTerm]);
+  const [customerListPage, setCustomerListPage] = useState(1);
+  const [customerListTotal, setCustomerListTotal] = useState(0);
+  const [customerListTotalPages, setCustomerListTotalPages] = useState(1);
+  const [marketplacePage, setMarketplacePage] = useState(1);
+  const [marketplaceTotal, setMarketplaceTotal] = useState(0);
+  const [marketplaceTotalPages, setMarketplaceTotalPages] = useState(1);
   const [isBidComposerOpen, setIsBidComposerOpen] = useState(false);
   const [isMyBidsOpen, setIsMyBidsOpen] = useState(false);
   const [isBidComposerLeaving, setIsBidComposerLeaving] = useState(false);
@@ -386,20 +384,42 @@ const ProjectsPage = () => {
     setLoading(true);
     try {
       if (isCustomer) {
-        const projectsResponse = await marketplaceApi.getMyProjects();
-        setProjects(projectsResponse.data || []);
+        const projectsResponse = await marketplaceApi.getMyProjects({
+          page: customerListPage,
+          limit: PROJECTS_PER_PAGE,
+        });
+        const payload = projectsResponse.data;
+        const items = Array.isArray(payload?.data) ? payload.data : [];
+        const meta = payload?.pagination;
+        setProjects(items);
+        setCustomerListTotal(meta?.total ?? items.length);
+        setCustomerListTotalPages(meta?.totalPages ?? 1);
       } else {
-        const shouldUseSearchEndpoint = marketplaceStatus !== 'open' || marketplaceSkills.length > 0;
+        const keyword = debouncedSearchTerm.trim();
+        const hasFilters = marketplaceStatus !== 'open'
+          || marketplaceSkills.length > 0
+          || keyword !== '';
+        const baseParams = {
+          page: marketplacePage,
+          limit: PROJECTS_PER_PAGE,
+          q: keyword || undefined,
+        };
         const [projectsResponse, bidsResponse] = await Promise.all([
-          shouldUseSearchEndpoint
+          hasFilters
             ? marketplaceApi.searchProjects({
+              ...baseParams,
               status: marketplaceStatus,
               skills: marketplaceSkills,
             })
-            : marketplaceApi.getAllProjects(),
+            : marketplaceApi.getAllProjects(baseParams),
           marketplaceApi.getMyBids(),
         ]);
-        setProjects(projectsResponse.data || []);
+        const payload = projectsResponse.data;
+        const items = Array.isArray(payload?.data) ? payload.data : [];
+        const meta = payload?.pagination;
+        setProjects(items);
+        setMarketplaceTotal(meta?.total ?? items.length);
+        setMarketplaceTotalPages(meta?.totalPages ?? 1);
         setMyBids(bidsResponse.data || []);
       }
     } catch (error) {
@@ -407,7 +427,17 @@ const ProjectsPage = () => {
     } finally {
       setLoading(false);
     }
-  }, [addToast, isCustomer, marketplaceSkills, marketplaceStatus, t, user?.id]);
+  }, [
+    addToast,
+    customerListPage,
+    debouncedSearchTerm,
+    isCustomer,
+    marketplacePage,
+    marketplaceSkills,
+    marketplaceStatus,
+    t,
+    user?.id,
+  ]);
 
   const loadProjectBids = useCallback(async (project) => {
     setSelectedProject(project);
@@ -504,10 +534,21 @@ const ProjectsPage = () => {
     { value: 'cancelled', label: t('status.project.cancelled', {}, locale) },
   ]), [locale, t]);
 
-  const filteredMarketplaceProjects = useMemo(
-    () => projects.filter((project) => matchesProjectKeyword(project, marketplaceSearchTerm)),
-    [marketplaceSearchTerm, projects],
-  );
+  useEffect(() => {
+    setMarketplacePage(1);
+  }, [debouncedSearchTerm, marketplaceStatus, marketplaceSkills]);
+
+  useEffect(() => {
+    if (customerListPage > customerListTotalPages) {
+      setCustomerListPage(customerListTotalPages);
+    }
+  }, [customerListPage, customerListTotalPages]);
+
+  useEffect(() => {
+    if (marketplacePage > marketplaceTotalPages) {
+      setMarketplacePage(marketplaceTotalPages);
+    }
+  }, [marketplacePage, marketplaceTotalPages]);
 
   const projectSkillSuggestions = useMemo(
     () => skillCatalog.filter((skill) => !normalizeSkillNames(projectForm.skills).includes(skill)).slice(0, 10),
@@ -933,6 +974,34 @@ const ProjectsPage = () => {
     setMarketplaceSkills([]);
   };
 
+  const renderCustomerPagination = (placement) => (
+    <Pagination
+      page={customerListPage}
+      totalPages={customerListTotalPages}
+      totalItems={customerListTotal}
+      pageSize={PROJECTS_PER_PAGE}
+      onChange={setCustomerListPage}
+      idPrefix={`customer-projects-${placement}`}
+      className={placement === 'top'
+        ? 'mb-3 border-b border-slate-100 pb-3'
+        : 'mt-4 border-t border-slate-100 pt-3'}
+    />
+  );
+
+  const renderMarketplacePagination = (placement) => (
+    <Pagination
+      page={marketplacePage}
+      totalPages={marketplaceTotalPages}
+      totalItems={marketplaceTotal}
+      pageSize={PROJECTS_PER_PAGE}
+      onChange={setMarketplacePage}
+      idPrefix={`marketplace-projects-${placement}`}
+      className={placement === 'top'
+        ? 'mb-4 border-b border-slate-100 pb-3'
+        : 'mt-4 border-t border-slate-100 pt-3'}
+    />
+  );
+
   return (
     <div className="relative mx-auto flex w-full max-w-[1600px] flex-col gap-6">
       <div className="pointer-events-none absolute inset-x-0 -top-20 -z-10 h-52 bg-gradient-to-r from-primary-100/60 via-sky-50/50 to-indigo-100/40 blur-2xl" />
@@ -1203,12 +1272,14 @@ const ProjectsPage = () => {
                 </div>
               </div>
 
-              <div className="mt-5 flex flex-col gap-4 max-h-[800px] overflow-y-auto pr-1">
+              <div className="mt-5 flex flex-col gap-4">
                 {visibleLoading && (
                   <div className="flex items-center justify-center rounded-xl border border-dashed border-slate-200 bg-slate-50 p-6">
                     <Spinner size="sm" label={extraCopy.marketplaceLoading} />
                   </div>
                 )}
+
+                {!visibleLoading && renderCustomerPagination('top')}
 
                 {projects.map((project) => {
                   const statusMeta = getProjectStatusMeta(project.status, locale);
@@ -1281,6 +1352,8 @@ const ProjectsPage = () => {
                   </Callout>
                 )}
               </div>
+
+              {!visibleLoading && renderCustomerPagination('bottom')}
             </Card>
           </section>
 
@@ -1553,9 +1626,11 @@ const ProjectsPage = () => {
             </div>
           )}
 
+          {!visibleLoading && renderMarketplacePagination('top')}
+
           {!visibleLoading && (
             <div className="grid w-full min-w-0 gap-4">
-              {filteredMarketplaceProjects.map((project) => {
+              {projects.map((project) => {
                 const statusMeta = getProjectStatusMeta(project.status, locale);
                 const coverImage = getCoverImageBySkills(project.skills);
 
@@ -1640,16 +1715,18 @@ const ProjectsPage = () => {
             </div>
           )}
 
-          {!visibleLoading && projects.length === 0 && (
-            <Callout type="info" title={copy.marketplace.emptyTitle}>
-              {copy.marketplace.emptyDescription}
-            </Callout>
-          )}
+          {!visibleLoading && renderMarketplacePagination('bottom')}
 
-          {!visibleLoading && projects.length > 0 && filteredMarketplaceProjects.length === 0 && (
-            <Callout type="info" title={extraCopy.marketplaceFiltersEmptyTitle}>
-              {extraCopy.marketplaceFiltersEmptyDescription}
-            </Callout>
+          {!visibleLoading && marketplaceTotal === 0 && (
+            debouncedSearchTerm.trim() || marketplaceSkills.length > 0 || marketplaceStatus !== 'open' ? (
+              <Callout type="info" title={extraCopy.marketplaceFiltersEmptyTitle}>
+                {extraCopy.marketplaceFiltersEmptyDescription}
+              </Callout>
+            ) : (
+              <Callout type="info" title={copy.marketplace.emptyTitle}>
+                {copy.marketplace.emptyDescription}
+              </Callout>
+            )
           )}
         </div>
       )}

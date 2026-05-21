@@ -35,9 +35,18 @@ export const useDepositWallet = () => {
   });
 };
 
+const EMPTY_PAGE = {
+  data: [],
+  pagination: { page: 1, limit: 0, total: 0, totalPages: 1 },
+};
+
+/**
+ * Legacy: trả về toàn bộ ledger (không phân trang).
+ * Chỉ dùng cho list ngắn hoặc tổng hợp; tránh dùng cho list lịch sử của user dài hạn.
+ */
 export const useWalletLedger = (options = {}) => {
   return useQuery({
-    queryKey: LEDGER_QUERY_KEY,
+    queryKey: [...LEDGER_QUERY_KEY, "all"],
     queryFn: () =>
       marketplaceApi
         .getWalletLedger()
@@ -45,6 +54,25 @@ export const useWalletLedger = (options = {}) => {
         .catch(() => []),
     staleTime: 1 * 60 * 1000,
     gcTime: 5 * 60 * 1000,
+    ...options,
+  });
+};
+
+/**
+ * Server-side pagination cho lịch sử giao dịch ví.
+ * Trả về {@code PagedResponse} ({ data, pagination }).
+ */
+export const useWalletLedgerPaged = ({ page = 1, limit = 10 } = {}, options = {}) => {
+  return useQuery({
+    queryKey: [...LEDGER_QUERY_KEY, "page", page, limit],
+    queryFn: () =>
+      marketplaceApi
+        .getWalletLedger({ page, limit })
+        .then((res) => res?.data || EMPTY_PAGE)
+        .catch(() => EMPTY_PAGE),
+    staleTime: 1 * 60 * 1000,
+    gcTime: 5 * 60 * 1000,
+    placeholderData: (prev) => prev,
     ...options,
   });
 };

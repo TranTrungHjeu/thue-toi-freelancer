@@ -44,6 +44,9 @@ public class SePayWebhookService {
     @Autowired
     private PaymentService paymentService;
 
+    @Autowired
+    private WithdrawalService withdrawalService;
+
     public void requireValidAuth(String authorizationHeader) {
         String key = Optional.ofNullable(sePayProperties.getWebhookApiKey()).orElse("").trim();
         if (key.isEmpty()) {
@@ -70,6 +73,10 @@ public class SePayWebhookService {
             log.info("[SePayWebhook] duplicate txId={}, skip", txId);
             return;
         }
+        if (transferType != null && "out".equalsIgnoreCase(transferType)) {
+            handleOutgoingTransaction(txId, amount, transferType, body);
+            return;
+        }
         if (transferType != null && !"in".equalsIgnoreCase(transferType)) {
             persistEvent(txId, null, null, null, null, body);
             return;
@@ -79,7 +86,8 @@ public class SePayWebhookService {
             // SePay only fills `code` when a dashboard pattern matches the memo.
             // Fall back to scanning the raw memo for our deterministic order code
             // formats produced by PaymentService:
-            // TTB<bidId>P<projectId>X<8 hex> for checkout, TTD<userId>W<8 hex> for wallet deposits.
+            // TTB<bidId>P<projectId>X<8 hex> for checkout, TTD<userId>W<8 hex> for wallet deposits,
+            // TTW<userId>R<requestId>X<8 hex> for withdrawals.
             code = extractOrderCodeFromMemo(body);
         }
         if (code == null || code.isBlank()) {
@@ -87,6 +95,11 @@ public class SePayWebhookService {
             return;
         }
         code = code.trim();
+        // Trường hợp transferType=in nhưng memo lại chứa mã rút tiền (rare) -> bỏ qua, không đóng đơn rút bằng tiền vào.
+        if (code.startsWith("TTW")) {
+            tryPersistEvent(txId, code, null, amount, transferType, body);
+            return;
+        }
         Optional<PaymentOrder> orderOpt = paymentOrderRepository.findDetailedByOrderCode(code);
         if (orderOpt.isEmpty()) {
             tryPersistEvent(txId, code, null, amount, transferType, body);
@@ -115,6 +128,30 @@ public class SePayWebhookService {
         } catch (DataIntegrityViolationException e) {
             // trùng id giao dịch — coi như thành công
         }
+    }
+
+    /**
+     * Webhook giao dịch chuyển tiền RA (transferType=out) - khớp với yêu cầu rút tiền theo order_code
+     * mà admin đã ghi vào nội dung chuyển khoản. Auto-complete withdrawal request nếu khớp.
+     */
+    private void handleOutgoingTransaction(String txId, BigDecimal amount, String transferType, Map<String, Object> body) {
+        String code = asString(body.get("code"));
+        if (code == null || code.isBlank()) {
+            code = extractOrderCodeFromMemo(body);
+        }
+        if (code == null || code.isBlank() || !code.toUpperCase(Locale.ROOT).startsWith("TTW")) {
+            log.info("[SePayWebhook] outgoing tx without TTW order_code, store only. txId={}", txId);
+            tryPersistEvent(txId, code, null, amount, transferType, body);
+            return;
+        }
+        code = code.trim().toUpperCase(Locale.ROOT);
+        try {
+            boolean closed = withdrawalService.completeFromWebhook(code, amount, txId);
+            log.info("[SePayWebhook] withdrawal complete result txId={} code={} closed={}", txId, code, closed);
+        } catch (Exception e) {
+            log.error("[SePayWebhook] failed to complete withdrawal txId={} code={}: {}", txId, code, e.getMessage(), e);
+        }
+        tryPersistEvent(txId, code, null, amount, transferType, body);
     }
 
     private void tryPersistEvent(
@@ -170,7 +207,7 @@ public class SePayWebhookService {
     }
 
     private static final Pattern ORDER_CODE_PATTERN =
-        Pattern.compile("(?:TTB\\d+P\\d+X|TTD\\d+W)[0-9A-Fa-f]{8}");
+        Pattern.compile("(?:TTB\\d+P\\d+X|TTD\\d+W|TTW\\d+R\\d+X)[0-9A-Fa-f]{8}");
 
     private static String extractOrderCodeFromMemo(Map<String, Object> body) {
         String[] fields = { "content", "description", "transferContent", "memo", "remark", "note" };

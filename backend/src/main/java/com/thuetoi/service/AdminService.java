@@ -34,7 +34,6 @@ import com.thuetoi.repository.ReportRepository;
 import com.thuetoi.repository.SystemSettingRepository;
 import com.thuetoi.repository.UserRepository;
 import com.thuetoi.repository.WithdrawalRequestRepository;
-
 /**
  * AdminService: Moderation logic for admin role
  * Reuses ProjectService and ContractService patterns for status, notifications, ownership.
@@ -65,6 +64,15 @@ public class AdminService {
 
     @Autowired
     private WithdrawalRequestRepository withdrawalRequestRepository;
+
+    @Autowired
+    private WalletService walletService;
+
+    @Autowired
+    private WithdrawalService withdrawalService;
+
+    @Autowired
+    private WithdrawalRealtimePublisher withdrawalRealtimePublisher;
 
     @Autowired
     private SystemSettingRepository systemSettingRepository;
@@ -357,46 +365,75 @@ public class AdminService {
         return withdrawalRequestRepository.findAllByOrderByCreatedAtDesc();
     }
 
+    /**
+     * Admin xử lý yêu cầu rút tiền.
+     *
+     * <p><b>Luồng strict mới (yêu cầu nghiệp vụ):</b> số dư đã được hold ngay khi user
+     * tạo request. Admin chỉ được "xác nhận đã chuyển" (APPROVED/COMPLETED) <i>sau khi</i>
+     * SePay API xác nhận có giao dịch chuyển ra (transferType=out) khớp mã đơn:</p>
+     * <ul>
+     *   <li>{@code APPROVED} hoặc {@code COMPLETED}: ủy quyền cho
+     *       {@link WithdrawalService#verifyAndComplete} -> tra cứu SePay, nếu khớp thì
+     *       chuyển thẳng sang COMPLETED, nếu không tìm thấy giao dịch thì ném 422.</li>
+     *   <li>{@code REJECTED}: refund số dư hold về available + thông báo lý do.</li>
+     * </ul>
+     */
     @Transactional
     public WithdrawalRequest processWithdrawal(Long withdrawalId, String status, String note, Long adminId) {
+        String normalizedStatus = normalizeWithdrawalStatus(status);
+        String normalizedNote = note == null ? null : note.trim();
+
+        // APPROVED và COMPLETED đều bắt buộc đi qua SePay verification.
+        if (WithdrawalRequest.STATUS_APPROVED.equals(normalizedStatus)
+                || WithdrawalRequest.STATUS_COMPLETED.equals(normalizedStatus)) {
+            withdrawalService.verifyAndComplete(withdrawalId, adminId, normalizedNote);
+            // Trả về snapshot mới nhất từ DB sau khi verifyAndComplete commit (trong cùng tx này).
+            return withdrawalRequestRepository.findById(withdrawalId)
+                .orElseThrow(() -> new BusinessException(
+                    "ERR_SYS_02",
+                    "Không tìm thấy yêu cầu sau khi xử lý",
+                    HttpStatus.NOT_FOUND
+                ));
+        }
+
+        // Còn lại: REJECTED
         WithdrawalRequest request = withdrawalRequestRepository.findByIdForUpdate(withdrawalId)
             .orElseThrow(() -> new BusinessException("ERR_SYS_02", "Không tìm thấy yêu cầu rút tiền", HttpStatus.NOT_FOUND));
 
-        if (!"PENDING".equalsIgnoreCase(request.getStatus())) {
+        if (!WithdrawalRequest.STATUS_PENDING.equalsIgnoreCase(request.getStatus())) {
             throw new BusinessException("ERR_SYS_02", "Yêu cầu đã được xử lý trước đó", HttpStatus.BAD_REQUEST);
         }
 
-        String normalizedStatus = normalizeWithdrawalStatus(status);
-        String normalizedNote = note == null ? null : note.trim();
-        request.setStatus(normalizedStatus);
-        request.setNote(normalizedNote);
-        request.setProcessedBy(adminId);
-
-        if ("APPROVED".equals(request.getStatus())) {
-            User user = userRepository.findByIdForUpdate(request.getUserId())
-                .orElseThrow(() -> new BusinessException("ERR_USER_01", "User not found", HttpStatus.NOT_FOUND));
-
-            if (user.getBalance().compareTo(request.getAmount()) < 0) {
-                throw new BusinessException("ERR_SYS_02", "Số dư người dùng không đủ để thực hiện lệnh này", HttpStatus.BAD_REQUEST);
-            }
-
-            user.setBalance(user.getBalance().subtract(request.getAmount()));
-            userRepository.save(user);
-
-            notificationService.createNotificationForUser(user.getId(), "system", "Lệnh rút tiền thành công",
-                "Số tiền " + request.getAmount() + " đã được chuyển tới tài khoản của bạn.", "/workspace/notifications");
-        } else {
-            String rejectionReason = normalizedNote;
-            if (rejectionReason == null || rejectionReason.isBlank()) {
-                rejectionReason = "Yêu cầu rút tiền bị từ chối bởi Quản trị viên.";
-            }
-            request.setNote(rejectionReason);
-
-            notificationService.createNotificationForUser(request.getUserId(), "system", "Lệnh rút tiền bị từ chối",
-                "Lý do: " + rejectionReason, "/workspace/notifications");
+        String rejectionReason = normalizedNote;
+        if (rejectionReason == null || rejectionReason.isBlank()) {
+            rejectionReason = "Yêu cầu rút tiền bị từ chối bởi Quản trị viên.";
         }
+        request.setStatus(WithdrawalRequest.STATUS_REJECTED);
+        request.setProcessedBy(adminId);
+        request.setNote(rejectionReason);
 
-        return withdrawalRequestRepository.save(request);
+        walletService.refundWithdrawalHold(
+            request.getUserId(),
+            request.getId(),
+            request.getAmount(),
+            rejectionReason
+        );
+
+        notificationService.createNotificationForUser(
+            request.getUserId(),
+            "system",
+            "Yêu cầu rút tiền bị từ chối",
+            "Lý do: " + rejectionReason + ". Số tiền đã được hoàn lại vào ví khả dụng.",
+            "/workspace/wallet"
+        );
+
+        WithdrawalRequest saved = withdrawalRequestRepository.save(request);
+        withdrawalRealtimePublisher.publish(
+            saved.getUserId(),
+            saved.getId(),
+            WithdrawalRealtimePublisher.TYPE_REJECTED
+        );
+        return saved;
     }
 
     // --- System Settings ---
@@ -570,7 +607,7 @@ public class AdminService {
             throw new BusinessException("ERR_SYS_02", "Trạng thái yêu cầu rút tiền không được để trống", HttpStatus.BAD_REQUEST);
         }
         String normalizedStatus = status.trim().toUpperCase(Locale.ROOT);
-        if (!Set.of("APPROVED", "REJECTED").contains(normalizedStatus)) {
+        if (!Set.of("APPROVED", "REJECTED", "COMPLETED").contains(normalizedStatus)) {
             throw new BusinessException("ERR_SYS_02", "Trạng thái yêu cầu rút tiền không hợp lệ", HttpStatus.BAD_REQUEST);
         }
         return normalizedStatus;

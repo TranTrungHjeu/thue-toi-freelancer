@@ -11,12 +11,17 @@ import org.springframework.stereotype.Component;
 import org.springframework.web.client.HttpStatusCodeException;
 import org.springframework.web.client.RestTemplate;
 
+import java.math.BigDecimal;
+import java.math.RoundingMode;
+import java.nio.charset.StandardCharsets;
 import java.util.HashMap;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Optional;
 
 import org.springframework.http.converter.json.MappingJackson2HttpMessageConverter;
 import org.springframework.web.util.DefaultUriBuilderFactory;
+import org.springframework.web.util.UriComponentsBuilder;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import lombok.extern.slf4j.Slf4j;
@@ -100,6 +105,116 @@ public class SePayApiClient {
                 return;
             }
             throw mapSePayError(ex);
+        }
+    }
+
+    /**
+     * Tra cứu giao dịch CHUYỂN RA gần đây trên SePay theo mã đơn (TTW...) và số tiền kỳ vọng.
+     * <p>Dùng cho luồng admin xác nhận đã chuyển khoản rút tiền: chỉ cho phép đóng đơn rút
+     * sau khi SePay xác nhận đã có giao dịch chuyển ra khớp mã đơn.</p>
+     * <p>SePay v2 docs: <code>GET /v2/transactions?q=...&transfer_type=out</code>. Tham số
+     * <code>q</code> tìm kiếm trên các trường reference_number, transaction_content, code.</p>
+     *
+     * @param orderCode      mã đơn rút tiền (vd: TTW123R45X9af2b1c0)
+     * @param expectedAmount số tiền kỳ vọng (VND); nếu khác thì bỏ qua, tránh nhầm lẫn
+     * @return JsonNode giao dịch nếu khớp, hoặc {@link Optional#empty()} nếu chưa thấy
+     */
+    public Optional<JsonNode> findOutgoingTransactionByOrderCode(String orderCode, BigDecimal expectedAmount) {
+        ensureConfigured();
+        if (orderCode == null || orderCode.isBlank()) {
+            return Optional.empty();
+        }
+
+        // Sử dụng UriComponentsBuilder để escape giá trị query trước khi nối path.
+        // DefaultUriBuilderFactory(base) sẽ tự prefix base URL.
+        String path = UriComponentsBuilder.fromUriString("/v2/transactions")
+            .queryParam("q", orderCode)
+            .queryParam("transfer_type", "out")
+            .queryParam("per_page", 50)
+            .build()
+            .toUriString();
+
+        try {
+            ResponseEntity<String> res = restTemplate.exchange(
+                path, HttpMethod.GET, new HttpEntity<>(null, authHeaders()), String.class
+            );
+            if (res.getBody() == null) {
+                return Optional.empty();
+            }
+            JsonNode root = objectMapper.readTree(res.getBody());
+            if (!"success".equalsIgnoreCase(Optional.ofNullable(root.get("status")).map(JsonNode::asText).orElse(""))) {
+                log.warn("[SePayApiClient] tra cứu transactions trả về status={} body={}",
+                    Optional.ofNullable(root.get("status")).map(JsonNode::asText).orElse("?"),
+                    res.getBody());
+                return Optional.empty();
+            }
+            JsonNode data = root.get("data");
+            if (data == null || !data.isArray()) {
+                return Optional.empty();
+            }
+
+            String upperCode = orderCode.trim().toUpperCase(Locale.ROOT);
+            BigDecimal expected = expectedAmount == null
+                ? null
+                : expectedAmount.setScale(0, RoundingMode.HALF_UP);
+
+            for (JsonNode tx : data) {
+                String content = upperOrEmpty(tx, "transaction_content");
+                String code = upperOrEmpty(tx, "code");
+                String ref = upperOrEmpty(tx, "reference_number");
+                boolean matchCode = content.contains(upperCode)
+                    || code.contains(upperCode)
+                    || ref.contains(upperCode);
+                if (!matchCode) {
+                    continue;
+                }
+
+                if (expected != null) {
+                    BigDecimal amountOut = bigDecimalOf(tx, "amount_out");
+                    if (amountOut == null) {
+                        continue;
+                    }
+                    if (amountOut.setScale(0, RoundingMode.HALF_UP).compareTo(expected) != 0) {
+                        log.warn("[SePayApiClient] tx khớp code={} nhưng số tiền {} != kỳ vọng {} -> bỏ qua",
+                            upperCode, amountOut, expected);
+                        continue;
+                    }
+                }
+                return Optional.of(tx);
+            }
+            return Optional.empty();
+        } catch (HttpStatusCodeException ex) {
+            throw mapSePayError(ex);
+        } catch (BusinessException e) {
+            throw e;
+        } catch (Exception e) {
+            throw new BusinessException(
+                "ERR_PAYMENT_04",
+                "Lỗi tra cứu giao dịch trên SePay: " + e.getMessage(),
+                HttpStatus.BAD_GATEWAY
+            );
+        }
+    }
+
+    private static String upperOrEmpty(JsonNode node, String field) {
+        JsonNode v = node.get(field);
+        if (v == null || v.isNull()) {
+            return "";
+        }
+        return v.asText("").toUpperCase(Locale.ROOT);
+    }
+
+    private static BigDecimal bigDecimalOf(JsonNode node, String field) {
+        JsonNode v = node.get(field);
+        if (v == null || v.isNull()) {
+            return null;
+        }
+        try {
+            String text = v.asText("0");
+            if (text.isEmpty()) return BigDecimal.ZERO;
+            return new BigDecimal(text);
+        } catch (Exception e) {
+            return null;
         }
     }
 

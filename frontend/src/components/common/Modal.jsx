@@ -9,7 +9,7 @@ import { H2 } from './Typography';
  * Thành phần hộp thoại dùng chung theo phong cách giao diện góc cạnh.
  * Animation spring mượt, không vỡ layout.
  */
-const Modal = ({ isOpen, onClose, title, children, size = 'md' }) => {
+const Modal = ({ isOpen, onClose, title, children, footer, size = 'md', bodyClassName = '' }) => {
   const [mounted, setMounted] = React.useState(false);
   React.useEffect(() => {
     setMounted(true);
@@ -51,10 +51,10 @@ const Modal = ({ isOpen, onClose, title, children, size = 'md' }) => {
             initial="hidden"
             animate="visible"
             exit="exit"
-            className={`relative bg-white w-full ${sizeClasses[size] || sizeClasses.md} border border-slate-200 shadow-2xl overflow-hidden rounded-none`}
+            className={`relative bg-white w-full ${sizeClasses[size] || sizeClasses.md} border border-slate-200 shadow-2xl overflow-hidden rounded-none flex flex-col max-h-[calc(100vh-2rem)]`}
           >
             {title && (
-              <div className="flex items-center justify-between p-6 border-b border-slate-100">
+              <div className="flex items-center justify-between p-6 border-b border-slate-100 shrink-0">
                 <H2 className="!mb-0 text-xl">{title}</H2>
                 <button
                   onClick={onClose}
@@ -74,9 +74,15 @@ const Modal = ({ isOpen, onClose, title, children, size = 'md' }) => {
               </button>
             )}
 
-            <div className={title ? 'p-6' : ''}>
+            <div className={`${title ? 'p-6' : ''} flex-1 min-h-0 overflow-y-auto ${bodyClassName}`}>
               {children}
             </div>
+
+            {footer && (
+              <div className="border-t border-slate-100 bg-white p-4 sm:p-6 shrink-0">
+                {footer}
+              </div>
+            )}
           </motion.div>
         </div>
       )}

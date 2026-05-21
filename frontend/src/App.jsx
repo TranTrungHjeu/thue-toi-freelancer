@@ -17,6 +17,7 @@ import NotificationsPage from './pages/workspace/NotificationsPage'
 import AdminPage from './pages/workspace/AdminPage'
 import NotFoundPage from './pages/NotFoundPage'
 import WalletPage from './views/WalletPage'
+import BankAccountsPage from './views/BankAccountsPage'
 
 // Admin Views
 import AdminUsersPage from './views/admin/AdminUsersPage'
@@ -66,6 +67,7 @@ export default function App() {
             <Route path="/workspace/profile" element={<ProfilePage />} />
             <Route path="/workspace/notifications" element={<NotificationsPage />} />
             <Route path="/workspace/wallet" element={<WalletPage />} />
+            <Route path="/workspace/wallet/bank-accounts" element={<BankAccountsPage />} />
 
             {/* Admin nested routes */}
             <Route element={<AdminLayout />}>
