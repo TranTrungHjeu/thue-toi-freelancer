@@ -2,6 +2,7 @@ package com.thuetoi.controller;
 
 import com.thuetoi.dto.request.ProjectRequest;
 import com.thuetoi.dto.response.ApiResponse;
+import com.thuetoi.dto.response.PagedResponse;
 import com.thuetoi.dto.response.marketplace.ProjectResponse;
 import com.thuetoi.entity.Project;
 import com.thuetoi.exception.BusinessException;
@@ -10,6 +11,7 @@ import com.thuetoi.security.CurrentUserProvider;
 import com.thuetoi.service.ProjectService;
 import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.Page;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.*;
 
@@ -32,12 +34,26 @@ public class ProjectController {
     private MarketplaceResponseMapper marketplaceResponseMapper;
 
     /**
-     * Lấy tất cả dự án đang mở trên marketplace
+     * Lấy tất cả dự án đang mở trên marketplace.
+     * Nếu cung cấp {@code page}/{@code limit} sẽ trả về dạng {@link PagedResponse}.
      */
     @GetMapping
-    public ApiResponse<List<ProjectResponse>> getAllProjects() {
-        List<Project> projects = projectService.getAllProjects();
-        return ApiResponse.success("Lấy tất cả dự án", marketplaceResponseMapper.toProjectResponses(projects));
+    public ApiResponse<?> getAllProjects(
+        @RequestParam(required = false) Integer page,
+        @RequestParam(required = false) Integer limit,
+        @RequestParam(required = false) String q,
+        @RequestParam(required = false) String status,
+        @RequestParam(required = false) List<String> skills
+    ) {
+        if (page == null && limit == null && q == null && status == null && (skills == null || skills.isEmpty())) {
+            List<Project> projects = projectService.getAllProjects();
+            return ApiResponse.success("Lấy tất cả dự án", marketplaceResponseMapper.toProjectResponses(projects));
+        }
+        int effectivePage = page != null ? page : 1;
+        int effectiveLimit = limit != null ? limit : 20;
+        Page<Project> result = projectService.searchProjects(skills, status, q, effectivePage, effectiveLimit);
+        List<ProjectResponse> items = marketplaceResponseMapper.toProjectResponses(result.getContent());
+        return ApiResponse.success("Lấy tất cả dự án", PagedResponse.from(result, items));
     }
 
     /**
@@ -69,24 +85,49 @@ public class ProjectController {
     }
 
     /**
-     * Tìm kiếm project theo kỹ năng (skill-based search)
+     * Tìm kiếm project theo kỹ năng (skill-based search).
+     * Nếu cung cấp {@code page}/{@code limit} sẽ trả về {@link PagedResponse}.
      */
     @GetMapping("/search")
-    public ApiResponse<List<ProjectResponse>> searchProjects(
+    public ApiResponse<?> searchProjects(
             @RequestParam(required = false) List<String> skills,
-            @RequestParam(required = false) String status) {
-        List<Project> projects = projectService.searchProjectsBySkills(skills, status);
-        return ApiResponse.success("Tìm kiếm project theo kỹ năng thành công", marketplaceResponseMapper.toProjectResponses(projects));
+            @RequestParam(required = false) String status,
+            @RequestParam(required = false) String q,
+            @RequestParam(required = false) Integer page,
+            @RequestParam(required = false) Integer limit) {
+        if (page == null && limit == null && q == null) {
+            List<Project> projects = projectService.searchProjectsBySkills(skills, status);
+            return ApiResponse.success("Tìm kiếm project theo kỹ năng thành công",
+                marketplaceResponseMapper.toProjectResponses(projects));
+        }
+        int effectivePage = page != null ? page : 1;
+        int effectiveLimit = limit != null ? limit : 20;
+        Page<Project> result = projectService.searchProjects(skills, status, q, effectivePage, effectiveLimit);
+        List<ProjectResponse> items = marketplaceResponseMapper.toProjectResponses(result.getContent());
+        return ApiResponse.success("Tìm kiếm project theo kỹ năng thành công", PagedResponse.from(result, items));
     }
 
     /**
-     * Lấy danh sách dự án của user hiện tại
+     * Lấy danh sách dự án của user hiện tại.
+     * Nếu cung cấp {@code page}/{@code limit} sẽ trả về {@link PagedResponse}.
      */
     @GetMapping("/my")
-    public ApiResponse<List<ProjectResponse>> getMyProjects(Principal principal) {
+    public ApiResponse<?> getMyProjects(
+        Principal principal,
+        @RequestParam(required = false) Integer page,
+        @RequestParam(required = false) Integer limit
+    ) {
         Long currentUserId = currentUserProvider.requireCurrentUserId(principal);
-        List<Project> projects = projectService.getProjectsByUser(currentUserId);
-        return ApiResponse.success("Lấy danh sách dự án của user hiện tại", marketplaceResponseMapper.toProjectResponses(projects));
+        if (page == null && limit == null) {
+            List<Project> projects = projectService.getProjectsByUser(currentUserId);
+            return ApiResponse.success("Lấy danh sách dự án của user hiện tại",
+                marketplaceResponseMapper.toProjectResponses(projects));
+        }
+        int effectivePage = page != null ? page : 1;
+        int effectiveLimit = limit != null ? limit : 20;
+        Page<Project> result = projectService.getProjectsByUser(currentUserId, effectivePage, effectiveLimit);
+        List<ProjectResponse> items = marketplaceResponseMapper.toProjectResponses(result.getContent());
+        return ApiResponse.success("Lấy danh sách dự án của user hiện tại", PagedResponse.from(result, items));
     }
 
     /**

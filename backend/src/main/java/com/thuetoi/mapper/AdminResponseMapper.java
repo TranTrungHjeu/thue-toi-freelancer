@@ -171,9 +171,18 @@ public class AdminResponseMapper {
             toUserSummary(usersById.get(request.getUserId())),
             request.getAmount(),
             request.getBankInfo(),
+            request.getBankName(),
+            request.getBankCode(),
+            request.getAccountNumber(),
+            request.getAccountHolder(),
+            request.getQrImageUrl(),
+            request.getOrderCode(),
             request.getStatus(),
             request.getNote(),
             request.getProcessedBy(),
+            request.getApprovedAt(),
+            request.getCompletedAt(),
+            request.getSepayTransactionId(),
             request.getCreatedAt(),
             request.getUpdatedAt()
         );

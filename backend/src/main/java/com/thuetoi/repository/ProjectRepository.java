@@ -1,6 +1,8 @@
 package com.thuetoi.repository;
 
 import com.thuetoi.entity.Project;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.EntityGraph;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
@@ -63,4 +65,48 @@ public interface ProjectRepository extends JpaRepository<Project, Long> {
         @Param("status") String status,
         @Param("now") LocalDateTime now
     );
+
+    @EntityGraph(attributePaths = {"skills", "user.skills"})
+    @Query("""
+        select p
+        from Project p
+        where p.status = :status
+          and (
+            :keyword is null
+            or :keyword = ''
+            or lower(p.title) like concat('%', :keyword, '%')
+            or lower(coalesce(p.description, '')) like concat('%', :keyword, '%')
+          )
+        order by p.createdAt desc
+        """)
+    Page<Project> pageByStatusAndKeyword(
+        @Param("status") String status,
+        @Param("keyword") String keyword,
+        Pageable pageable
+    );
+
+    @EntityGraph(attributePaths = {"skills", "user.skills"})
+    @Query("""
+        select distinct p
+        from Project p
+        join p.skills s
+        where lower(s.name) in :skillNames
+          and (:status is null or p.status = :status)
+          and (
+            :keyword is null
+            or :keyword = ''
+            or lower(p.title) like concat('%', :keyword, '%')
+            or lower(coalesce(p.description, '')) like concat('%', :keyword, '%')
+          )
+        order by p.createdAt desc
+        """)
+    Page<Project> pageBySkillsAndOptionalStatusAndKeyword(
+        @Param("skillNames") List<String> skillNames,
+        @Param("status") String status,
+        @Param("keyword") String keyword,
+        Pageable pageable
+    );
+
+    @EntityGraph(attributePaths = {"skills", "user.skills"})
+    Page<Project> findByUserIdOrderByCreatedAtDesc(Long userId, Pageable pageable);
 }

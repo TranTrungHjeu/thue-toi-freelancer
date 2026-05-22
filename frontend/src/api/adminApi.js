@@ -123,6 +123,17 @@ const adminApi = {
     });
   },
 
+  /**
+   * Admin xác nhận đã chuyển khoản: backend gọi SePay API tra cứu giao dịch
+   * chuyển ra khớp mã đơn trước khi đóng đơn. Nếu chưa tìm thấy giao dịch,
+   * backend trả 422 ERR_WITHDRAWAL_07 và FE hiển thị hướng dẫn admin chuyển lại.
+   */
+  verifyWithdrawal: (id, note) => {
+    return axiosClient.post(`/v1/admin/withdrawals/${id}/process`, null, {
+      params: { status: 'COMPLETED', note }
+    });
+  },
+
   // --- System Settings ---
   getSettings: () => {
     return axiosClient.get("/v1/admin/settings");
