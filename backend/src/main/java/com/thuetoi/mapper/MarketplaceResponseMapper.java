@@ -121,6 +121,13 @@ public class MarketplaceResponseMapper {
         if (message == null) {
             return null;
         }
+        return toMessageResponse(message, null);
+    }
+
+    public MessageResponse toMessageResponse(Message message, String senderRole) {
+        if (message == null) {
+            return null;
+        }
         return new MessageResponse(
             message.getId(),
             message.getContractId(),
@@ -129,7 +136,8 @@ public class MarketplaceResponseMapper {
             message.getMessageType(),
             message.getContent(),
             attachmentMetadataService.deserialize(message.getAttachments()),
-            message.getSentAt()
+            message.getSentAt(),
+            senderRole
         );
     }
 

@@ -6,6 +6,7 @@ import com.thuetoi.entity.Contract;
 import com.thuetoi.entity.Message;
 import com.thuetoi.exception.BusinessException;
 import com.thuetoi.repository.MessageRepository;
+import com.thuetoi.repository.UserRepository;
 import com.thuetoi.mapper.MarketplaceResponseMapper;
 import com.thuetoi.websocket.ContractMessageWebSocketHandler;
 import com.thuetoi.dto.response.marketplace.MessageResponse;
@@ -47,6 +48,9 @@ class MessageServiceTest {
     @Mock
     private ContractMessageWebSocketHandler contractMessageWebSocketHandler;
 
+    @Mock
+    private UserRepository userRepository;
+
     @InjectMocks
     private MessageService messageService;
 
@@ -59,7 +63,13 @@ class MessageServiceTest {
         Contract contract = contract(5L, "in_progress");
         when(contractAccessService.requireAccessibleContract(5L, 9L)).thenReturn(contract);
         when(messageRepository.save(any(Message.class))).thenAnswer(invocation -> invocation.getArgument(0));
-        when(marketplaceResponseMapper.toMessageResponse(any(Message.class))).thenReturn(new MessageResponse(1L, 5L, 9L, 1L, "text", "Xin chao client", null, null));
+
+        com.thuetoi.entity.User sender = new com.thuetoi.entity.User();
+        sender.setId(9L);
+        sender.setRole("freelancer");
+        when(userRepository.findById(9L)).thenReturn(java.util.Optional.of(sender));
+
+        when(marketplaceResponseMapper.toMessageResponse(any(Message.class), any())).thenReturn(new MessageResponse(1L, 5L, 9L, 1L, "text", "Xin chao client", null, null, "freelancer"));
 
         Message message = messageService.sendMessage(9L, request);
 
@@ -126,7 +136,13 @@ class MessageServiceTest {
         when(contractAccessService.requireAccessibleContract(5L, 9L)).thenReturn(contract);
         when(attachmentMetadataService.serialize(request.getAttachments())).thenReturn("[{\"url\":\"https://res.cloudinary.com/demo/file.pdf\"}]");
         when(messageRepository.save(any(Message.class))).thenAnswer(invocation -> invocation.getArgument(0));
-        when(marketplaceResponseMapper.toMessageResponse(any(Message.class))).thenReturn(new MessageResponse(2L, 5L, 9L, 1L, "file", null, null, null));
+
+        com.thuetoi.entity.User sender = new com.thuetoi.entity.User();
+        sender.setId(9L);
+        sender.setRole("freelancer");
+        when(userRepository.findById(9L)).thenReturn(java.util.Optional.of(sender));
+
+        when(marketplaceResponseMapper.toMessageResponse(any(Message.class), any())).thenReturn(new MessageResponse(2L, 5L, 9L, 1L, "file", null, null, null, "freelancer"));
 
         Message message = messageService.sendMessage(9L, request);
 

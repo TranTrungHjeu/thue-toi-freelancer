@@ -1,5 +1,5 @@
 -- Cron settings for expired projects and contracts
-INSERT INTO
+INSERT IGNORE INTO
     system_settings (
         setting_key,
         setting_value,

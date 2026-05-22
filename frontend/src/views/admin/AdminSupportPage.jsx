@@ -4,16 +4,21 @@ import {
   Send,
   User as UserIcon,
   Search,
-  Headset
+  Headset,
+  Attachment,
+  Xmark
 } from 'iconoir-react';
 import { H1, Text, Caption } from '../../components/common/Typography';
 import Card from '../../components/common/Card';
 import Button from '../../components/common/Button';
 import adminApi from '../../api/adminApi';
+import marketplaceApi from '../../api/marketplaceApi';
 import { useToast } from '../../hooks/useToast';
 import { useI18n } from '../../hooks/useI18n';
 import Spinner from '../../components/common/Spinner';
-import { format } from 'date-fns';
+import { formatDateTime } from '../../utils/formatters';
+import { normalizeAttachments } from '../../utils/attachments';
+import { getAccessToken } from '../../api/axiosClient';
 
 const AdminSupportPage = () => {
   const { t } = useI18n();
@@ -22,11 +27,13 @@ const AdminSupportPage = () => {
   const [selectedUser, setSelectedUser] = useState(null);
   const [messages, setMessages] = useState([]);
   const [newMessage, setNewMessage] = useState('');
+  const [fileToUpload, setFileToUpload] = useState(null);
   const [loadingUsers, setLoadingUsers] = useState(true);
   const [loadingMessages, setLoadingMessages] = useState(false);
   const [sending, setSending] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
   const messagesEndRef = useRef(null);
+  const socketRef = useRef(null);
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -38,7 +45,72 @@ const AdminSupportPage = () => {
 
   useEffect(() => {
     fetchUsers();
+    connectWebSocket();
+    return () => {
+      if (socketRef.current) {
+        socketRef.current.close();
+      }
+    };
   }, []);
+
+  const connectWebSocket = () => {
+    const token = getAccessToken();
+    if (!token || token === 'null') {
+      console.error('[AdminSupportWebSocket] No token found.');
+      return;
+    }
+
+    const wsUrl = process.env.VITE_WS_URL || `${window.location.protocol === 'https:' ? 'wss:' : 'ws:'}//${window.location.host}/ws/support?token=${token}`;
+    console.log('[AdminSupportWebSocket] Connecting to:', wsUrl);
+
+    const socket = new WebSocket(wsUrl);
+    socketRef.current = socket;
+
+    socket.onmessage = (event) => {
+      console.log('[AdminSupportWebSocket] Raw message received:', event.data);
+      try {
+        const data = JSON.parse(event.data);
+        console.log('[AdminSupportWebSocket] Parsed data:', data);
+
+        // Backend sends MessageRealtimeEvent which has 'event' and 'data' (the message)
+        const message = data.event === 'SUPPORT_MESSAGE_CREATED' ? data.data : data;
+        console.log('[AdminSupportWebSocket] Extracted message:', message);
+
+        if (message && message.id) {
+          // Only add message if it's related to the currently selected user
+          setSelectedUser(currentSelected => {
+            console.log('[AdminSupportWebSocket] Current selected user:', currentSelected?.id);
+            if (currentSelected && (message.senderId === currentSelected.id || message.recipientId === currentSelected.id)) {
+              console.log('[AdminSupportWebSocket] Message matches selected user, adding to list');
+              setMessages(prev => {
+                // Avoid duplicates
+                if (prev.find(m => m.id === message.id)) {
+                  console.log('[AdminSupportWebSocket] Duplicate message ignored:', message.id);
+                  return prev;
+                }
+                return [...prev, message];
+              });
+            } else {
+              console.log('[AdminSupportWebSocket] Message does not match selected user. Sender:', message.senderId, 'Recipient:', message.recipientId);
+            }
+            return currentSelected;
+          });
+        } else {
+          console.warn('[AdminSupportWebSocket] Received message without ID:', message);
+        }
+      } catch (error) {
+        console.error("[AdminSupportWebSocket] Error parsing message:", error);
+      }
+    };
+
+    socket.onopen = () => console.log('[AdminSupportWebSocket] Connection established');
+    socket.onerror = (err) => console.error('[AdminSupportWebSocket] Connection error:', err);
+    socket.onclose = (event) => {
+      console.log('[AdminSupportWebSocket] Connection closed:', event.code, event.reason);
+      // Reconnect after 3 seconds if closed unexpectedly
+      setTimeout(connectWebSocket, 3000);
+    };
+  };
 
   const fetchUsers = async () => {
     try {
@@ -75,23 +147,29 @@ const AdminSupportPage = () => {
 
   const handleSendMessage = async (e) => {
     e.preventDefault();
-    if (!newMessage.trim() || !selectedUser || sending) return;
+    if ((!newMessage.trim() && !fileToUpload) || !selectedUser || sending) return;
 
     setSending(true);
     try {
+      let uploaded = [];
+      if (fileToUpload) {
+        const response = await marketplaceApi.uploadFiles('support', [fileToUpload]);
+        uploaded = normalizeAttachments(response.data || []);
+      }
+
       const response = await adminApi.sendSupportMessage({
         recipientId: selectedUser.id,
         content: newMessage,
-        type: 'TEXT'
+        attachments: uploaded,
+        messageType: uploaded.length > 0 ? 'file' : 'text'
       });
       if (response.success) {
-        setMessages([...messages, response.data]);
         setNewMessage('');
+        setFileToUpload(null);
       }
     } catch {
       addToast(t('errors.code.ERR_SYS_01'), 'error');
     } finally {
-      setSending(null);
       setSending(false);
     }
   };
@@ -188,8 +266,26 @@ const AdminSupportPage = () => {
                       }`}
                     >
                       <div className="break-words">{msg.content}</div>
+
+                      {msg.messageType === 'file' && (
+                        <div className={`mt-2 border-t pt-2 flex flex-col gap-1 ${msg.senderId === selectedUser.id ? 'border-slate-200' : 'border-white/10'}`}>
+                          {normalizeAttachments(msg.attachments).map((att, i) => (
+                            <a
+                              key={i}
+                              href={att.url}
+                              target="_blank"
+                              rel="noreferrer"
+                              className="flex items-center gap-1 font-semibold underline hover:opacity-80"
+                            >
+                              <Attachment className="w-3 h-3" />
+                              {att.name || 'Download'}
+                            </a>
+                          ))}
+                        </div>
+                      )}
+
                       <div className={`text-[9px] mt-1 opacity-60 ${msg.senderId === selectedUser.id ? 'text-slate-500' : 'text-primary-100'}`}>
-                        {format(new Date(msg.createdAt), 'HH:mm, MMM d')}
+                        {formatDateTime(msg.createdAt || msg.sentAt)}
                       </div>
                     </div>
                   ))
@@ -198,7 +294,22 @@ const AdminSupportPage = () => {
               </div>
 
               <form onSubmit={handleSendMessage} className="p-4 border-t border-slate-100 bg-slate-50/50">
-                <div className="flex gap-2">
+                {fileToUpload && (
+                  <div className="mb-2 flex items-center justify-between rounded-md bg-primary-50 px-3 py-1 text-[10px] text-primary-700 border border-primary-100">
+                    <span className="truncate flex-1">File: {fileToUpload.name}</span>
+                    <button type="button" onClick={() => setFileToUpload(null)} className="ml-1 hover:text-primary-900"><Xmark className="w-3 h-3" /></button>
+                  </div>
+                )}
+                <div className="flex gap-2 items-center">
+                  <label className="flex h-10 w-10 shrink-0 cursor-pointer items-center justify-center rounded-xl bg-white border border-slate-200 text-slate-500 hover:bg-slate-50 hover:text-slate-700 transition">
+                    <Attachment className="w-4 h-4" />
+                    <input
+                      type="file"
+                      className="hidden"
+                      onChange={(e) => setFileToUpload(e.target.files?.[0])}
+                      disabled={sending}
+                    />
+                  </label>
                   <input
                     type="text"
                     placeholder="Type your message..."
@@ -210,8 +321,8 @@ const AdminSupportPage = () => {
                   <Button
                     type="submit"
                     variant="primary"
-                    className="rounded-xl px-4"
-                    disabled={!newMessage.trim() || sending}
+                    className="rounded-xl px-4 h-10"
+                    disabled={(!newMessage.trim() && !fileToUpload) || sending}
                   >
                     {sending ? <Spinner size="xs" tone="current" /> : <Send className="w-4 h-4" />}
                   </Button>

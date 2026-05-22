@@ -17,6 +17,8 @@ import { formatDateTime } from '../../utils/formatters';
 import { useI18n } from '../../hooks/useI18n';
 import { useAuth } from '../../hooks/useAuth';
 import { useToast } from '../../hooks/useToast';
+import { getAccessToken } from '../../api/axiosClient';
+import adminApi from '../../api/adminApi';
 import { AiChatRichText } from '../features/aiChatRichText';
 import Spinner from '../common/Spinner';
 import VideoCallModal from '../common/VideoCallModal';
@@ -39,7 +41,8 @@ const ChatWindow = ({
   chat,
   onClose,
   onToggleMinimize,
-  isMinimized
+  isMinimized,
+  onMessageReceived // Callback for unread count
 }) => {
   const { locale } = useI18n();
   const { user } = useAuth();
@@ -55,7 +58,8 @@ const ChatWindow = ({
   const inputRef = useRef(null);
 
   const isAi = chat.type === 'ai';
-  const contractId = !isAi ? chat.id : null;
+  const isSupport = chat.type === 'support';
+  const contractId = (!isAi && !isSupport) ? chat.id : null;
 
   useEffect(() => {
     if (isMinimized) return;
@@ -72,6 +76,23 @@ const ChatWindow = ({
     let mounted = true;
     if (isAi) {
       setMessages(chat.messages || []);
+      return;
+    }
+    if (isSupport) {
+      const loadSupportMessages = async () => {
+        setLoading(true);
+        try {
+          const response = chat.adminViewUserId
+            ? await adminApi.getSupportMessages(chat.adminViewUserId)
+            : await marketplaceApi.getSupportMessages();
+          if (mounted) setMessages(response.data || []);
+        } catch (error) {
+          console.error('Failed to load support messages:', error);
+        } finally {
+          if (mounted) setLoading(false);
+        }
+      };
+      loadSupportMessages();
       return;
     }
 
@@ -91,9 +112,47 @@ const ChatWindow = ({
     return () => { mounted = false; };
   }, [contractId, isAi, chat.messages]);
 
+  // Realtime subscription for support messages (via ChatManager hub)
+  useEffect(() => {
+    if (isAi || !isSupport) return;
+
+    const handleSupportMessage = (event) => {
+      const message = event.detail;
+      console.log('[ChatWindowSupport] Event received:', message);
+      if (!message || !message.id) return;
+
+      // Filter logic for Admin view vs User view
+      if (chat.adminViewUserId) {
+        // Admin view: only show messages involving this specific user
+        const isRelevant = message.senderId === chat.adminViewUserId || message.recipientId === chat.adminViewUserId;
+        console.log(`[ChatWindowSupport] Admin filter (viewing user ${chat.adminViewUserId}): isRelevant = ${isRelevant}`);
+        if (!isRelevant) return;
+      } else {
+        // Regular user view: Since they only have one support chat, any support message received by their socket is for them.
+        // But let's be safe and check if it's not a message for someone else (shouldn't happen with user-scoped sessions)
+        console.log('[ChatWindowSupport] User view: processing support message');
+      }
+
+      setMessages((prev) => {
+        if (prev.some((m) => m.id === message.id)) {
+          console.log('[ChatWindowSupport] Message already in state, skipping duplicate:', message.id);
+          return prev;
+        }
+        return [...prev, message];
+      });
+
+      if (onMessageReceived && !isMinimized) {
+        onMessageReceived(message);
+      }
+    };
+
+    window.addEventListener('thuetoi:support-message', handleSupportMessage);
+    return () => window.removeEventListener('thuetoi:support-message', handleSupportMessage);
+  }, [isSupport, isAi, chat.id, chat.adminViewUserId, isMinimized, onMessageReceived]);
+
   // Realtime subscription for contract messages
   useEffect(() => {
-    if (isAi || !contractId) return;
+    if (isAi || isSupport || !contractId) return;
 
     const realtimeClient = createMessageRealtimeClient({
       contractId,
@@ -106,10 +165,10 @@ const ChatWindow = ({
     });
 
     return () => realtimeClient.close();
-  }, [contractId, isAi]);
+  }, [contractId, isAi, isSupport]);
 
   const handleStartCall = (isVideo) => {
-    if (!contractId) return;
+    if (!contractId || isSupport) return;
     setCallRoomName(`thuetoi-contract-${contractId}`);
     setIsCallOpen(true);
     marketplaceApi.sendMessage({
@@ -123,7 +182,7 @@ const ChatWindow = ({
   const handleSend = async (e) => {
     e?.preventDefault();
     const text = input.trim();
-    if (!text && !fileToUpload && !isAi) return;
+    if (!text && !fileToUpload && !isAi && !isSupport) return;
     if (!text && isAi) return;
     if (sending) return;
 
@@ -153,6 +212,46 @@ const ChatWindow = ({
         };
         setMessages(prev => [...prev, botMsg]);
         if (chat.onAiMessage) chat.onAiMessage([...messages, userMsg, botMsg]);
+      } else if (isSupport) {
+        let uploaded = [];
+        if (fileToUpload) {
+          const response = await marketplaceApi.uploadFiles('support', [fileToUpload]);
+          uploaded = normalizeAttachments(response.data || []);
+        }
+
+        const messagePayload = {
+          content: text,
+          attachments: uploaded,
+          messageType: uploaded.length > 0 ? 'file' : 'text'
+        };
+
+        // Optimistically add the user's message to the UI
+        const newUserMessage = {
+          id: `temp_${Date.now()}`, // Temporary ID
+          senderId: user.id,
+          senderRole: user.role, // Assuming user object has role
+          content: text,
+          attachments: uploaded,
+          messageType: messagePayload.messageType,
+          createdAt: new Date().toISOString(),
+        };
+        setMessages(prev => [...prev, newUserMessage]);
+        setInput('');
+        setFileToUpload(null);
+
+        try {
+          if (chat.adminViewUserId) {
+            await adminApi.sendSupportMessage({
+              recipientId: chat.adminViewUserId,
+              ...messagePayload
+            });
+          } else {
+            await marketplaceApi.sendSupportMessage(messagePayload);
+          }
+        } catch (error) {
+          addToast('Failed to send message: ' + error.message, 'error');
+          // TODO: Handle error state for the sent message (e.g., show an error icon)
+        }
       } else {
         let uploaded = [];
         if (fileToUpload) {
@@ -184,7 +283,7 @@ const ChatWindow = ({
         className="flex h-10 w-64 cursor-pointer items-center justify-between rounded-t-lg bg-secondary-900 px-3 text-white shadow-lg transition-all hover:bg-secondary-800"
       >
         <div className="flex items-center gap-2 overflow-hidden">
-          <div className={`h-2 w-2 shrink-0 rounded-full ${isAi ? 'bg-emerald-400' : 'bg-primary-400'}`} />
+          <div className={`h-2 w-2 shrink-0 rounded-full ${isAi ? 'bg-emerald-400' : isSupport ? 'bg-amber-400' : 'bg-primary-400'}`} />
           <span className="truncate text-xs font-bold">{chat.title}</span>
         </div>
         <div className="flex items-center gap-1">
@@ -207,14 +306,15 @@ const ChatWindow = ({
         onClick={onToggleMinimize}
       >
         <div className="flex items-center gap-2 overflow-hidden">
-          <div className={`h-2 w-2 shrink-0 rounded-full ${isAi ? 'bg-emerald-400' : 'bg-primary-400'} animate-pulse`} />
+          <div className={`h-2 w-2 shrink-0 rounded-full ${isAi ? 'bg-emerald-400' : isSupport ? 'bg-amber-400' : 'bg-primary-400'} animate-pulse`} />
           <div className="flex flex-col min-w-0">
             <span className="truncate text-xs font-bold uppercase tracking-wider">{chat.title}</span>
             {isAi && <span className="text-[10px] text-primary-100">AI Assistant</span>}
+            {isSupport && <span className="text-[10px] text-amber-100">Hỗ trợ trực tuyến</span>}
           </div>
         </div>
         <div className="flex items-center gap-1 shrink-0">
-          {!isAi && (
+          {(!isAi && !isSupport) && (
             <>
               <button
                 type="button"
@@ -270,6 +370,7 @@ const ChatWindow = ({
         {messages.map((m, idx) => {
           const isUser = isAi ? m.role === 'user' : m.senderId === user?.id;
           const isBot = isAi && m.role === 'assistant';
+          const isAdmin = isSupport && m.senderRole === 'ADMIN';
           return (
             <div key={m.id || idx} className={`flex ${isUser ? 'justify-end' : 'justify-start'}`}>
               <div className={`max-w-[85%] rounded-2xl px-3 py-2 text-xs shadow-sm relative overflow-hidden ${
@@ -277,7 +378,9 @@ const ChatWindow = ({
                   ? (isAi ? 'bg-primary-600 text-white' : 'bg-secondary-900 text-white')
                   : isBot
                     ? 'bg-primary-50 border border-primary-200 text-slate-900 border-l-4 border-l-primary-500'
-                    : 'bg-white border border-slate-200 text-slate-800'
+                    : isAdmin
+                      ? 'bg-amber-50 border border-amber-200 text-slate-900 border-l-4 border-l-amber-500'
+                      : 'bg-white border border-slate-200 text-slate-800'
               }`}>
                 {isBot && (
                   <div className="mb-1 flex items-center gap-1 text-[9px] font-bold text-primary-600 uppercase tracking-tight">
@@ -335,7 +438,7 @@ const ChatWindow = ({
           </div>
         )}
         <div className="flex items-center gap-1.5 rounded-lg border border-slate-200 bg-slate-50 p-1 focus-within:border-primary-400 focus-within:bg-white transition-all">
-          {!isAi && (
+          {(!isAi) && (
             <label className="flex h-8 w-8 shrink-0 cursor-pointer items-center justify-center rounded-md text-slate-500 hover:bg-slate-200 hover:text-slate-700 transition">
               <Attachment className="h-4 w-4" />
               <input

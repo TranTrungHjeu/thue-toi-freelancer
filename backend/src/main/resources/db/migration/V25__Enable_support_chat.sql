@@ -31,4 +31,24 @@ EXECUTE stmt;
 DEALLOCATE PREPARE stmt;
 
 -- Index phục vụ truy vấn chat hỗ trợ (contract_id is null)
-CREATE INDEX idx_messages_support_chat ON messages (sender_id, recipient_id);
+SET @indexname = 'idx_messages_support_chat';
+
+SET
+    @preparedStatement = (
+        SELECT IF(
+                (
+                    SELECT COUNT(*)
+                    FROM INFORMATION_SCHEMA.STATISTICS
+                    WHERE
+                        TABLE_SCHEMA = @dbname
+                        AND TABLE_NAME = @tablename
+                        AND INDEX_NAME = @indexname
+                ) > 0, 'SELECT 1', 'CREATE INDEX idx_messages_support_chat ON messages (sender_id, recipient_id)'
+            )
+    );
+
+PREPARE stmt FROM @preparedStatement;
+
+EXECUTE stmt;
+
+DEALLOCATE PREPARE stmt;

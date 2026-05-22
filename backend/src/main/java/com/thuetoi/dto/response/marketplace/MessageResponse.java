@@ -12,6 +12,7 @@ public record MessageResponse(
     String messageType,
     String content,
     List<FileAttachmentRequest> attachments,
-    LocalDateTime sentAt
+    LocalDateTime sentAt,
+    String senderRole
 ) {
 }

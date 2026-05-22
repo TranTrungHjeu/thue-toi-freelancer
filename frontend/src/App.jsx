@@ -30,6 +30,7 @@ import AdminBroadcastPage from './views/admin/AdminBroadcastPage'
 import AdminSkillsPage from './views/admin/AdminSkillsPage'
 import AdminSettingsPage from './views/admin/AdminSettingsPage'
 import AdminActivityLogPage from './views/admin/AdminActivityLogPage'
+import AdminSupportPage from './views/admin/AdminSupportPage'
 
 // Layout wrappers
 const WorkspaceLayout = () => {
@@ -55,6 +56,7 @@ export default function App() {
         <Routes>
           {/* Public routes */}
           <Route path="/" element={<LandingPage />} />
+          <Route path="/admin/support" element={<ProtectedRoute><MainLayout><AdminSupportPage /></MainLayout></ProtectedRoute>} />
           <Route path="/auth/login" element={<LoginPage />} />
           <Route path="/auth/register" element={<RegisterPage />} />
           <Route path="/auth/verify-email" element={<VerifyEmailPage />} />
@@ -83,6 +85,7 @@ export default function App() {
               <Route path="/workspace/admin/skills" element={<AdminSkillsPage />} />
               <Route path="/workspace/admin/settings" element={<AdminSettingsPage />} />
               <Route path="/workspace/admin/logs" element={<AdminActivityLogPage />} />
+              <Route path="/workspace/admin/support" element={<AdminSupportPage />} />
             </Route>
           </Route>
 

@@ -44,6 +44,8 @@ services:
       CLOUDINARY_URL: ${CLOUDINARY_URL}
       GEMINI_API_KEY: ${GEMINI_API_KEY}
       GEMINI_MODEL: ${GEMINI_MODEL:-}
+      SPRING_DATASOURCE_USERNAME: ${MYSQL_USER:-root}
+      SPRING_DATASOURCE_PASSWORD: ${MYSQL_PASSWORD:-${MYSQL_ROOT_PASSWORD:-root_dev_secure_pw}}
       # SePay API v2 (VA orders) + webhook auth — see backend/src/main/resources/application.properties
       SEPAY_API_BASE_URL: ${SEPAY_API_BASE_URL:-https://userapi.sepay.vn}
       SEPAY_API_TOKEN: ${SEPAY_API_TOKEN}

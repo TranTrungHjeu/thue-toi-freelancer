@@ -145,6 +145,11 @@ export const marketplaceApi = {
       headers: { "Content-Type": "multipart/form-data" },
     });
   },
+
+  // --- Support Chat ---
+  getSupportMessages: () => axiosClient.get("/v1/admin/support/messages/me"),
+  sendSupportMessage: (payload) =>
+    axiosClient.post("/v1/admin/support/messages", payload),
 };
 
 export default marketplaceApi;

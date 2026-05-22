@@ -126,6 +126,8 @@ public class WithdrawalService {
         entity.setStatus(WithdrawalRequest.STATUS_PENDING);
 
         applyBankInfo(userId, entity, request);
+        // Đặt tạm bankInfo trước khi lưu lần 1 để tránh lỗi NOT NULL constraint nếu DB chưa chạy V28 migration
+        entity.setBankInfo(buildLegacyBankInfo(entity));
 
         // Lưu lần 1 để có ID -> dùng làm hậu tố cho order_code (unique, deterministic).
         WithdrawalRequest saved = withdrawalRequestRepository.save(entity);

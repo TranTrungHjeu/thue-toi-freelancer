@@ -347,6 +347,22 @@ public class AdminController {
             marketplaceResponseMapper.toMessageResponse(messageService.sendMessage(currentAdmin.getId(), request)));
     }
 
+    @GetMapping("/support/messages/me")
+    @PreAuthorize("hasAnyRole('ADMIN', 'CUSTOMER', 'FREELANCER')")
+    public ApiResponse<List<com.thuetoi.dto.response.marketplace.MessageResponse>> getMySupportMessages(Principal principal) {
+        Long currentUserId = currentUserProvider.requireCurrentUserId(principal);
+        return ApiResponse.success("Lịch sử tin nhắn hỗ trợ của tôi",
+            marketplaceResponseMapper.toMessageResponses(messageService.getSupportMessages(null, currentUserId)));
+    }
+
+    @PostMapping("/support/messages")
+    @PreAuthorize("hasAnyRole('ADMIN', 'CUSTOMER', 'FREELANCER')")
+    public ApiResponse<com.thuetoi.dto.response.marketplace.MessageResponse> sendSupportMessageToAdmin(@Valid @RequestBody com.thuetoi.dto.request.MessageRequest request, Principal principal) {
+        Long currentUserId = currentUserProvider.requireCurrentUserId(principal);
+        return ApiResponse.success("Gửi tin nhắn hỗ trợ thành công",
+            marketplaceResponseMapper.toMessageResponse(messageService.sendSupportMessageToAdmin(currentUserId, request)));
+    }
+
     private User requireCurrentAdmin(Principal principal) {
         Long currentUserId = currentUserProvider.requireCurrentUserId(principal);
         return userRepository.findById(currentUserId)

@@ -66,16 +66,16 @@ const MainLayout = ({ children }) => {
 
     if (role === 'admin') {
       return [
-        {
-          title: t('layout.adminSections.moderation'),
-          items: [
-            { label: t('layout.navigation.adminDashboard'), href: '/workspace/admin/dashboard', icon: Home },
-            { label: t('layout.navigation.adminUsers'), href: '/workspace/admin/users', icon: Group },
-            { label: t('layout.navigation.adminProjects'), href: '/workspace/admin/projects', icon: ViewGrid },
-            { label: t('layout.navigation.adminKyc'), href: '/workspace/admin/kyc', icon: ShieldCheck },
-            { label: t('layout.navigation.adminReports'), href: '/workspace/admin/reports', icon: WarningTriangle },
-          ],
-        },
+      {
+        title: t('layout.navigation.support'),
+        items: [
+          {
+            label: t('layout.navigation.supportChat'),
+            icon: Headset,
+            href: '/admin/support',
+          },
+        ],
+      },
         {
           title: t('layout.adminSections.finance'),
           items: [

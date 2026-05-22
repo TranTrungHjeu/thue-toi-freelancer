@@ -11,6 +11,7 @@ import com.thuetoi.mapper.MarketplaceResponseMapper;
 import com.thuetoi.repository.MessageRepository;
 import com.thuetoi.repository.UserRepository;
 import com.thuetoi.websocket.ContractMessageWebSocketHandler;
+import com.thuetoi.websocket.SupportMessageWebSocketHandler;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
@@ -30,6 +31,9 @@ public class MessageService {
 
     @Autowired
     private ContractMessageWebSocketHandler contractMessageWebSocketHandler;
+
+    @Autowired
+    private SupportMessageWebSocketHandler supportMessageWebSocketHandler;
 
     @Autowired
     private AttachmentMetadataService attachmentMetadataService;
@@ -80,7 +84,10 @@ public class MessageService {
         message.setAttachments(normalizedAttachments);
 
         Message savedMessage = messageRepository.save(message);
-        MessageResponse response = marketplaceResponseMapper.toMessageResponse(savedMessage);
+        String senderRole = userRepository.findById(currentUserId)
+            .map(com.thuetoi.entity.User::getRole)
+            .orElse("user");
+        MessageResponse response = marketplaceResponseMapper.toMessageResponse(savedMessage, senderRole);
 
         Long recipientId = contract.getClientId().equals(currentUserId)
             ? contract.getFreelancerId()
@@ -148,10 +155,13 @@ public class MessageService {
         message.setAttachments(normalizedAttachments);
 
         Message savedMessage = messageRepository.save(message);
-        MessageResponse response = marketplaceResponseMapper.toMessageResponse(savedMessage);
+        String senderRole = userRepository.findById(currentUserId)
+            .map(com.thuetoi.entity.User::getRole)
+            .orElse("user");
+        MessageResponse response = marketplaceResponseMapper.toMessageResponse(savedMessage, senderRole);
 
-        // Phát tín hiệu realtime (cần cập nhật WebSocketHandler sau)
-        contractMessageWebSocketHandler.broadcast(response);
+        // Phát tín hiệu realtime
+        supportMessageWebSocketHandler.broadcast(response);
 
         notificationService.createNotificationForUser(
             recipientId,
@@ -164,18 +174,21 @@ public class MessageService {
         return savedMessage;
     }
 
-    public List<Message> getSupportMessages(Long currentUserId, Long targetUserId) {
-        // Nếu currentUserId là admin, lấy chat với targetUserId.
-        // Nếu targetUserId null, lấy tất cả chat hỗ trợ của admin? (Cần API khác cho admin liệt kê danh sách chat)
-        if (targetUserId == null) {
-             // User lấy chat của chính mình với admin
-             Long adminId = userRepository.findByRole("admin").stream()
+    public List<Message> getSupportMessages(Long adminId, Long userId) {
+        // Nếu adminId null, có nghĩa là user đang gọi để lấy chat của mình với admin
+        if (adminId == null) {
+            adminId = userRepository.findByRole("admin").stream()
                 .findFirst()
                 .map(com.thuetoi.entity.User::getId)
                 .orElseThrow(() -> new BusinessException("ERR_SYS_02", "Không tìm thấy Admin", HttpStatus.NOT_FOUND));
-             return messageRepository.findSupportMessagesBetween(currentUserId, adminId);
+            return messageRepository.findSupportMessagesBetween(userId, adminId);
         }
-        return messageRepository.findSupportMessagesBetween(currentUserId, targetUserId);
+        // Nếu adminId không null, admin đang lấy chat với user
+        return messageRepository.findSupportMessagesBetween(adminId, userId);
+    }
+
+    public Message sendSupportMessageToAdmin(Long currentUserId, MessageRequest request) {
+        return sendSupportMessage(currentUserId, null, request);
     }
 
     private MessageType normalizeMessageType(String messageType) {

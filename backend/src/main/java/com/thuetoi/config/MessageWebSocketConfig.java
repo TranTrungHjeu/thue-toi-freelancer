@@ -1,6 +1,7 @@
 package com.thuetoi.config;
 
 import com.thuetoi.websocket.ContractMessageWebSocketHandler;
+import com.thuetoi.websocket.SupportMessageWebSocketHandler;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.server.ServerHttpRequest;
 import org.springframework.http.server.ServerHttpResponse;
@@ -18,17 +19,26 @@ import java.util.Map;
 public class MessageWebSocketConfig implements WebSocketConfigurer {
 
     private final ContractMessageWebSocketHandler contractMessageWebSocketHandler;
+    private final SupportMessageWebSocketHandler supportMessageWebSocketHandler;
 
-    public MessageWebSocketConfig(ContractMessageWebSocketHandler contractMessageWebSocketHandler) {
+    public MessageWebSocketConfig(
+        ContractMessageWebSocketHandler contractMessageWebSocketHandler,
+        SupportMessageWebSocketHandler supportMessageWebSocketHandler
+    ) {
         this.contractMessageWebSocketHandler = contractMessageWebSocketHandler;
+        this.supportMessageWebSocketHandler = supportMessageWebSocketHandler;
     }
 
     @Override
     public void registerWebSocketHandlers(WebSocketHandlerRegistry registry) {
-        // Đăng ký cả hai endpoint để tương thích tối đa với các loại Proxy
+        // Đăng ký các endpoint để tương thích tối đa với các loại Proxy
         registry.addHandler(contractMessageWebSocketHandler, "/ws/messages", "/api/ws/messages")
             .addInterceptors(new TokenHandshakeInterceptor())
-            .setAllowedOriginPatterns("*");
+            .setAllowedOrigins("*");
+
+        registry.addHandler(supportMessageWebSocketHandler, "/ws/support", "/api/ws/support")
+            .addInterceptors(new TokenHandshakeInterceptor())
+            .setAllowedOrigins("*");
     }
 
     /**
