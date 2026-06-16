@@ -6,3 +6,4 @@ frontend/dist/
 .cursor
 .cursor.*
 node_modules/
+*.pem
